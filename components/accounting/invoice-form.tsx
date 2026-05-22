@@ -1,0 +1,352 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/forms/field";
+import { createInvoice, updateInvoice } from "@/actions/invoices";
+import { formatCurrency } from "@/lib/utils";
+import type { ActionResult } from "@/lib/action-helpers";
+import { Plus, Trash2 } from "lucide-react";
+
+type Opt = { id: string; label: string };
+type ItemRow = { description: string; quantity: number; unitPrice: number };
+
+export type InvoiceInitial = {
+  id: string;
+  customerId: string;
+  loadId: string | null;
+  series: string | null;
+  issueDate: Date | string;
+  dueDate: Date | string;
+  vatRate: number;
+  currency: string;
+  notes: string | null;
+  items: unknown;
+};
+
+const toDateInput = (d: Date | string | null | undefined) => {
+  if (!d) return "";
+  const date = typeof d === "string" ? new Date(d) : d;
+  const off = date.getTimezoneOffset();
+  return new Date(date.getTime() - off * 60_000).toISOString().slice(0, 10);
+};
+
+export function InvoiceForm({
+  initial,
+  customers,
+  loads,
+  defaultVatRate,
+  defaultCurrency,
+  defaultLoadId,
+  defaultCustomerId,
+  defaultItems,
+}: {
+  initial?: InvoiceInitial;
+  customers: Opt[];
+  loads: Opt[];
+  defaultVatRate: number;
+  defaultCurrency: string;
+  defaultLoadId?: string | null;
+  defaultCustomerId?: string | null;
+  defaultItems?: ItemRow[];
+}) {
+  const editing = Boolean(initial);
+  const router = useRouter();
+  const [state, setState] = useState<ActionResult | null>(null);
+  const [pending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const initialItems: ItemRow[] = (() => {
+    const arr = Array.isArray(initial?.items)
+      ? (initial!.items as ItemRow[])
+      : [];
+    if (arr.length) return arr;
+    if (defaultItems?.length) return defaultItems;
+    return [{ description: "", quantity: 1, unitPrice: 0 }];
+  })();
+  const [items, setItems] = useState<ItemRow[]>(initialItems);
+  const [vatRate, setVatRate] = useState<number>(
+    initial?.vatRate ?? defaultVatRate,
+  );
+  const currency = initial?.currency ?? defaultCurrency;
+
+  useEffect(() => {
+    if (!state) return;
+    if (state.ok) {
+      toast.success(state.message ?? "Salvat.");
+      const id = (state.data as { id?: string } | undefined)?.id ?? initial?.id;
+      if (id) router.push(`/accounting/invoices/${id}`);
+      else router.push("/accounting/invoices");
+    } else toast.error(state.error);
+  }, [state, router, initial?.id]);
+
+  function handleSubmit(ev: React.FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+    const form = formRef.current!;
+    const fd = new FormData();
+    // scalar fields
+    const fields = [
+      "customerId",
+      "loadId",
+      "series",
+      "issueDate",
+      "dueDate",
+      "currency",
+      "vatRate",
+      "notes",
+    ];
+    if (editing) fd.append("id", initial!.id);
+    for (const f of fields) {
+      const el = form.elements.namedItem(f) as
+        | HTMLInputElement
+        | HTMLSelectElement
+        | HTMLTextAreaElement
+        | null;
+      fd.append(f, el?.value ?? "");
+    }
+    // item rows from state
+    for (const it of items) {
+      fd.append("itemDescription", it.description);
+      fd.append("itemQuantity", String(it.quantity));
+      fd.append("itemUnitPrice", String(it.unitPrice));
+    }
+    startTransition(async () => {
+      const result = await (editing ? updateInvoice(fd) : createInvoice(fd));
+      setState(result);
+    });
+  }
+
+  const e = state && !state.ok ? (state.fieldErrors ?? {}) : {};
+
+  const subtotal = items.reduce(
+    (s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
+    0,
+  );
+  const vatAmount = +(subtotal * (vatRate / 100)).toFixed(2);
+  const total = +(subtotal + vatAmount).toFixed(2);
+
+  const addItem = () =>
+    setItems((arr) => [...arr, { description: "", quantity: 1, unitPrice: 0 }]);
+  const removeItem = (idx: number) =>
+    setItems((arr) => arr.filter((_, i) => i !== idx));
+  const updateItem = (idx: number, patch: Partial<ItemRow>) =>
+    setItems((arr) =>
+      arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)),
+    );
+
+  return (
+    <form ref={formRef} onSubmit={handleSubmit} className="grid gap-6">
+      {editing && <input type="hidden" name="id" value={initial!.id} />}
+
+      <section className="grid gap-4 rounded-lg border bg-card p-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            name="customerId"
+            label="Customer"
+            required
+            error={e.customerId}
+          >
+            <Select
+              id="customerId"
+              name="customerId"
+              defaultValue={initial?.customerId ?? defaultCustomerId ?? ""}
+              required
+            >
+              <option value="">— select customer —</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            name="loadId"
+            label="Associated Load (optional)"
+            error={e.loadId}
+          >
+            <Select
+              id="loadId"
+              name="loadId"
+              defaultValue={initial?.loadId ?? defaultLoadId ?? ""}
+            >
+              <option value="">— no load —</option>
+              {loads.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-4">
+          <Field name="series" label="Series" error={e.series}>
+            <Input
+              id="series"
+              name="series"
+              defaultValue={initial?.series ?? ""}
+              placeholder="e.g.: INV"
+            />
+          </Field>
+          <Field
+            name="issueDate"
+            label="Issue Date"
+            required
+            error={e.issueDate}
+          >
+            <Input
+              id="issueDate"
+              name="issueDate"
+              type="date"
+              defaultValue={toDateInput(initial?.issueDate ?? new Date())}
+              required
+            />
+          </Field>
+          <Field name="dueDate" label="Due Date" required error={e.dueDate}>
+            <Input
+              id="dueDate"
+              name="dueDate"
+              type="date"
+              defaultValue={toDateInput(
+                initial?.dueDate ?? new Date(Date.now() + 30 * 86400_000),
+              )}
+              required
+            />
+          </Field>
+          <Field name="currency" label="Currency" error={e.currency}>
+            <Select id="currency" name="currency" defaultValue={currency}>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="RON">RON</option>
+              <option value="MDL">MDL</option>
+              <option value="GBP">GBP</option>
+            </Select>
+          </Field>
+        </div>
+      </section>
+
+      <section className="grid gap-3 rounded-lg border bg-card p-6">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">Invoice Lines</h3>
+          <Button type="button" variant="outline" size="sm" onClick={addItem}>
+            <Plus className="mr-1 h-4 w-4" /> Add Line
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          {items.map((it, idx) => (
+            <div key={idx} className="grid grid-cols-12 gap-2">
+              <div className="col-span-6">
+                <Input
+                  name="itemDescription"
+                  placeholder="Description"
+                  value={it.description}
+                  onChange={(ev) =>
+                    updateItem(idx, { description: ev.target.value })
+                  }
+                  required={idx === 0}
+                />
+              </div>
+              <div className="col-span-2">
+                <Input
+                  name="itemQuantity"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  placeholder="Qty."
+                  value={it.quantity}
+                  onChange={(ev) =>
+                    updateItem(idx, { quantity: Number(ev.target.value) })
+                  }
+                />
+              </div>
+              <div className="col-span-3">
+                <Input
+                  name="itemUnitPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Unit Price"
+                  value={it.unitPrice}
+                  onChange={(ev) =>
+                    updateItem(idx, { unitPrice: Number(ev.target.value) })
+                  }
+                />
+              </div>
+              <div className="col-span-1 flex items-center justify-end">
+                {items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(idx)}
+                    className="rounded p-2 text-muted-foreground hover:bg-accent hover:text-destructive"
+                    aria-label="Delete line"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3 grid gap-2 border-t pt-3 text-sm sm:grid-cols-2">
+          <div className="flex items-center gap-2">
+            <label className="text-muted-foreground">VAT %</label>
+            <Input
+              name="vatRate"
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={vatRate}
+              onChange={(ev) => setVatRate(Number(ev.target.value))}
+              className="w-24"
+            />
+          </div>
+          <div className="space-y-1 text-right">
+            <div className="text-muted-foreground">
+              Subtotal:{" "}
+              <span className="font-medium text-foreground">
+                {formatCurrency(subtotal, currency)}
+              </span>
+            </div>
+            <div className="text-muted-foreground">
+              VAT:{" "}
+              <span className="font-medium text-foreground">
+                {formatCurrency(vatAmount, currency)}
+              </span>
+            </div>
+            <div className="text-lg font-semibold">
+              Total: {formatCurrency(total, currency)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 rounded-lg border bg-card p-6">
+        <Field name="notes" label="Notes / Remarks" error={e.notes}>
+          <Textarea
+            id="notes"
+            name="notes"
+            rows={3}
+            defaultValue={initial?.notes ?? ""}
+          />
+        </Field>
+      </section>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Saving…" : editing ? "Save" : "Issue Invoice"}
+        </Button>
+      </div>
+    </form>
+  );
+}

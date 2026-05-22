@@ -1,0 +1,63 @@
+import "server-only";
+import { cache } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { assertPermission, type Permission } from "@/lib/permissions";
+
+/**
+ * Returns the current session or null. Cached per-request.
+ */
+export const getSession = cache(async () => {
+  return auth();
+});
+
+/**
+ * Returns the current user (full DB record) or null. Cached per-request.
+ */
+export const getCurrentUser = cache(async () => {
+  const session = await getSession();
+  if (!session?.user?.id) return null;
+  return prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: { company: true },
+  });
+});
+
+/**
+ * Guarantees an authenticated user; otherwise redirects to /login.
+ * Cached so it's cheap to call from layouts/pages/server actions.
+ */
+export const requireUser = cache(async () => {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+  return session.user;
+});
+
+/**
+ * Like requireUser, but also enforces an RBAC permission.
+ * Throws if missing — server actions can map to a UI error.
+ */
+export async function requirePermission(permission: Permission) {
+  const user = await requireUser();
+  assertPermission(user.role, permission);
+  return user;
+}
+
+/**
+ * Returns the user's companyId, redirecting if not set.
+ * Used by all multi-tenant data queries.
+ */
+export async function requireCompanyId(): Promise<string> {
+  const user = await requireUser();
+  if (!user.companyId) {
+    // SUPER_ADMIN may not be attached to a company; they pick one via UI.
+    if (user.role === "SUPER_ADMIN") {
+      throw new Error("SUPER_ADMIN must select a company context first.");
+    }
+    redirect("/login");
+  }
+  return user.companyId;
+}

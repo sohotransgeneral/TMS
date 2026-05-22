@@ -1,0 +1,361 @@
+"use client";
+
+import { useState, useActionState, useEffect } from "react";
+import { toast } from "sonner";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Field } from "@/components/forms/field";
+import { createDriver, updateDriver, deleteDriver } from "@/actions/drivers";
+import { toActionState } from "@/lib/to-action-state";
+import type { ActionResult } from "@/lib/action-helpers";
+
+export type DriverRow = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  cnp: string | null;
+  licenseNumber: string | null;
+  licenseCategories: string[];
+  licenseExpiresAt: Date | string | null;
+  tachoCardNumber: string | null;
+  tachoCardExpiresAt: Date | string | null;
+  status: string;
+  salaryPerKm: number | null;
+  commissionRate: number | null;
+  internalNotes: string | null;
+  user: { id: string; email: string; phone: string | null };
+};
+
+const STATUSES = [
+  "AVAILABLE",
+  "ON_ROUTE",
+  "REST",
+  "ON_LEAVE",
+  "INACTIVE",
+] as const;
+const STATUS_LABELS: Record<string, string> = {
+  AVAILABLE: "Available",
+  ON_ROUTE: "On Route",
+  REST: "Resting",
+  ON_LEAVE: "On Leave",
+  INACTIVE: "Inactive",
+};
+
+function toDateInput(d: Date | string | null | undefined) {
+  if (!d) return "";
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toISOString().slice(0, 10);
+}
+
+export function DriverFormDialog({
+  initial,
+  trigger,
+}: {
+  initial?: DriverRow;
+  trigger: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const editing = Boolean(initial);
+  const action = toActionState(editing ? updateDriver : createDriver);
+  const [state, formAction, pending] = useActionState<
+    ActionResult | null,
+    FormData
+  >(action, null);
+
+  useEffect(() => {
+    if (!state) return;
+    if (state.ok) {
+      toast.success(state.message ?? "Salvat.");
+      setOpen(false);
+    } else toast.error(state.error);
+  }, [state]);
+
+  const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div onClick={() => setOpen(true)}>{trigger}</div>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{editing ? "Edit Driver" : "New Driver"}</DialogTitle>
+          <DialogDescription>
+            Driver details and mobile app access credentials.
+          </DialogDescription>
+        </DialogHeader>
+        <form action={formAction} className="grid gap-4">
+          {editing && <input type="hidden" name="id" value={initial!.id} />}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              name="firstName"
+              label="First Name"
+              required
+              error={errors.firstName}
+            >
+              <Input
+                id="firstName"
+                name="firstName"
+                defaultValue={initial?.firstName ?? ""}
+                required
+              />
+            </Field>
+            <Field
+              name="lastName"
+              label="Last Name"
+              required
+              error={errors.lastName}
+            >
+              <Input
+                id="lastName"
+                name="lastName"
+                defaultValue={initial?.lastName ?? ""}
+                required
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              name="email"
+              label="Email"
+              required={!editing}
+              error={errors.email}
+            >
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                defaultValue={initial?.user.email ?? ""}
+                required={!editing}
+              />
+            </Field>
+            <Field name="phone" label="Phone" error={errors.phone}>
+              <Input
+                id="phone"
+                name="phone"
+                defaultValue={initial?.user.phone ?? ""}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field name="cnp" label="CNP" error={errors.cnp}>
+              <Input id="cnp" name="cnp" defaultValue={initial?.cnp ?? ""} />
+            </Field>
+            <Field
+              name="password"
+              label={editing ? "New Password" : "Password"}
+              required={!editing}
+              error={errors.password}
+            >
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                minLength={8}
+                required={!editing}
+                placeholder={
+                  editing
+                    ? "Leave blank to keep current"
+                    : "At least 8 characters"
+                }
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              name="licenseNumber"
+              label="License Number"
+              error={errors.licenseNumber}
+            >
+              <Input
+                id="licenseNumber"
+                name="licenseNumber"
+                defaultValue={initial?.licenseNumber ?? ""}
+              />
+            </Field>
+            <Field
+              name="licenseCategories"
+              label="Categorii (B,C,CE…)"
+              error={errors.licenseCategories}
+            >
+              <Input
+                id="licenseCategories"
+                name="licenseCategories"
+                defaultValue={(initial?.licenseCategories ?? []).join(",")}
+                placeholder="ex: B,C,CE"
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              name="licenseIssuedAt"
+              label="License Issued"
+              error={errors.licenseIssuedAt}
+            >
+              <Input id="licenseIssuedAt" name="licenseIssuedAt" type="date" />
+            </Field>
+            <Field
+              name="licenseExpiresAt"
+              label="License Expires"
+              error={errors.licenseExpiresAt}
+            >
+              <Input
+                id="licenseExpiresAt"
+                name="licenseExpiresAt"
+                type="date"
+                defaultValue={toDateInput(initial?.licenseExpiresAt)}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              name="tachoCardNumber"
+              label="Tachograph Card"
+              error={errors.tachoCardNumber}
+            >
+              <Input
+                id="tachoCardNumber"
+                name="tachoCardNumber"
+                defaultValue={initial?.tachoCardNumber ?? ""}
+              />
+            </Field>
+            <Field
+              name="tachoCardExpiresAt"
+              label="Tachograph Expires"
+              error={errors.tachoCardExpiresAt}
+            >
+              <Input
+                id="tachoCardExpiresAt"
+                name="tachoCardExpiresAt"
+                type="date"
+                defaultValue={toDateInput(initial?.tachoCardExpiresAt)}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field name="status" label="Status" error={errors.status}>
+              <Select
+                id="status"
+                name="status"
+                defaultValue={initial?.status ?? "AVAILABLE"}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field
+              name="salaryPerKm"
+              label="Salary / km (€)"
+              error={errors.salaryPerKm}
+            >
+              <Input
+                id="salaryPerKm"
+                name="salaryPerKm"
+                type="number"
+                step="0.001"
+                defaultValue={initial?.salaryPerKm ?? ""}
+              />
+            </Field>
+            <Field
+              name="commissionRate"
+              label="Commission (%)"
+              error={errors.commissionRate}
+            >
+              <Input
+                id="commissionRate"
+                name="commissionRate"
+                type="number"
+                step="0.01"
+                defaultValue={initial?.commissionRate ?? ""}
+              />
+            </Field>
+          </div>
+
+          <Field
+            name="internalNotes"
+            label="Note interne"
+            error={errors.internalNotes}
+          >
+            <Textarea
+              id="internalNotes"
+              name="internalNotes"
+              rows={3}
+              defaultValue={initial?.internalNotes ?? ""}
+            />
+          </Field>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function NewDriverButton() {
+  return (
+    <DriverFormDialog
+      trigger={
+        <Button>
+          <Plus className="h-4 w-4" /> New Driver
+        </Button>
+      }
+    />
+  );
+}
+
+export function DriverRowActions({ driver }: { driver: DriverRow }) {
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <DriverFormDialog
+        initial={driver}
+        trigger={
+          <Button variant="ghost" size="icon" aria-label="Edit">
+            <Pencil className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <ConfirmDialog
+        trigger={
+          <Button variant="ghost" size="icon" aria-label="Delete">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        }
+        title="Delete driver?"
+        description="This action is irreversible. Historical loads will retain the deleted driver's name."
+        confirmLabel="Delete"
+        action={async () => deleteDriver(driver.id)}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,39 @@
+"use client";
+
+import { useState } from "react";
+import type { UserRole } from "@prisma/client";
+import { Sidebar } from "./sidebar";
+import { Topbar } from "./topbar";
+
+interface Props {
+  role: UserRole;
+  name?: string | null;
+  email?: string | null;
+  companyName?: string | null;
+  children: React.ReactNode;
+}
+
+export function DashboardShell({
+  role,
+  name,
+  email,
+  companyName,
+  children,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex min-h-svh">
+      <Sidebar role={role} open={open} onClose={() => setOpen(false)} />
+      <div className="flex flex-col flex-1 min-w-0">
+        <Topbar
+          role={role}
+          name={name}
+          email={email}
+          companyName={companyName}
+          onMenu={() => setOpen(true)}
+        />
+        <main className="flex-1 p-4 lg:p-6 bg-muted/30">{children}</main>
+      </div>
+    </div>
+  );
+}

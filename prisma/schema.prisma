@@ -1,0 +1,799 @@
+// Prisma 6 schema for TMS — MongoDB provider
+// Run: npx prisma generate && npx prisma db push
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  DISPATCHER
+  DRIVER
+  ACCOUNTANT
+  FLEET_MANAGER
+  CUSTOMER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  SUSPENDED
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_TRIP
+  OFF_DUTY
+  UNAVAILABLE
+}
+
+enum TruckStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SERVICE
+  UNAVAILABLE
+}
+
+enum TrailerStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SERVICE
+  UNAVAILABLE
+}
+
+enum LoadStatus {
+  DRAFT
+  ASSIGNED
+  DRIVER_ACCEPTED
+  ON_WAY_TO_PICKUP
+  AT_PICKUP
+  LOADED
+  IN_TRANSIT
+  AT_DELIVERY
+  DELIVERED
+  POD_UPLOADED
+  INVOICED
+  PAID
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ExpenseType {
+  FUEL
+  TOLL
+  PARKING
+  REPAIR
+  SALARY
+  COMMISSION
+  INSURANCE
+  OTHER
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DocumentType {
+  CMR
+  BOL
+  POD
+  INVOICE
+  DRIVER_LICENSE
+  ID_CARD
+  INSURANCE
+  ITP
+  VIGNETTE
+  TACHOGRAPH
+  CONTRACT
+  OTHER
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+  DOCUMENT_EXPIRING
+  LOAD_UPDATE
+  INVOICE_DUE
+  MAINTENANCE
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================================
+// CORE
+// ============================================================
+
+model Company {
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  legalName          String?
+  taxId              String?            // CIF / VAT
+  registrationNumber String?            // J.../
+  email              String?
+  phone              String?
+  website            String?
+  logoUrl            String?
+
+  // Address
+  street             String?
+  city               String?
+  county             String?
+  postalCode         String?
+  country            String?            @default("RO")
+
+  // Billing
+  bankName           String?
+  bankAccount        String?            // IBAN
+  currency           String             @default("USD")
+  vatRate            Float              @default(19)
+  invoicePrefix      String?            @default("INV")
+  invoiceCounter     Int                @default(0)
+
+  // App settings
+  timezone           String             @default("Europe/Bucharest")
+  locale             String             @default("ro")
+
+  // SaaS
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  subscriptionPlan   String?            @default("starter")
+  trialEndsAt        DateTime?
+
+  active             Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  users              User[]
+  drivers            DriverProfile[]
+  trucks             Truck[]
+  trailers           Trailer[]
+  loads              Load[]
+  customers          Customer[]
+  invoices           Invoice[]
+  expenses           Expense[]
+  documents          Document[]
+  gpsLocations       GPSLocation[]
+  maintenances       Maintenance[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  payments           Payment[]
+  fuelEntries        FuelEntry[]
+  mapZonePins        MapZonePin[]
+
+  @@index([active])
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  email         String   @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  phone         String?
+  password      String?  // bcrypt hash (null for OAuth-only users)
+  role          UserRole @default(DISPATCHER)
+  active        Boolean  @default(true)
+  lastLoginAt   DateTime?
+
+  // Multi-tenancy: every non-SUPER_ADMIN user belongs to a company
+  companyId     String?  @db.ObjectId
+  company       Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Auth
+  resetToken        String?
+  resetTokenExpires DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  driverProfile     DriverProfile?
+  customerProfiles  Customer[]
+  createdLoads      Load[]            @relation("CreatedLoads")
+  dispatchedLoads   Load[]            @relation("DispatchedLoads")
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  uploadedDocuments Document[]        @relation("UploadedDocuments")
+  approvedExpenses  Expense[]         @relation("ApprovedExpenses")
+  reportedExpenses  Expense[]         @relation("ReportedExpenses")
+  statusUpdates     LoadStatusHistory[]
+  accounts          Account[]
+  sessions          Session[]
+
+  @@index([companyId, role])
+}
+
+// Auth.js DB-session models (kept even with JWT strategy for future OAuth)
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+// FLEET
+// ============================================================
+
+model DriverProfile {
+  id                 String       @id @default(auto()) @map("_id") @db.ObjectId
+  companyId          String       @db.ObjectId
+  company            Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId             String       @unique @db.ObjectId
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  firstName          String
+  lastName           String
+  cnp                String?      // personal id
+  dateOfBirth        DateTime?
+
+  // Driving license
+  licenseNumber      String?
+  licenseCategories  String[]     @default([])
+  licenseIssuedAt    DateTime?
+  licenseExpiresAt   DateTime?
+
+  // Tachograph card
+  tachoCardNumber    String?
+  tachoCardExpiresAt DateTime?
+
+  // Employment
+  employedSince      DateTime?
+  salaryPerKm        Float?
+  commissionRate     Float?
+
+  status             DriverStatus @default(AVAILABLE)
+  rating             Float?       @default(5)
+  internalNotes      String?
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  loads              Load[]
+  gpsLocations       GPSLocation[]
+  expenses           Expense[]
+  fuelEntries        FuelEntry[]
+  mapZonePins        MapZonePin[]
+
+  @@index([companyId, status])
+}
+
+model Truck {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId       String        @db.ObjectId
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  plateNumber     String
+  vin             String?
+  make            String?
+  model           String?
+  year            Int?
+  color           String?
+  mileage         Int?          @default(0)
+  fuelType        String?       @default("diesel")
+  avgConsumption  Float?        // L / 100 km
+
+  // Documents expirations
+  insuranceExpiresAt DateTime?
+  itpExpiresAt       DateTime?
+  vignetteExpiresAt  DateTime?
+  tachographExpiresAt DateTime?
+
+  status          TruckStatus   @default(AVAILABLE)
+  notes           String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  loads           Load[]
+  maintenances    Maintenance[]
+  expenses        Expense[]
+  fuelEntries     FuelEntry[]
+  gpsLocations    GPSLocation[]
+
+  @@unique([companyId, plateNumber])
+  @@index([companyId, status])
+}
+
+model Trailer {
+  id                 String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId          String        @db.ObjectId
+  company            Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  plateNumber        String
+  type               String?       // tilt, reefer, tanker, flatbed...
+  capacityKg         Int?
+  volumeM3           Float?
+  axles              Int?
+  yearOfManufacture  Int?
+
+  insuranceExpiresAt DateTime?
+  itpExpiresAt       DateTime?
+
+  status             TrailerStatus @default(AVAILABLE)
+  notes              String?
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  loads              Load[]
+  maintenances       Maintenance[]
+
+  @@unique([companyId, plateNumber])
+  @@index([companyId, status])
+}
+
+// ============================================================
+// CUSTOMERS
+// ============================================================
+
+model Customer {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId     String   @db.ObjectId
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Optional portal user
+  userId        String?  @db.ObjectId @map("userId")
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  taxId         String?
+  registrationNumber String?
+
+  street        String?
+  city          String?
+  county        String?
+  postalCode    String?
+  country       String?  @default("RO")
+
+  paymentTermsDays Int?  @default(30)
+  creditLimit   Float?
+  notes         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  loads         Load[]
+  invoices      Invoice[]
+
+  @@index([companyId])
+}
+
+// ============================================================
+// LOADS
+// ============================================================
+
+model Load {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  companyId       String     @db.ObjectId
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  referenceNumber String     // human-readable, e.g. L-2026-00001
+
+  customerId      String?    @db.ObjectId
+  customer        Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  // Pickup
+  pickupAddress   String
+  pickupCity      String?
+  pickupCountry   String?
+  pickupLat       Float?
+  pickupLng       Float?
+  pickupDate      DateTime
+  pickupNotes     String?
+
+  // Delivery
+  deliveryAddress String
+  deliveryCity    String?
+  deliveryCountry String?
+  deliveryLat     Float?
+  deliveryLng     Float?
+  deliveryDate    DateTime
+  deliveryNotes   String?
+
+  // Cargo
+  cargoDescription String?
+  weightKg         Float?
+  volumeM3         Float?
+  packages         Int?
+  isHazardous      Boolean?  @default(false)
+  temperature      String?   // e.g. "+2 / +6"
+
+  // Pricing
+  price            Float
+  currency         String    @default("EUR")
+  estimatedDistanceKm Float?
+  actualDistanceKm    Float?
+
+  status           LoadStatus @default(DRAFT)
+
+  // Assignments
+  driverId         String?   @db.ObjectId
+  driver           DriverProfile? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  truckId          String?   @db.ObjectId
+  truck            Truck?    @relation(fields: [truckId], references: [id], onDelete: SetNull)
+  trailerId        String?   @db.ObjectId
+  trailer          Trailer?  @relation(fields: [trailerId], references: [id], onDelete: SetNull)
+
+  dispatcherId     String?   @db.ObjectId
+  dispatcher       User?     @relation("DispatchedLoads", fields: [dispatcherId], references: [id], onDelete: SetNull)
+
+  createdById      String?   @db.ObjectId
+  createdBy        User?     @relation("CreatedLoads", fields: [createdById], references: [id], onDelete: SetNull)
+
+  internalNotes    String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  statusHistory    LoadStatusHistory[]
+  documents        Document[]
+  expenses         Expense[]
+  fuelEntries      FuelEntry[]
+  gpsLocations     GPSLocation[]
+  invoice          Invoice?
+
+  @@unique([companyId, referenceNumber])
+  @@index([companyId, status])
+  @@index([companyId, driverId])
+  @@index([companyId, pickupDate])
+}
+
+model LoadStatusHistory {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  loadId    String     @db.ObjectId
+  load      Load       @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  status    LoadStatus
+  note      String?
+  lat       Float?
+  lng       Float?
+  changedById String?  @db.ObjectId
+  changedBy User?      @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  createdAt DateTime   @default(now())
+
+  @@index([loadId, createdAt])
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model Document {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String        @db.ObjectId
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type         DocumentType
+  name         String
+  url          String        // S3 url
+  mimeType     String?
+  sizeBytes    Int?
+  expiresAt    DateTime?
+
+  // Polymorphic-style links (only one of these is typically set)
+  loadId       String?       @db.ObjectId
+  load         Load?         @relation(fields: [loadId], references: [id], onDelete: Cascade)
+  truckId      String?       @db.ObjectId
+  trailerId    String?       @db.ObjectId
+  driverProfileId String?    @db.ObjectId
+  customerId   String?       @db.ObjectId
+  invoiceId    String?       @db.ObjectId
+
+  uploadedById String?       @db.ObjectId
+  uploadedBy   User?         @relation("UploadedDocuments", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([companyId, type])
+  @@index([companyId, expiresAt])
+}
+
+// ============================================================
+// FINANCE
+// ============================================================
+
+model Invoice {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId      String        @db.ObjectId
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  number         String
+  series         String?
+  issueDate      DateTime      @default(now())
+  dueDate        DateTime
+
+  customerId     String        @db.ObjectId
+  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  loadId         String?       @unique @db.ObjectId
+  load           Load?         @relation(fields: [loadId], references: [id], onDelete: SetNull)
+
+  subtotal       Float
+  vatRate        Float         @default(0)
+  vatAmount      Float         @default(0)
+  total          Float
+  currency       String        @default("USD")
+  paidAmount     Float         @default(0)
+
+  status         InvoiceStatus @default(DRAFT)
+  notes          String?
+  pdfUrl         String?
+
+  // line items as embedded JSON
+  items          Json?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  payments       Payment[]
+
+  @@unique([companyId, number])
+  @@index([companyId, status])
+  @@index([companyId, dueDate])
+}
+
+model Payment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String   @db.ObjectId
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  invoiceId String   @db.ObjectId
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  amount    Float
+  currency  String   @default("USD")
+  method    String?  // bank, cash, card
+  reference String?
+  paidAt    DateTime @default(now())
+  notes     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, invoiceId])
+}
+
+model Expense {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId  String        @db.ObjectId
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type       ExpenseType
+  amount     Float
+  currency   String        @default("USD")
+  description String?
+  occurredAt DateTime      @default(now())
+
+  loadId     String?       @db.ObjectId
+  load       Load?         @relation(fields: [loadId], references: [id], onDelete: SetNull)
+  truckId    String?       @db.ObjectId
+  truck      Truck?        @relation(fields: [truckId], references: [id], onDelete: SetNull)
+  driverId   String?       @db.ObjectId
+  driver     DriverProfile? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  receiptUrl String?
+
+  status       ExpenseStatus @default(PENDING)
+  approvedById String?       @db.ObjectId
+  approvedBy   User?         @relation("ApprovedExpenses", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt   DateTime?
+
+  reportedById String?       @db.ObjectId
+  reportedBy   User?         @relation("ReportedExpenses", fields: [reportedById], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([companyId, type])
+  @@index([companyId, occurredAt])
+}
+
+model FuelEntry {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId  String   @db.ObjectId
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  truckId    String?  @db.ObjectId
+  truck      Truck?   @relation(fields: [truckId], references: [id], onDelete: SetNull)
+  driverId   String?  @db.ObjectId
+  driver     DriverProfile? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  loadId     String?  @db.ObjectId
+  load       Load?    @relation(fields: [loadId], references: [id], onDelete: SetNull)
+
+  liters     Float
+  pricePerLiter Float
+  totalAmount Float
+  currency   String   @default("USD")
+  station    String?
+  mileage    Int?
+  occurredAt DateTime @default(now())
+  receiptUrl String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, truckId, occurredAt])
+}
+
+// ============================================================
+// MAINTENANCE
+// ============================================================
+
+model Maintenance {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String            @db.ObjectId
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  truckId     String?           @db.ObjectId
+  truck       Truck?            @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  trailerId   String?           @db.ObjectId
+  trailer     Trailer?          @relation(fields: [trailerId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  scheduledAt DateTime
+  completedAt DateTime?
+  cost        Float?
+  currency    String            @default("USD")
+  mileage     Int?
+  partsReplaced String[]        @default([])
+  status      MaintenanceStatus @default(SCHEDULED)
+  notes       String?
+  documentUrl String?
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([companyId, status])
+}
+
+// ============================================================
+// GPS
+// ============================================================
+
+model GPSLocation {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String   @db.ObjectId
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  driverId  String?  @db.ObjectId
+  driver    DriverProfile? @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  truckId   String?  @db.ObjectId
+  truck     Truck?   @relation(fields: [truckId], references: [id], onDelete: Cascade)
+  loadId    String?  @db.ObjectId
+  load      Load?    @relation(fields: [loadId], references: [id], onDelete: Cascade)
+
+  lat       Float
+  lng       Float
+  speed     Float?   // km/h
+  heading   Float?
+  accuracy  Float?
+  recordedAt DateTime @default(now())
+
+  @@index([companyId, driverId, recordedAt])
+  @@index([companyId, loadId, recordedAt])
+}
+
+// Zone pins placed by drivers on the map
+// status: "GREEN" | "YELLOW" | "RED"
+model MapZonePin {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String        @db.ObjectId
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  driverId  String        @db.ObjectId
+  driver    DriverProfile @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  lat       Float
+  lng       Float
+  status    String        @default("GREEN") // GREEN | YELLOW | RED
+  note      String?
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([driverId])
+}
+
+// ============================================================
+// NOTIFICATIONS / AUDIT
+// ============================================================
+
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String?          @db.ObjectId
+  company   Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  userId    String           @db.ObjectId
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType @default(INFO)
+  title     String
+  body      String?
+  link      String?
+  read      Boolean          @default(false)
+  meta      Json?
+
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId  String?  @db.ObjectId
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  userId     String?  @db.ObjectId
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action     String   // e.g. "load.update", "user.login"
+  entityType String?  // e.g. "Load"
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  meta       Json?
+
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([entityType, entityId])
+}
