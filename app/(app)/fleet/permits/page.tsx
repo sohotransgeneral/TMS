@@ -3,13 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ShieldCheck, FileText, Receipt, AlertTriangle, ExternalLink } from "lucide-react";
+import {
+  ShieldCheck,
+  FileText,
+  Receipt,
+  AlertTriangle,
+  ExternalLink,
+} from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { PERMIT_TYPES } from "@/actions/permits";
+import { PERMIT_TYPES } from "@/lib/permit-types";
 
 export const metadata = { title: "Truck Permits" };
 
@@ -17,12 +28,13 @@ function statusBadge(validTo: Date | null) {
   if (!validTo) return <Badge variant="secondary">No expiry</Badge>;
   const diff = (validTo.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
   if (diff < 0) return <Badge variant="destructive">Expired</Badge>;
-  if (diff < 14) return (
-    <Badge variant="outline" className="border-amber-400 text-amber-600">
-      <AlertTriangle className="mr-1 h-3 w-3" />
-      {Math.ceil(diff)}d left
-    </Badge>
-  );
+  if (diff < 14)
+    return (
+      <Badge variant="outline" className="border-amber-400 text-amber-600">
+        <AlertTriangle className="mr-1 h-3 w-3" />
+        {Math.ceil(diff)}d left
+      </Badge>
+    );
   return <Badge className="bg-green-600 text-white">Active</Badge>;
 }
 
@@ -64,13 +76,17 @@ export default async function PermitsPage() {
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Expiring (14 days)</p>
-          <p className={`mt-1 text-2xl font-bold ${expiringSoon.length > 0 ? "text-amber-600" : ""}`}>
+          <p
+            className={`mt-1 text-2xl font-bold ${expiringSoon.length > 0 ? "text-amber-600" : ""}`}
+          >
             {expiringSoon.length}
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total Cost</p>
-          <p className="mt-1 text-2xl font-bold">{formatCurrency(totalCost, "USD")}</p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatCurrency(totalCost, "USD")}
+          </p>
         </div>
       </div>
 
@@ -122,8 +138,12 @@ export default async function PermitsPage() {
                   <TableCell>
                     <Badge variant="secondary">{typeLabel(p.type)}</Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{p.permitNumber ?? "—"}</TableCell>
-                  <TableCell className="text-sm">{p.jurisdiction ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {p.permitNumber ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {p.jurisdiction ?? "—"}
+                  </TableCell>
                   <TableCell className="max-w-[180px] text-xs text-muted-foreground truncate">
                     {p.description ?? "—"}
                   </TableCell>

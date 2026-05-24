@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Truck, MapPin, ClipboardList, Phone, Package, ShieldCheck } from "lucide-react";
+import {
+  Truck,
+  MapPin,
+  ClipboardList,
+  Phone,
+  Package,
+  ShieldCheck,
+} from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -257,11 +264,16 @@ export default async function DriverDashboardPage() {
               Active Truck Permits
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Special permits for this truck. Show these to authorities when requested.
+              Special permits for this truck. Show these to authorities when
+              requested.
             </p>
           </CardHeader>
           <CardContent>
-            <PermitList permits={permits} truckId={activeTruckId!} canEdit={false} />
+            <PermitList
+              permits={permits}
+              truckId={activeTruckId!}
+              canEdit={false}
+            />
           </CardContent>
         </Card>
       )}

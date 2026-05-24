@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { deletePermit, PERMIT_TYPES } from "@/actions/permits";
+import { deletePermit } from "@/actions/permits";
+import { PERMIT_TYPES } from "@/lib/permit-types";
 import { EditPermitButton } from "./permit-form-dialog";
 import {
   ShieldCheck,
@@ -39,8 +40,17 @@ function statusBadge(validTo: Date | string | null) {
   const now = new Date();
   const diff = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   if (diff < 0) return <Badge variant="destructive">Expired</Badge>;
-  if (diff < 14) return <Badge variant="outline" className="border-amber-400 text-amber-600">Expires in {Math.ceil(diff)}d</Badge>;
-  return <Badge variant="default" className="bg-green-600">Active</Badge>;
+  if (diff < 14)
+    return (
+      <Badge variant="outline" className="border-amber-400 text-amber-600">
+        Expires in {Math.ceil(diff)}d
+      </Badge>
+    );
+  return (
+    <Badge variant="default" className="bg-green-600">
+      Active
+    </Badge>
+  );
 }
 
 function typeLabel(type: string) {
@@ -72,7 +82,11 @@ export function PermitList({
       <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center">
         <ShieldCheck className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">No permits added yet.</p>
-        {canEdit && <p className="text-xs text-muted-foreground">Add oversize, overweight or other special permits.</p>}
+        {canEdit && (
+          <p className="text-xs text-muted-foreground">
+            Add oversize, overweight or other special permits.
+          </p>
+        )}
       </div>
     );
   }
@@ -106,7 +120,9 @@ export function PermitList({
           </div>
 
           {p.permitNumber && (
-            <p className="text-xs font-mono text-muted-foreground">#{p.permitNumber}</p>
+            <p className="text-xs font-mono text-muted-foreground">
+              #{p.permitNumber}
+            </p>
           )}
 
           {p.jurisdiction && (
@@ -123,14 +139,17 @@ export function PermitList({
           {(p.validFrom || p.validTo) && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <CalendarClock className="h-3.5 w-3.5" />
-              {p.validFrom ? formatDate(p.validFrom) : "—"} → {p.validTo ? formatDate(p.validTo) : "—"}
+              {p.validFrom ? formatDate(p.validFrom) : "—"} →{" "}
+              {p.validTo ? formatDate(p.validTo) : "—"}
             </div>
           )}
 
           {p.cost != null && (
             <div className="flex items-center justify-between border-t pt-2">
               <span className="text-xs text-muted-foreground">Permit Cost</span>
-              <span className="font-semibold text-sm">{formatCurrency(p.cost, p.currency)}</span>
+              <span className="font-semibold text-sm">
+                {formatCurrency(p.cost, p.currency)}
+              </span>
             </div>
           )}
 
@@ -159,7 +178,9 @@ export function PermitList({
               </a>
             )}
             {!p.permitImageUrl && !p.invoiceUrl && canEdit && (
-              <span className="text-xs text-muted-foreground">No documents uploaded</span>
+              <span className="text-xs text-muted-foreground">
+                No documents uploaded
+              </span>
             )}
           </div>
 
