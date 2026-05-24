@@ -53,6 +53,7 @@ export function DriverZoneMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const myMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [pins, setPins] = useState<ZonePin[]>([]);
   const [hint, setHint] = useState(true);
 
@@ -110,9 +111,17 @@ export function DriverZoneMap({
           .addTo(map);
       }
       // Fit to show both if available
-      if (pickupLat != null && pickupLng != null && deliveryLat != null && deliveryLng != null) {
+      if (
+        pickupLat != null &&
+        pickupLng != null &&
+        deliveryLat != null &&
+        deliveryLng != null
+      ) {
         map.fitBounds(
-          new mapboxgl.LngLatBounds([pickupLng, pickupLat], [deliveryLng, deliveryLat]),
+          new mapboxgl.LngLatBounds(
+            [pickupLng, pickupLat],
+            [deliveryLng, deliveryLat],
+          ),
           { padding: 60, maxZoom: 8, duration: 800 },
         );
       }
@@ -145,9 +154,45 @@ export function DriverZoneMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      myMarkerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // Watch driver's own GPS position and show blue dot on map
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const map = mapRef.current;
+        if (!map) return;
+        if (!myMarkerRef.current) {
+          const el = document.createElement("div");
+          el.style.cssText =
+            "width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.45)";
+          myMarkerRef.current = new mapboxgl.Marker({
+            element: el,
+            anchor: "center",
+          })
+            .setLngLat([lng, lat])
+            .setPopup(
+              new mapboxgl.Popup({ offset: 14 }).setHTML(
+                `<div style="font-size:12px;color:#111827"><b>📍 You are here</b></div>`,
+              ),
+            )
+            .addTo(map);
+        } else {
+          myMarkerRef.current.setLngLat([lng, lat]);
+        }
+      },
+      () => {
+        /* permission denied or unavailable — silently ignore */
+      },
+      { enableHighAccuracy: true },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
 
   // Sync markers to pins state
   useEffect(() => {
@@ -246,6 +291,15 @@ export function DriverZoneMap({
         </span>
         <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-red-700 font-medium">
           ● RED — can&apos;t go
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-3 w-3 rounded-full bg-[#7c3aed]" /> Pickup
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-3 w-3 rounded-full bg-[#2563eb]" /> You
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-3 w-3 rounded-full bg-[#111827]" /> Delivery
         </span>
         <span className="ml-auto text-xs opacity-60">
           Click pin to cycle status • 3rd click removes it
