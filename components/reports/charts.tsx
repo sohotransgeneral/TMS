@@ -38,17 +38,17 @@ export function MonthlyRevenueChart({
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="month" />
         <YAxis />
-        <Tooltip formatter={(v: number) => v.toLocaleString("ro-RO")} />
+        <Tooltip formatter={(v: number) => v.toLocaleString("en-US")} />
         <Legend />
         <Bar
           dataKey="invoiced"
-          name="Facturat"
+          name="Invoiced"
           fill={COLORS[0]}
           radius={[4, 4, 0, 0]}
         />
         <Bar
           dataKey="collected"
-          name="Încasat"
+          name="Collected"
           fill={COLORS[1]}
           radius={[4, 4, 0, 0]}
         />
@@ -72,7 +72,7 @@ export function LoadsPerDayChart({
         <Line
           type="monotone"
           dataKey="count"
-          name="Curse"
+          name="Loads"
           stroke={COLORS[0]}
           strokeWidth={2}
           dot={false}
@@ -105,7 +105,7 @@ export function ExpensesByTypeChart({
             <Cell key={i} fill={COLORS[i % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(v: number) => v.toLocaleString("ro-RO")} />
+        <Tooltip formatter={(v: number) => v.toLocaleString("en-US")} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -125,7 +125,7 @@ export function LoadsByStatusChart({
         <Tooltip />
         <Bar
           dataKey="count"
-          name="Curse"
+          name="Loads"
           fill={COLORS[4]}
           radius={[0, 4, 4, 0]}
         />
@@ -151,14 +151,14 @@ export function FuelConsumptionChart({
         <Bar
           yAxisId="l"
           dataKey="liters"
-          name="Litri"
+          name="Liters"
           fill={COLORS[2]}
           radius={[4, 4, 0, 0]}
         />
         <Bar
           yAxisId="r"
           dataKey="amount"
-          name="USD"
+          name="Amount (USD)"
           fill={COLORS[3]}
           radius={[4, 4, 0, 0]}
         />

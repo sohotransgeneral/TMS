@@ -89,7 +89,7 @@ export default async function DriverDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {activeLoad && <GpsTracker loadId={activeLoad.id} />}
+      <GpsTracker loadId={activeLoad?.id} />
 
       <div>
         <h1 className="text-2xl font-bold">Hello, {driver.firstName}!</h1>

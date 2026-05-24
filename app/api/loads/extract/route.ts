@@ -99,6 +99,15 @@ export async function POST(req: Request) {
       ];
     } else {
       // PDF — extract text with pdf-parse, then send as text to GPT-4o
+      // Polyfill browser globals that pdfjs-dist requires in a Node.js environment
+      if (typeof globalThis.DOMMatrix === "undefined") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).DOMMatrix = class DOMMatrix {};
+      }
+      if (typeof globalThis.Path2D === "undefined") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (globalThis as any).Path2D = class Path2D {};
+      }
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
       const parsed = await pdfParse(buffer);

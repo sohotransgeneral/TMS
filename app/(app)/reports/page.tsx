@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
+
+export const dynamic = "force-dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
@@ -234,7 +237,9 @@ export default async function ReportsPage({
         }
       />
 
-      <ReportsFilters drivers={drivers} trucks={allTrucks} />
+      <Suspense fallback={null}>
+        <ReportsFilters drivers={drivers} trucks={allTrucks} />
+      </Suspense>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => {
