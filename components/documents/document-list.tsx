@@ -11,13 +11,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export type DocumentItem = {
   id: string;
@@ -174,18 +167,17 @@ export function DocumentList({
               <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">
                 Document Type
               </label>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full bg-white dark:bg-slate-900 text-foreground border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {allowedTypes.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {DOC_TYPE_LABELS[t] ?? t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="w-full rounded-md border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {allowedTypes.map((t) => (
+                  <option key={t} value={t} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+                    {DOC_TYPE_LABELS[t] ?? t}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex-1 min-w-[140px]">
