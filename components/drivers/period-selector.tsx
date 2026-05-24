@@ -5,10 +5,10 @@ import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 const PERIODS = [
-  { value: "today",  label: "Azi" },
-  { value: "week",   label: "Săptămâna" },
-  { value: "month",  label: "Luna" },
-  { value: "year",   label: "Anul" },
+  { value: "today", label: "Azi" },
+  { value: "week", label: "Săptămâna" },
+  { value: "month", label: "Luna" },
+  { value: "year", label: "Anul" },
 ] as const;
 
 export function PeriodSelector() {

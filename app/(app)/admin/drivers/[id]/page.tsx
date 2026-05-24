@@ -1,13 +1,16 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate, daysUntil } from "@/lib/utils";
 import { DocumentSection } from "@/components/documents/document-section";
-import { DriverFinancialReport } from "@/components/drivers/driver-financial-report";
+import { DriverFinancialReport, getPeriodRange } from "@/components/drivers/driver-financial-report";
 import { PeriodSelector } from "@/components/drivers/period-selector";
+import { FileDown, ExternalLink } from "lucide-react";
 
 export const metadata = { title: "Driver Details" };
 
@@ -78,6 +81,28 @@ export default async function DriverDetailPage({
     where: { driverProfileId: id },
     include: { uploadedBy: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
+  });
+
+  const { from, to } = getPeriodRange(period);
+  const periodLoads = await prisma.load.findMany({
+    where: {
+      driverId: driver.id,
+      pickupDate: { gte: from, lte: to },
+    },
+    orderBy: { pickupDate: "desc" },
+    select: {
+      id: true,
+      referenceNumber: true,
+      pickupCity: true,
+      deliveryCity: true,
+      pickupDate: true,
+      price: true,
+      currency: true,
+      status: true,
+      actualDistanceKm: true,
+      estimatedDistanceKm: true,
+      customer: { select: { name: true } },
+    },
   });
 
   const fullName = `${driver.firstName} ${driver.lastName}`;
@@ -174,9 +199,23 @@ export default async function DriverDetailPage({
       <section className="rounded-lg border bg-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-semibold">Raport Financiar</h3>
-          <PeriodSelector />
+          <div className="flex items-center gap-2">
+            <PeriodSelector />
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/drivers/${driver.id}/report?period=${period}`} target="_blank">
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF
+              </Link>
+            </Button>
+          </div>
         </div>
-        <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Se calculează...</div>}>
+        <Suspense
+          fallback={
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Se calculează...
+            </div>
+          }
+        >
           <DriverFinancialReport
             driverId={driver.id}
             salaryPerKm={driver.salaryPerKm}
@@ -184,6 +223,60 @@ export default async function DriverDetailPage({
             period={period}
           />
         </Suspense>
+      </section>
+
+      {/* Loads in period */}
+      <section className="rounded-lg border bg-card p-6">
+        <h3 className="mb-4 font-semibold">Curse în perioadă ({periodLoads.length})</h3>
+        {periodLoads.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">Fără curse în această perioadă.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                  <th className="pb-2 pr-4">Referință</th>
+                  <th className="pb-2 pr-4">Pickup → Livrare</th>
+                  <th className="pb-2 pr-4">Client</th>
+                  <th className="pb-2 pr-4">Data</th>
+                  <th className="pb-2 pr-4 text-right">Km</th>
+                  <th className="pb-2 pr-4 text-right">Preț</th>
+                  <th className="pb-2">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {periodLoads.map((l) => (
+                  <tr key={l.id} className="hover:bg-muted/40">
+                    <td className="py-2 pr-4">
+                      <Link href={`/dispatch/loads/${l.id}`} className="flex items-center gap-1 font-mono text-xs text-primary hover:underline">
+                        {l.referenceNumber}
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span className="font-medium">{l.pickupCity ?? "—"}</span>
+                      <span className="mx-1 text-muted-foreground">→</span>
+                      <span className="font-medium">{l.deliveryCity ?? "—"}</span>
+                    </td>
+                    <td className="py-2 pr-4 text-muted-foreground">{l.customer?.name ?? "—"}</td>
+                    <td className="py-2 pr-4 text-muted-foreground tabular-nums">
+                      {new Date(l.pickupDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("ro-RO")}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums font-semibold">
+                      {new Intl.NumberFormat("ro-RO", { style: "currency", currency: l.currency }).format(l.price)}
+                    </td>
+                    <td className="py-2">
+                      <Badge variant="outline" className="text-xs">{l.status.replace(/_/g, " ")}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       {/* Documents */}
