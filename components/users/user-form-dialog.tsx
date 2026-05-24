@@ -41,7 +41,11 @@ interface UserFormDialogProps {
   companies?: CompanyOpt[];
 }
 
-export function UserFormDialog({ initial, trigger, companies = [] }: UserFormDialogProps) {
+export function UserFormDialog({
+  initial,
+  trigger,
+  companies = [],
+}: UserFormDialogProps) {
   const [open, setOpen] = useState(false);
   const editing = Boolean(initial);
   const action = toActionState(editing ? updateUser : createUser);
@@ -79,11 +83,18 @@ export function UserFormDialog({ initial, trigger, companies = [] }: UserFormDia
         <form action={formAction} className="grid gap-4">
           {editing && <input type="hidden" name="id" value={initial!.id} />}
           {companies.length > 0 && !editing && (
-            <Field name="companyId" label="Companie" required error={errors.companyId}>
+            <Field
+              name="companyId"
+              label="Companie"
+              required
+              error={errors.companyId}
+            >
               <Select id="companyId" name="companyId" defaultValue="">
                 <option value="">— Selectează compania —</option>
                 {companies.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </Select>
             </Field>
@@ -174,7 +185,11 @@ export function UserFormDialog({ initial, trigger, companies = [] }: UserFormDia
   );
 }
 
-export function NewUserButton({ companies = [] }: { companies?: CompanyOpt[] }) {
+export function NewUserButton({
+  companies = [],
+}: {
+  companies?: CompanyOpt[];
+}) {
   return (
     <UserFormDialog
       companies={companies}

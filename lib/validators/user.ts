@@ -19,7 +19,6 @@ export const userCreateSchema = z.object({
   password: z
     .string()
     .min(8, "Minim 8 caractere")
-    .regex(/[A-Z]/, "O literă mare")
     .regex(/[0-9]/, "O cifră"),
   active: z.coerce.boolean().default(true),
 });
@@ -33,8 +32,8 @@ export const userUpdateSchema = userCreateSchema
       .optional()
       .transform((v) => (v ? String(v) : undefined))
       .refine(
-        (v) => v === undefined || (v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v)),
-        "Parola: min 8 caractere, literă mare și cifră",
+        (v) => v === undefined || (v.length >= 8 && /[0-9]/.test(v)),
+        "Parola: min 8 caractere și o cifră",
       ),
   });
 

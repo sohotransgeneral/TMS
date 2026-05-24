@@ -66,7 +66,10 @@ export default async function UsersPage({
     }),
     prisma.user.count({ where }),
     isSuperAdmin
-      ? prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
+      ? prisma.company.findMany({
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        })
       : Promise.resolve([]),
   ]);
 
