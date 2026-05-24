@@ -30,7 +30,7 @@ const ROLE_ALLOWED_PREFIXES: Partial<Record<UserRole, string[]>> = {
 /** Default landing page per role */
 const ROLE_DEFAULT: Partial<Record<UserRole, string>> = {
   DRIVER: "/driver/dashboard",
-  CUSTOMER: "/customer/invoices",
+  CUSTOMER: "/customer/loads",
   DISPATCHER: "/dispatch/loads",
   FLEET_MANAGER: "/fleet/trucks",
   ACCOUNTANT: "/accounting/dashboard",

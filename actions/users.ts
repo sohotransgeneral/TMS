@@ -43,6 +43,15 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     },
   });
 
+  // If CUSTOMER role and a customerId was provided, link this user to that Customer
+  const rawCustomerId = typeof raw.customerId === "string" ? raw.customerId.trim() : "";
+  if (parsed.data.role === "CUSTOMER" && rawCustomerId) {
+    await prisma.customer.updateMany({
+      where: { id: rawCustomerId, companyId: targetCompanyId, userId: null },
+      data: { userId: user.id },
+    });
+  }
+
   await logAudit({
     action: "user.create",
     userId: me.id,

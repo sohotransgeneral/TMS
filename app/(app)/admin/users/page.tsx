@@ -47,7 +47,7 @@ export default async function UsersPage({
     ...buildSearch(q, ["name", "email", "phone"]),
   };
 
-  const [users, total, companies] = await Promise.all([
+  const [users, total, companies, customers] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -71,6 +71,13 @@ export default async function UsersPage({
           orderBy: { name: "asc" },
         })
       : Promise.resolve([]),
+    me.companyId
+      ? prisma.customer.findMany({
+          where: { companyId: me.companyId, userId: null },
+          select: { id: true, name: true, email: true },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -78,7 +85,7 @@ export default async function UsersPage({
       <PageHeader
         title="Utilizatori"
         description="Membrii echipei cu acces la platformă."
-        action={<NewUserButton companies={companies} />}
+        action={<NewUserButton companies={companies} customers={customers} />}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -106,7 +113,7 @@ export default async function UsersPage({
             icon={<Users className="h-10 w-10" />}
             title="Nu există utilizatori"
             description="Adaugă primul membru al echipei."
-            action={<NewUserButton companies={companies} />}
+            action={<NewUserButton companies={companies} customers={customers} />}
           />
         ) : (
           <Table>

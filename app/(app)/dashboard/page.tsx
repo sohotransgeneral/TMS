@@ -130,7 +130,7 @@ export default async function DashboardPage() {
 
   // Drivers and customers get their own dashboards
   if (user.role === "DRIVER") redirect(defaultDashboardFor("DRIVER"));
-  if (user.role === "CUSTOMER") redirect("/customer/invoices");
+  if (user.role === "CUSTOMER") redirect("/customer/loads");
 
   if (!user.companyId) {
     return (

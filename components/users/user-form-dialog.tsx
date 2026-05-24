@@ -30,6 +30,7 @@ type UserRow = {
 };
 
 type CompanyOpt = { id: string; name: string };
+type CustomerOpt = { id: string; name: string; email: string | null };
 
 const ROLE_OPTIONS = (
   Object.keys(ROLE_LABELS) as Array<keyof typeof ROLE_LABELS>
@@ -39,14 +40,17 @@ interface UserFormDialogProps {
   initial?: UserRow;
   trigger: React.ReactNode;
   companies?: CompanyOpt[];
+  customers?: CustomerOpt[];
 }
 
 export function UserFormDialog({
   initial,
   trigger,
   companies = [],
+  customers = [],
 }: UserFormDialogProps) {
   const [open, setOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(initial?.role ?? "DISPATCHER");
   const editing = Boolean(initial);
   const action = toActionState(editing ? updateUser : createUser);
   const [state, formAction, pending] = useActionState<
@@ -131,6 +135,7 @@ export function UserFormDialog({
                 id="role"
                 name="role"
                 defaultValue={initial?.role ?? "DISPATCHER"}
+                onChange={(e) => setSelectedRole(e.target.value)}
               >
                 {ROLE_OPTIONS.map((r) => (
                   <option key={r} value={r}>
@@ -150,6 +155,22 @@ export function UserFormDialog({
               </Select>
             </Field>
           </div>
+          {!editing && selectedRole === "CUSTOMER" && customers.length > 0 && (
+            <Field
+              name="customerId"
+              label="Asociază client existent"
+              error={errors.customerId}
+            >
+              <Select id="customerId" name="customerId" defaultValue="">
+                <option value="">— Selectează clientul —</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{c.email ? ` (${c.email})` : ""}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field
             name="password"
             label={editing ? "Parolă nouă (opțional)" : "Parolă"}
@@ -187,12 +208,15 @@ export function UserFormDialog({
 
 export function NewUserButton({
   companies = [],
+  customers = [],
 }: {
   companies?: CompanyOpt[];
+  customers?: CustomerOpt[];
 }) {
   return (
     <UserFormDialog
       companies={companies}
+      customers={customers}
       trigger={
         <Button>
           <Plus className="h-4 w-4" /> Utilizator nou

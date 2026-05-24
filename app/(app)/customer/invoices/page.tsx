@@ -20,13 +20,10 @@ export const metadata = { title: "My Invoices" };
 export default async function CustomerInvoicesPage() {
   const me = await requirePermission("invoices:read");
 
-  // Find the Customer record linked to this user's email
+  // Find the Customer record linked to this portal user
   const customer = me.companyId
     ? await prisma.customer.findFirst({
-        where: {
-          companyId: me.companyId,
-          email: me.email ?? undefined,
-        },
+        where: { companyId: me.companyId, userId: me.id },
       })
     : null;
 

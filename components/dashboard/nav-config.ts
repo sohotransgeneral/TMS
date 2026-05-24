@@ -53,6 +53,18 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ClipboardList,
         roles: ["DRIVER"],
       },
+      {
+        href: "/customer/loads",
+        label: "My Loads",
+        icon: Package,
+        roles: ["CUSTOMER"],
+      },
+      {
+        href: "/customer/invoices",
+        label: "My Invoices",
+        icon: Receipt,
+        roles: ["CUSTOMER"],
+      },
     ],
   },
   {
