@@ -95,7 +95,7 @@ export function LiveMap({ token }: { token: string | null }) {
       }
     }
     fetchPositions();
-    const id = setInterval(fetchPositions, 15_000);
+    const id = setInterval(fetchPositions, 5_000);
     return () => {
       cancelled = true;
       clearInterval(id);
@@ -305,7 +305,7 @@ export function LiveMap({ token }: { token: string | null }) {
             {showZones ? "Hide zones" : "Show zones"}
           </button>
           <span className="text-xs text-muted-foreground">
-            Auto-refresh 15s
+            Auto-refresh 5s
           </span>
         </div>
       </div>
