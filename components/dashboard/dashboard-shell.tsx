@@ -22,9 +22,9 @@ export function DashboardShell({
 }: Props) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="flex min-h-svh">
+    <div className="flex h-svh overflow-hidden">
       <Sidebar role={role} open={open} onClose={() => setOpen(false)} />
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar
           role={role}
           name={name}
@@ -32,7 +32,7 @@ export function DashboardShell({
           companyName={companyName}
           onMenu={() => setOpen(true)}
         />
-        <main className="flex-1 p-4 lg:p-6 bg-muted/30">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/30">{children}</main>
       </div>
     </div>
   );
