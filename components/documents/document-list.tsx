@@ -11,6 +11,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type DocumentItem = {
   id: string;
@@ -163,17 +170,18 @@ export function DocumentList({
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
                 Document Type
               </label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {allowedTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {DOC_TYPE_LABELS[t] ?? t}
-                  </option>
-                ))}
-              </select>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {allowedTypes.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {DOC_TYPE_LABELS[t] ?? t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex-1 min-w-[140px]">
@@ -184,7 +192,7 @@ export function DocumentList({
                 type="date"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
