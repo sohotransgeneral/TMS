@@ -62,7 +62,7 @@ export function LoadStatusButton({
         <form action={formAction} className="grid gap-4">
           <input type="hidden" name="id" value={loadId} />
           <Field name="status" label="New Status" required>
-            <Select id="status" name="status" defaultValue={options[0]}>
+            <Select id="status" name="status" defaultValue={options.includes(current) ? current : options[0]}>
               {options.map((s) => (
                 <option key={s} value={s}>
                   {LOAD_STATUS_LABELS[s] ?? s}
