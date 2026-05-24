@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -78,6 +78,7 @@ function LoadCard({
       style={style}
       {...attributes}
       {...listeners}
+      data-dnd-draggable="true"
       className={`rounded-md border bg-card p-3 text-sm shadow-sm select-none cursor-grab active:cursor-grabbing ${
         overlay
           ? "ring-2 ring-primary shadow-xl rotate-1"
@@ -192,14 +193,11 @@ export function CockpitBoard({
   );
 
   // Use pointer-within first (best for large empty columns), fall back to rect intersection
-  const collisionDetection: CollisionDetection = useCallback(
-    (args) => {
-      const pointer = pointerWithin(args);
-      if (pointer.length > 0) return pointer;
-      return rectIntersection(args);
-    },
-    [],
-  );
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const pointer = pointerWithin(args);
+    if (pointer.length > 0) return pointer;
+    return rectIntersection(args);
+  }, []);
 
   /** Map each load id → which column it's in */
   const loadToColumn = useCallback(
@@ -275,6 +273,31 @@ export function CockpitBoard({
 
   const activeLoad = loads.find((l) => l.id === activeId);
 
+  // ── Mouse-drag-to-pan ──────────────────────────────────────────────────────
+  const boardRef = useRef<HTMLDivElement>(null);
+  const panState = useRef<{ startX: number; scrollLeft: number } | null>(null);
+
+  function onMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    // Only pan on middle-button or when not clicking a card (target is the grid itself)
+    if (e.button !== 0) return;
+    // Don't start pan if the target is a card (has draggable role)
+    const el = e.target as HTMLElement;
+    if (el.closest("[data-dnd-draggable]")) return;
+    panState.current = { startX: e.pageX, scrollLeft: boardRef.current?.scrollLeft ?? 0 };
+    document.body.style.userSelect = "none";
+  }
+
+  function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!panState.current || !boardRef.current) return;
+    const dx = e.pageX - panState.current.startX;
+    boardRef.current.scrollLeft = panState.current.scrollLeft - dx;
+  }
+
+  function onMouseUp() {
+    panState.current = null;
+    document.body.style.userSelect = "";
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -284,8 +307,13 @@ export function CockpitBoard({
       onDragEnd={handleDragEnd}
     >
       <div
-        className="grid grid-flow-col gap-4 overflow-x-auto pb-4"
+        ref={boardRef}
+        className="grid grid-flow-col gap-4 overflow-x-auto pb-4 cursor-grab active:cursor-grabbing"
         style={{ gridAutoColumns: "minmax(280px, 1fr)" }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
       >
         {columns.map((col) => {
           const items = col.statuses.flatMap((s) =>
