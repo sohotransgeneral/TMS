@@ -25,6 +25,7 @@ type UserRow = {
   name: string | null;
   email: string;
   phone: string | null;
+  telegramChatId?: string | null;
   role: string;
   active: boolean;
 };
@@ -126,6 +127,18 @@ export function UserFormDialog({
               />
             </Field>
           </div>
+          <Field
+            name="telegramChatId"
+            label="Telegram chat id (optional)"
+            error={errors.telegramChatId}
+          >
+            <Input
+              id="telegramChatId"
+              name="telegramChatId"
+              defaultValue={initial?.telegramChatId ?? ""}
+              placeholder="e.g. 123456789 — get yours from @userinfobot"
+            />
+          </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field name="role" label="Role" required error={errors.role}>
               <Select

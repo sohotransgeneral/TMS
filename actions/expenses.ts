@@ -10,6 +10,7 @@ import {
   expenseUpdateSchema,
   expenseDecisionSchema,
 } from "@/lib/validators/accounting";
+import { notifyEvent } from "@/lib/notifications";
 
 export async function createExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
@@ -50,6 +51,16 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
     entityType: "Expense",
     entityId: expense.id,
     meta: { amount: d.amount, type: d.type },
+  });
+
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "expenses",
+    type: "EXPENSE_SUBMITTED",
+    title: `Expense submitted: ${d.type}`,
+    body: `${d.amount} ${d.currency} — ${d.description ?? ""}`.trim(),
+    link: `/accounting/expenses`,
+    roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
   });
 
   revalidatePath("/accounting/expenses");
@@ -113,6 +124,17 @@ export async function decideExpense(formData: FormData): Promise<ActionResult> {
     entityType: "Expense",
     entityId: id,
     meta: { decision },
+  });
+
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "expenses",
+    type: "EXPENSE_DECISION",
+    title: `Expense ${decision === "APPROVED" ? "approved" : "rejected"}`,
+    body: `${target.amount} ${target.currency} — ${target.type}`,
+    link: `/accounting/expenses`,
+    roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
+    userIds: target.reportedById ? [target.reportedById] : [],
   });
 
   revalidatePath("/accounting/expenses");

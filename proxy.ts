@@ -20,11 +20,11 @@ const isPublic = (path: string) =>
  * SUPER_ADMIN and COMPANY_ADMIN have no restrictions (handled below).
  */
 const ROLE_ALLOWED_PREFIXES: Partial<Record<UserRole, string[]>> = {
-  DRIVER: ["/driver", "/api"],
+  DRIVER: ["/driver", "/admin/notifications", "/api"],
   CUSTOMER: ["/customer", "/accounting/invoices", "/admin/notifications", "/api"],
-  DISPATCHER: ["/dashboard", "/dispatch", "/fleet", "/customers", "/admin/drivers", "/api"],
-  FLEET_MANAGER: ["/dashboard", "/fleet", "/admin/drivers", "/api"],
-  ACCOUNTANT: ["/dashboard", "/accounting", "/customers", "/dispatch/loads", "/api"],
+  DISPATCHER: ["/dashboard", "/dispatch", "/fleet", "/customers", "/admin/drivers", "/admin/notifications", "/api"],
+  FLEET_MANAGER: ["/dashboard", "/fleet", "/admin/drivers", "/admin/notifications", "/api"],
+  ACCOUNTANT: ["/dashboard", "/accounting", "/customers", "/dispatch/loads", "/admin/notifications", "/api"],
 };
 
 /** Default landing page per role */

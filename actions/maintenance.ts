@@ -9,6 +9,7 @@ import {
   maintenanceCreateSchema,
   maintenanceUpdateSchema,
 } from "@/lib/validators/maintenance";
+import { notifyEvent } from "@/lib/notifications";
 
 export async function createMaintenance(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("maintenance:write");
@@ -44,6 +45,16 @@ export async function createMaintenance(formData: FormData): Promise<ActionResul
     entityType: "Maintenance",
     entityId: m.id,
     meta: { title: d.title },
+  });
+
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "maintenance",
+    type: "MAINTENANCE",
+    title: `Maintenance scheduled: ${d.title}`,
+    body: d.scheduledAt ? `Scheduled for ${d.scheduledAt.toString()}` : undefined,
+    link: `/fleet/maintenance`,
+    roles: ["COMPANY_ADMIN", "FLEET_MANAGER"],
   });
 
   revalidatePath("/fleet/maintenance");

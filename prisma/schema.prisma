@@ -116,9 +116,18 @@ enum NotificationType {
   ERROR
   SUCCESS
   DOCUMENT_EXPIRING
+  LOAD_CREATED
+  LOAD_ASSIGNED
+  LOAD_ACCEPTED
+  LOAD_STATUS
   LOAD_UPDATE
   INVOICE_DUE
+  INVOICE_CREATED
+  INVOICE_PAID
   MAINTENANCE
+  EXPENSE_SUBMITTED
+  EXPENSE_DECISION
+  USER_CREATED
 }
 
 enum MaintenanceStatus {
@@ -204,6 +213,9 @@ model User {
   role          UserRole @default(DISPATCHER)
   active        Boolean  @default(true)
   lastLoginAt   DateTime?
+
+  // Telegram personal chat id (numeric, can be negative). Optional.
+  telegramChatId String?
 
   // Multi-tenancy: every non-SUPER_ADMIN user belongs to a company
   companyId     String?  @db.ObjectId

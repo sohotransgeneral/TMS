@@ -20,6 +20,7 @@ import {
   ScrollText,
   Sparkles,
   ShieldCheck,
+  Send,
 } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 
@@ -197,6 +198,12 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/notifications",
         label: "Notifications",
         icon: Bell,
+      },
+      {
+        href: "/admin/telegram",
+        label: "Telegram",
+        icon: Send,
+        permissions: ["users:write"],
       },
       {
         href: "/admin/audit",

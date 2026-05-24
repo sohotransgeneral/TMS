@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   DocumentList,
   type DocumentItem,
@@ -19,6 +22,7 @@ export function DocumentSection({
   allowedTypes,
 }: DocumentSectionProps) {
   const [docs, setDocs] = useState<DocumentItem[]>(initialDocuments);
+  const [pending, start] = useTransition();
 
   async function refresh() {
     // Build query params from entityLink
@@ -31,19 +35,44 @@ export function DocumentSection({
     if (entityLink.customerId) params.set("customerId", entityLink.customerId);
     if (entityLink.invoiceId) params.set("invoiceId", entityLink.invoiceId);
 
-    const res = await fetch(`/api/documents?${params.toString()}`);
+    const res = await fetch(`/api/documents?${params.toString()}`, {
+      cache: "no-store",
+    });
     if (res.ok) {
       const data = await res.json();
       setDocs(data.documents);
     }
   }
 
+  function manualRefresh() {
+    start(async () => {
+      await refresh();
+      toast.success("Document URLs refreshed.");
+    });
+  }
+
   return (
-    <DocumentList
-      documents={docs}
-      entityLink={entityLink}
-      allowedTypes={allowedTypes}
-      onRefresh={refresh}
-    />
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={manualRefresh}
+          disabled={pending}
+        >
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${pending ? "animate-spin" : ""}`}
+          />
+          Refresh URLs
+        </Button>
+      </div>
+      <DocumentList
+        documents={docs}
+        entityLink={entityLink}
+        allowedTypes={allowedTypes}
+        onRefresh={refresh}
+      />
+    </div>
   );
 }

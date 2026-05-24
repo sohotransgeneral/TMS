@@ -6,5 +6,11 @@
   "functions": {
     "app/api/upload/route.ts": { "maxDuration": 60 },
     "app/api/upload-proof/route.ts": { "maxDuration": 30 }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/purge-notifications",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }

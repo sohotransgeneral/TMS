@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Menu, LogOut, User as UserIcon, Bell } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
@@ -13,6 +14,7 @@ interface TopbarProps {
   email?: string | null;
   role: UserRole;
   companyName?: string | null;
+  unreadCount?: number;
   onMenu?: () => void;
 }
 
@@ -21,6 +23,7 @@ export function Topbar({
   email,
   role,
   companyName,
+  unreadCount = 0,
   onMenu,
 }: TopbarProps) {
   const { theme, setTheme } = useTheme();
@@ -46,8 +49,15 @@ export function Topbar({
         <p className="text-sm font-medium truncate">{ROLE_LABELS[role]}</p>
       </div>
 
-      <Button variant="ghost" size="icon" aria-label="Notifications">
-        <Bell className="h-5 w-5" />
+      <Button asChild variant="ghost" size="icon" aria-label="Notifications" className="relative">
+        <Link href="/admin/notifications">
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold grid place-items-center">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
       </Button>
 
       <Button

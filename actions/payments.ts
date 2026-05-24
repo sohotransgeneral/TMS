@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { failure, success, type ActionResult } from "@/lib/action-helpers";
 import { paymentCreateSchema } from "@/lib/validators/accounting";
+import { notifyEvent } from "@/lib/notifications";
 
 export async function recordPayment(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("payments:write");
@@ -48,6 +49,19 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
     entityType: "Invoice",
     entityId: d.invoiceId,
     meta: { amount: d.amount, newPaid },
+  });
+
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "invoices",
+    type: status === "PAID" ? "INVOICE_PAID" : "INFO",
+    title:
+      status === "PAID"
+        ? `Invoice ${invoice.number} PAID`
+        : `Payment recorded on invoice ${invoice.number}`,
+    body: `${d.amount} ${d.currency} via ${d.method}`,
+    link: `/accounting/invoices/${d.invoiceId}`,
+    roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
   });
 
   revalidatePath("/accounting/invoices");

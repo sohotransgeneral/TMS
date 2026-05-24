@@ -7,6 +7,7 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
+  deleteAllReadNotifications,
 } from "@/actions/notifications";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
@@ -68,6 +69,33 @@ export function MarkAllReadButton() {
     <form action={formAction}>
       <Button type="submit" variant="outline" disabled={pending}>
         Mark all as read
+      </Button>
+    </form>
+  );
+}
+
+export function DeleteAllReadButton() {
+  const action = toActionState(deleteAllReadNotifications);
+  const [state, formAction, pending] = useActionState<
+    ActionResult | null,
+    FormData
+  >(action, null);
+  useEffect(() => {
+    if (!state) return;
+    if (state.ok) toast.success(state.message ?? "OK");
+    else toast.error(state.error);
+  }, [state]);
+  return (
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (!confirm("Delete all read notifications?")) {
+          e.preventDefault();
+        }
+      }}
+    >
+      <Button type="submit" variant="ghost" disabled={pending}>
+        Delete all read
       </Button>
     </form>
   );

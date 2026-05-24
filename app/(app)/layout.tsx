@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,6 +27,10 @@ export default async function DashboardLayout({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const unreadCount = await prisma.notification.count({
+    where: { userId: user.id, read: false },
+  });
+
   return (
     <DashboardShell
       role={user.role}
@@ -33,6 +38,7 @@ export default async function DashboardLayout({
       email={user.email}
       companyName={user.company?.name}
       companyLogoUrl={user.company?.logoUrl}
+      unreadCount={unreadCount}
     >
       {children}
     </DashboardShell>

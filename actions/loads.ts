@@ -14,6 +14,7 @@ import {
 } from "@/lib/validators/load";
 import { nextLoadReference } from "@/lib/load-reference";
 import { geocodeAddress } from "@/lib/geocode";
+import { notifyEvent } from "@/lib/notifications";
 
 export async function createLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
@@ -108,6 +109,32 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
     entityType: "Load",
     entityId: load.id,
     meta: { referenceNumber },
+  });
+
+  // Notifications: dispatchers/admins always; assigned driver if any
+  const driverUserId = load.driverId
+    ? (
+        await prisma.driverProfile.findUnique({
+          where: { id: load.driverId },
+          select: { userId: true },
+        })
+      )?.userId
+    : undefined;
+
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "loads",
+    type: status === "ASSIGNED" ? "LOAD_ASSIGNED" : "LOAD_CREATED",
+    title:
+      status === "ASSIGNED"
+        ? `Load ${referenceNumber} assigned`
+        : `Load ${referenceNumber} created`,
+    body: `${d.pickupCity ?? d.pickupAddress ?? "Pickup"} → ${
+      d.deliveryCity ?? d.deliveryAddress ?? "Delivery"
+    }`,
+    link: `/dispatch/loads/${load.id}`,
+    roles: ["COMPANY_ADMIN", "DISPATCHER"],
+    userIds: driverUserId ? [driverUserId] : undefined,
   });
 
   revalidatePath("/dispatch/loads");
@@ -209,6 +236,25 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
     meta: { driverId, truckId, trailerId },
   });
 
+  if (driverId && shouldFlip) {
+    const driverUserId = (
+      await prisma.driverProfile.findUnique({
+        where: { id: driverId },
+        select: { userId: true },
+      })
+    )?.userId;
+    await notifyEvent({
+      companyId: me.companyId,
+      topic: "loads",
+      type: "LOAD_ASSIGNED",
+      title: `Load ${target.referenceNumber} assigned`,
+      body: "You have a new load assigned.",
+      link: `/dispatch/loads/${id}`,
+      roles: ["COMPANY_ADMIN", "DISPATCHER"],
+      userIds: driverUserId ? [driverUserId] : undefined,
+    });
+  }
+
   revalidatePath("/dispatch/loads");
   revalidatePath(`/dispatch/loads/${id}`);
   return success(undefined, "Assignment saved.");
@@ -263,6 +309,16 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
     meta: { status, note },
   });
 
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "loads",
+    type: "LOAD_STATUS",
+    title: `Load ${target.referenceNumber}: ${status}`,
+    body: note ?? undefined,
+    link: `/dispatch/loads/${id}`,
+    roles: ["COMPANY_ADMIN", "DISPATCHER"],
+  });
+
   revalidatePath("/dispatch/loads");
   revalidatePath(`/dispatch/loads/${id}`);
   revalidatePath("/driver/dashboard");
@@ -306,6 +362,18 @@ export async function acceptLoad(id: string): Promise<ActionResult> {
       },
     },
   });
+
+  if (load.companyId) {
+    await notifyEvent({
+      companyId: load.companyId,
+      topic: "loads",
+      type: "LOAD_ACCEPTED",
+      title: `Load ${load.referenceNumber} accepted by driver`,
+      body: me.name ?? me.email ?? undefined,
+      link: `/dispatch/loads/${id}`,
+      roles: ["COMPANY_ADMIN", "DISPATCHER"],
+    });
+  }
 
   revalidatePath(`/dispatch/loads/${id}`);
   revalidatePath("/driver/dashboard");

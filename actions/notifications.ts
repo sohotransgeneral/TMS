@@ -40,3 +40,12 @@ export async function deleteNotification(formData: FormData): Promise<ActionResu
   revalidatePath("/admin/notifications");
   return success(undefined, "Deleted.");
 }
+
+export async function deleteAllReadNotifications(): Promise<ActionResult> {
+  const me = await requireUser();
+  const res = await prisma.notification.deleteMany({
+    where: { userId: me.id, read: true },
+  });
+  revalidatePath("/admin/notifications");
+  return success(undefined, `${res.count} notificare(s) sterse.`);
+}

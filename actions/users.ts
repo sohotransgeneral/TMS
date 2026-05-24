@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { failure, success, type ActionResult } from "@/lib/action-helpers";
 import { userCreateSchema, userUpdateSchema } from "@/lib/validators/user";
+import { notifyEvent } from "@/lib/notifications";
 
 export async function createUser(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("users:write");
@@ -36,6 +37,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       email,
       name: parsed.data.name,
       phone: parsed.data.phone,
+      telegramChatId: parsed.data.telegramChatId ?? null,
       role: parsed.data.role,
       active: parsed.data.active,
       password: hashed,
@@ -47,7 +49,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
   const rawCustomerId = typeof raw.customerId === "string" ? raw.customerId.trim() : "";
   if (parsed.data.role === "CUSTOMER" && rawCustomerId) {
     await prisma.customer.updateMany({
-      where: { id: rawCustomerId, companyId: targetCompanyId, userId: null },
+      where: { id: rawCustomerId, companyId: targetCompanyId ?? undefined, userId: { equals: null } },
       data: { userId: user.id },
     });
   }
@@ -60,6 +62,18 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     entityId: user.id,
   });
 
+  if (targetCompanyId) {
+    await notifyEvent({
+      companyId: targetCompanyId,
+      topic: "users",
+      type: "USER_CREATED",
+      title: `New user: ${user.name}`,
+      body: `${user.email} · ${user.role}`,
+      link: `/admin/users`,
+      roles: ["COMPANY_ADMIN"],
+    });
+  }
+
   revalidatePath("/admin/users");
   return success({ id: user.id }, "Utilizator creat.");
 }
@@ -71,7 +85,7 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
   if (!parsed.success) {
     return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
-  const { id, password, email, ...rest } = parsed.data;
+  const { id, password, email, telegramChatId, ...rest } = parsed.data;
 
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) return failure("Utilizator inexistent.");
@@ -82,6 +96,8 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
   }
 
   const data: Prisma.UserUpdateInput = { ...rest };
+  // Always allow clearing telegram chat id by submitting empty
+  data.telegramChatId = telegramChatId ?? null;
   if (email && email.toLowerCase() !== target.email) {
     data.email = email.toLowerCase();
   }

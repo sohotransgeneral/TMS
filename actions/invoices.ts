@@ -13,6 +13,7 @@ import {
   type InvoiceItem,
 } from "@/lib/validators/accounting";
 import { nextInvoiceNumber } from "@/lib/invoice-number";
+import { notifyEvent } from "@/lib/notifications";
 
 /** Pulls parallel `items[i][description|quantity|unitPrice]` arrays out of FormData. */
 function parseItems(fd: FormData): InvoiceItem[] {
@@ -79,6 +80,16 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
     entityType: "Invoice",
     entityId: invoice.id,
     meta: { number, total },
+  });
+
+  await notifyEvent({
+    companyId: me.companyId,
+    topic: "invoices",
+    type: "INVOICE_CREATED",
+    title: `Invoice ${number} created`,
+    body: `Total ${total} ${d.currency}`,
+    link: `/accounting/invoices/${invoice.id}`,
+    roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
   });
 
   revalidatePath("/accounting/invoices");

@@ -15,6 +15,12 @@ export const userCreateSchema = z.object({
   name: z.string().min(2, "Nume prea scurt"),
   email: z.string().email("Email invalid"),
   phone: fields.optionalString,
+  telegramChatId: z
+    .string()
+    .trim()
+    .regex(/^-?\d+$/u, "Telegram chat id must be a numeric id")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   role: z.enum(ROLE_VALUES),
   password: z
     .string()

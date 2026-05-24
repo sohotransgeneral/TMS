@@ -11,6 +11,7 @@ interface Props {
   email?: string | null;
   companyName?: string | null;
   companyLogoUrl?: string | null;
+  unreadCount?: number;
   children: React.ReactNode;
 }
 
@@ -20,6 +21,7 @@ export function DashboardShell({
   email,
   companyName,
   companyLogoUrl,
+  unreadCount = 0,
   children,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -41,6 +43,7 @@ export function DashboardShell({
             name={name}
             email={email}
             companyName={companyName}
+            unreadCount={unreadCount}
             onMenu={() => setOpen(true)}
           />
         </div>

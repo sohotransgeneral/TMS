@@ -11,6 +11,7 @@ import {
   MarkReadButton,
   DeleteNotificationButton,
   MarkAllReadButton,
+  DeleteAllReadButton,
 } from "@/components/notifications/notification-actions";
 import { NOTIFICATION_TYPE_LABELS } from "@/lib/notifications";
 import { formatDate } from "@/lib/utils";
@@ -70,7 +71,12 @@ export default async function NotificationsPage({
       <PageHeader
         title="Notifications"
         description={`${unreadCount} necitite din total ${total}.`}
-        action={unreadCount > 0 ? <MarkAllReadButton /> : null}
+        action={
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && <MarkAllReadButton />}
+            <DeleteAllReadButton />
+          </div>
+        }
       />
 
       <div className="flex flex-wrap gap-3">
