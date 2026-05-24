@@ -6,6 +6,7 @@ import {
   CockpitBoard,
   type CockpitColumn,
 } from "@/components/dispatch/cockpit-board";
+import { CockpitFilters } from "@/components/dispatch/cockpit-filters";
 
 export const metadata = { title: "Dispatch Cockpit" };
 
@@ -24,22 +25,66 @@ const COLUMNS: CockpitColumn[] = [
   { key: "Invoiced / Paid", statuses: ["INVOICED", "PAID"] },
 ];
 
-export default async function CockpitPage() {
-  const me = await requirePermission("loads:read");
+type SP = Promise<{
+  truckId?: string;
+  driverId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  period?: string;
+}>;
 
-  const loads = await prisma.load.findMany({
-    where: {
-      companyId: me.companyId ?? undefined,
-      status: { notIn: ["CANCELLED"] },
-    },
-    orderBy: { pickupDate: "asc" },
-    include: {
-      customer: { select: { name: true } },
-      driver: { include: { user: { select: { name: true } } } },
-      truck: { select: { plateNumber: true } },
-    },
-    take: 300,
-  });
+export default async function CockpitPage({
+  searchParams,
+}: {
+  searchParams: SP;
+}) {
+  const me = await requirePermission("loads:read");
+  const sp = await searchParams;
+
+  // Build pickup-date filter
+  const pickupFilter: { gte?: Date; lte?: Date } = {};
+  if (sp.dateFrom) pickupFilter.gte = new Date(sp.dateFrom);
+  if (sp.dateTo) {
+    const end = new Date(sp.dateTo);
+    end.setHours(23, 59, 59, 999);
+    pickupFilter.lte = end;
+  }
+
+  const [loads, trucks, drivers] = await Promise.all([
+    prisma.load.findMany({
+      where: {
+        companyId: me.companyId ?? undefined,
+        status: { notIn: ["CANCELLED"] },
+        ...(sp.truckId ? { truckId: sp.truckId } : {}),
+        ...(sp.driverId ? { driverId: sp.driverId } : {}),
+        ...(Object.keys(pickupFilter).length
+          ? { pickupDate: pickupFilter }
+          : {}),
+      },
+      orderBy: { pickupDate: "asc" },
+      include: {
+        customer: { select: { name: true } },
+        driver: { include: { user: { select: { name: true } } } },
+        truck: { select: { plateNumber: true } },
+      },
+      take: 300,
+    }),
+    prisma.truck.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      orderBy: { plateNumber: "asc" },
+      select: { id: true, plateNumber: true },
+    }),
+    prisma.driverProfile.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        user: { select: { name: true } },
+      },
+    }),
+  ]);
 
   // Serialise dates for the client component
   const serialised = loads.map((l) => ({
@@ -58,8 +103,23 @@ export default async function CockpitPage() {
     truck: l.truck,
   }));
 
+  const truckOpts = trucks.map((t) => ({
+    value: t.id,
+    label: t.plateNumber,
+  }));
+  const driverOpts = drivers.map((d) => ({
+    value: d.id,
+    label:
+      d.user?.name ??
+      `${d.firstName} ${d.lastName}`.trim() ??
+      "(no name)",
+  }));
+
+  // Key that remounts the board when filters change so its internal state resets
+  const boardKey = `${sp.truckId ?? ""}|${sp.driverId ?? ""}|${sp.dateFrom ?? ""}|${sp.dateTo ?? ""}`;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Dispatch Cockpit"
         description="Drag loads between columns to update their status."
@@ -73,7 +133,13 @@ export default async function CockpitPage() {
         }
       />
 
-      <CockpitBoard initialLoads={serialised} columns={COLUMNS} />
+      <CockpitFilters trucks={truckOpts} drivers={driverOpts} />
+
+      <CockpitBoard
+        key={boardKey}
+        initialLoads={serialised}
+        columns={COLUMNS}
+      />
     </div>
   );
 }

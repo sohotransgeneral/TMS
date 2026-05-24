@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Truck, X } from "lucide-react";
+import { Loader2, Truck, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { UserRole } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { hasAnyPermission } from "@/lib/permissions";
@@ -22,6 +23,16 @@ function isVisible(item: NavItem, role: UserRole) {
   if (item.permissions && !hasAnyPermission(role, item.permissions))
     return false;
   return true;
+}
+
+/** Swaps the link icon for a spinner while navigation is pending. */
+function NavLinkIcon({ Icon }: { Icon: LucideIcon }) {
+  const { pending } = useLinkStatus();
+  return pending ? (
+    <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+  ) : (
+    <Icon className="h-4 w-4 shrink-0" />
+  );
 }
 
 export function Sidebar({
@@ -95,7 +106,7 @@ export function Sidebar({
                           : "text-foreground/80 hover:bg-accent hover:text-foreground",
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
+                      <NavLinkIcon Icon={Icon} />
                       <span>{item.label}</span>
                     </Link>
                   </li>
