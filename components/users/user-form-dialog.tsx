@@ -94,7 +94,7 @@ export function UserFormDialog({
               : "Add a new member to your company's team."}
           </DialogDescription>
         </DialogHeader>
-        <form action={formAction} className="grid gap-4">
+        <form action={formAction} className="grid gap-4" key={open ? "open" : "closed"}>
           {editing && <input type="hidden" name="id" value={initial!.id} />}
           {companies.length > 0 && !editing && (
             <Field name="companyId" label="Company" error={errors.companyId}>
@@ -151,7 +151,7 @@ export function UserFormDialog({
               <Select
                 id="role"
                 name="role"
-                defaultValue={initial?.role ?? "DISPATCHER"}
+                value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
               >
                 {ROLE_OPTIONS.map((r) => (

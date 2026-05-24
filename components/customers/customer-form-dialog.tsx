@@ -257,7 +257,10 @@ export function CustomerRowActions({ customer }: { customer: CustomerRow }) {
 function CustomerPortalDialog({ customer }: { customer: CustomerRow }) {
   const [open, setOpen] = useState(false);
   const action = toActionState(setCustomerPortalPassword);
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(action, null);
+  const [state, formAction, pending] = useActionState<
+    ActionResult | null,
+    FormData
+  >(action, null);
 
   useEffect(() => {
     if (!state) return;
@@ -278,7 +281,9 @@ function CustomerPortalDialog({ customer }: { customer: CustomerRow }) {
         title={hasPortal ? "Reset portal password" : "Set portal password"}
         onClick={() => setOpen(true)}
       >
-        <KeyRound className={`h-4 w-4 ${hasPortal ? "text-green-600" : "text-muted-foreground"}`} />
+        <KeyRound
+          className={`h-4 w-4 ${hasPortal ? "text-green-600" : "text-muted-foreground"}`}
+        />
       </Button>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
@@ -289,13 +294,14 @@ function CustomerPortalDialog({ customer }: { customer: CustomerRow }) {
             {hasPortal
               ? `Current login: ${customer.user?.email ?? customer.email}`
               : customer.email
-              ? `Will create a login for ${customer.email}`
-              : "Add an email to the customer first."}
+                ? `Will create a login for ${customer.email}`
+                : "Add an email to the customer first."}
           </DialogDescription>
         </DialogHeader>
-        {(!hasPortal && !customer.email) ? (
+        {!hasPortal && !customer.email ? (
           <p className="text-sm text-destructive">
-            This customer has no email address. Edit the customer and add one first.
+            This customer has no email address. Edit the customer and add one
+            first.
           </p>
         ) : (
           <form action={formAction} className="grid gap-4">
@@ -321,11 +327,19 @@ function CustomerPortalDialog({ customer }: { customer: CustomerRow }) {
               />
             </Field>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={pending}>
-                {pending ? "Saving…" : hasPortal ? "Reset Password" : "Enable Portal"}
+                {pending
+                  ? "Saving…"
+                  : hasPortal
+                    ? "Reset Password"
+                    : "Enable Portal"}
               </Button>
             </DialogFooter>
           </form>

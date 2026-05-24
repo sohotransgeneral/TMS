@@ -116,7 +116,9 @@ export default async function CustomersPage({
                     {c._count.loads} / {c._count.invoices}
                   </TableCell>
                   <TableCell>
-                    <CustomerRowActions customer={{ ...c, user: c.user ?? null }} />
+                    <CustomerRowActions
+                      customer={{ ...c, user: c.user ?? null }}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

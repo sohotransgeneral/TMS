@@ -104,7 +104,11 @@ export function PermitList({
               {statusBadge(p.validTo)}
               {canEdit && (
                 <>
-                  <LogPermitExpenseButton permitId={p.id} cost={p.cost} currency={p.currency} />
+                  <LogPermitExpenseButton
+                    permitId={p.id}
+                    cost={p.cost}
+                    currency={p.currency}
+                  />
                   <EditPermitButton permit={p} truckId={truckId} />
                   <Button
                     size="icon"

@@ -48,10 +48,16 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
   // If CUSTOMER role and a customerId was provided, link this user to that Customer
   const rawCustomerId = typeof raw.customerId === "string" ? raw.customerId.trim() : "";
   if (parsed.data.role === "CUSTOMER" && rawCustomerId) {
-    await prisma.customer.updateMany({
-      where: { id: rawCustomerId, companyId: targetCompanyId ?? undefined, userId: { equals: null } },
-      data: { userId: user.id },
+    const customerToLink = await prisma.customer.findFirst({
+      where: { id: rawCustomerId, companyId: targetCompanyId ?? undefined },
+      select: { id: true, userId: true },
     });
+    if (customerToLink && (customerToLink.userId === null || customerToLink.userId === user.id)) {
+      await prisma.customer.update({
+        where: { id: rawCustomerId },
+        data: { userId: user.id },
+      });
+    }
   }
 
   await logAudit({
@@ -119,16 +125,19 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
       where: { userId: id },
       data: { userId: null },
     });
-    // Link new customer if selected (must belong to same company)
+    // Link new customer if one was selected
     if (rawCustomerId) {
-      await prisma.customer.updateMany({
-        where: {
-          id: rawCustomerId,
-          companyId: target.companyId ?? undefined,
-          userId: { equals: null },
-        },
-        data: { userId: id },
+      // Verify the customer belongs to the same company and is not linked to another user
+      const customerToLink = await prisma.customer.findFirst({
+        where: { id: rawCustomerId, companyId: target.companyId ?? undefined },
+        select: { id: true, userId: true },
       });
+      if (customerToLink && (customerToLink.userId === null || customerToLink.userId === id)) {
+        await prisma.customer.update({
+          where: { id: rawCustomerId },
+          data: { userId: id },
+        });
+      }
     }
   }
 

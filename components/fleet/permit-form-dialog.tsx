@@ -15,7 +15,11 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { toActionState } from "@/lib/to-action-state";
-import { createPermit, updatePermit, recordPermitExpense } from "@/actions/permits";
+import {
+  createPermit,
+  updatePermit,
+  recordPermitExpense,
+} from "@/actions/permits";
 import { PERMIT_TYPES } from "@/lib/permit-types";
 import type { ActionResult } from "@/lib/action-helpers";
 import {
@@ -346,7 +350,15 @@ export function EditPermitButton({
   );
 }
 
-export function LogPermitExpenseButton({ permitId, cost, currency }: { permitId: string; cost: number | null; currency: string }) {
+export function LogPermitExpenseButton({
+  permitId,
+  cost,
+  currency,
+}: {
+  permitId: string;
+  cost: number | null;
+  currency: string;
+}) {
   const [pending, setPending] = useState(false);
 
   if (!cost || cost <= 0) return null;
@@ -371,7 +383,11 @@ export function LogPermitExpenseButton({ permitId, cost, currency }: { permitId:
       onClick={handleClick}
       disabled={pending}
     >
-      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5 text-green-600" />}
+      {pending ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <DollarSign className="h-3.5 w-3.5 text-green-600" />
+      )}
     </Button>
   );
 }
