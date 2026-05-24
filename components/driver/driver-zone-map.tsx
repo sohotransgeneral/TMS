@@ -293,13 +293,16 @@ export function DriverZoneMap({
           ● RED — can&apos;t go
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#7c3aed]" /> Pickup
+          <span className="inline-block h-3 w-3 rounded-full bg-[#7c3aed]" />{" "}
+          Pickup
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#2563eb]" /> You
+          <span className="inline-block h-3 w-3 rounded-full bg-[#2563eb]" />{" "}
+          You
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#111827]" /> Delivery
+          <span className="inline-block h-3 w-3 rounded-full bg-[#111827]" />{" "}
+          Delivery
         </span>
         <span className="ml-auto text-xs opacity-60">
           Click pin to cycle status • 3rd click removes it
