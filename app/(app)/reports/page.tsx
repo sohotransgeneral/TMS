@@ -11,6 +11,7 @@ import {
   LoadsByStatusChart,
   FuelConsumptionChart,
 } from "@/components/reports/charts";
+import { ReportsFilters } from "@/components/reports/reports-filters";
 import { EXPENSE_TYPE_LABELS } from "@/lib/validators/accounting";
 import { TrendingUp, Package, Truck, Receipt, FileDown } from "lucide-react";
 
@@ -41,16 +42,21 @@ function fmtDay(d: Date) {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ driverId?: string; truckId?: string }>;
+}) {
   const me = await requirePermission("reports:read");
   const companyId = me.companyId ?? undefined;
+  const { driverId, truckId } = await searchParams;
 
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1);
   const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const last12Start = startOfMonth(now.getFullYear(), now.getMonth() - 11);
 
-  const [invoices, payments, loads, expenses, fuel, fleet, drivers] =
+  const [invoices, payments, loads, expenses, fuel, fleet, drivers, allTrucks] =
     await Promise.all([
       prisma.invoice.findMany({
         where: { companyId, issueDate: { gte: last12Start } },
@@ -61,7 +67,12 @@ export default async function ReportsPage() {
         select: { paidAt: true, amount: true },
       }),
       prisma.load.findMany({
-        where: { companyId, createdAt: { gte: last30 } },
+        where: {
+          companyId,
+          createdAt: { gte: last30 },
+          ...(driverId ? { driverId } : {}),
+          ...(truckId ? { truckId } : {}),
+        },
         select: { createdAt: true, status: true, price: true },
       }),
       prisma.expense.groupBy({
@@ -70,16 +81,33 @@ export default async function ReportsPage() {
           companyId,
           occurredAt: { gte: yearStart },
           status: "APPROVED",
+          ...(driverId ? { driverId } : {}),
+          ...(truckId ? { truckId } : {}),
         },
         _sum: { amount: true },
       }),
       prisma.fuelEntry.findMany({
-        where: { companyId, occurredAt: { gte: last12Start } },
+        where: {
+          companyId,
+          occurredAt: { gte: last12Start },
+          ...(driverId ? { driverId } : {}),
+          ...(truckId ? { truckId } : {}),
+        },
         select: { occurredAt: true, liters: true, totalAmount: true },
       }),
       prisma.truck.aggregate({ where: { companyId }, _count: true }),
-      prisma.driverProfile.aggregate({ where: { companyId }, _count: true }),
+      prisma.driverProfile.findMany({
+        where: { companyId },
+        select: { id: true, firstName: true, lastName: true },
+        orderBy: { firstName: "asc" },
+      }),
+      prisma.truck.findMany({
+        where: { companyId },
+        select: { id: true, plateNumber: true },
+        orderBy: { plateNumber: "asc" },
+      }),
     ]);
+  const driverCount = drivers.length;
 
   // KPI year
   const totalInvoiced = invoices
@@ -162,30 +190,30 @@ export default async function ReportsPage() {
 
   const kpis = [
     {
-      label: "Facturat (an)",
+      label: "Invoiced (YTD)",
       value: formatCurrency(totalInvoiced),
-      sub: `${invoices.length} facturi`,
+      sub: `${invoices.length} invoices`,
       icon: Receipt,
       color: "text-blue-600",
     },
     {
-      label: "Încasat (an)",
+      label: "Collected (YTD)",
       value: formatCurrency(totalCollected),
-      sub: `${payments.length} plăți`,
+      sub: `${payments.length} payments`,
       icon: TrendingUp,
       color: "text-emerald-600",
     },
     {
-      label: "Curse (30 zile)",
+      label: "Loads (30 days)",
       value: totalLoads.toString(),
-      sub: "curse create",
+      sub: "loads created",
       icon: Package,
       color: "text-violet-600",
     },
     {
-      label: "Flotă",
-      value: `${fleet._count} cam · ${drivers._count} șof`,
-      sub: `cheltuieli an ${formatCurrency(totalExpenses)}`,
+      label: "Fleet",
+      value: `${fleet._count} trucks · ${driverCount} drivers`,
+      sub: `expenses YTD ${formatCurrency(totalExpenses)}`,
       icon: Truck,
       color: "text-amber-600",
     },
@@ -205,6 +233,8 @@ export default async function ReportsPage() {
           </a>
         }
       />
+
+      <ReportsFilters drivers={drivers} trucks={allTrucks} />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => {
