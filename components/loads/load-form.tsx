@@ -123,7 +123,11 @@ export function LoadForm({
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Pickup</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="pickupCompanyName" label="Shipper Company" error={e.pickupCompanyName}>
+          <Field
+            name="pickupCompanyName"
+            label="Shipper Company"
+            error={e.pickupCompanyName}
+          >
             <Input
               id="pickupCompanyName"
               name="pickupCompanyName"
@@ -131,7 +135,12 @@ export function LoadForm({
               defaultValue={initial?.pickupCompanyName ?? ""}
             />
           </Field>
-          <Field name="pickupAddress" label="Address" required error={e.pickupAddress}>
+          <Field
+            name="pickupAddress"
+            label="Address"
+            required
+            error={e.pickupAddress}
+          >
             <Input
               id="pickupAddress"
               name="pickupAddress"
@@ -171,7 +180,11 @@ export function LoadForm({
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="pickupContact" label="Contact Person" error={e.pickupContact}>
+          <Field
+            name="pickupContact"
+            label="Contact Person"
+            error={e.pickupContact}
+          >
             <Input
               id="pickupContact"
               name="pickupContact"
@@ -217,7 +230,11 @@ export function LoadForm({
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Delivery</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="deliveryCompanyName" label="Receiver Company" error={e.deliveryCompanyName}>
+          <Field
+            name="deliveryCompanyName"
+            label="Receiver Company"
+            error={e.deliveryCompanyName}
+          >
             <Input
               id="deliveryCompanyName"
               name="deliveryCompanyName"
@@ -274,7 +291,11 @@ export function LoadForm({
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="deliveryContact" label="Contact Person" error={e.deliveryContact}>
+          <Field
+            name="deliveryContact"
+            label="Contact Person"
+            error={e.deliveryContact}
+          >
             <Input
               id="deliveryContact"
               name="deliveryContact"
@@ -368,7 +389,11 @@ export function LoadForm({
         <h3 className="font-semibold">Load Details</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="loadType" label="Load Type" error={e.loadType}>
-            <Select id="loadType" name="loadType" defaultValue={initial?.loadType ?? ""}>
+            <Select
+              id="loadType"
+              name="loadType"
+              defaultValue={initial?.loadType ?? ""}
+            >
               <option value="">—</option>
               <option value="FTL">Full Truckload (FTL)</option>
               <option value="LTL">Less Than Truckload (LTL)</option>
@@ -426,7 +451,11 @@ export function LoadForm({
               defaultValue={initial?.lineHaulRate ?? ""}
             />
           </Field>
-          <Field name="fuelSurcharge" label="Fuel Surcharge" error={e.fuelSurcharge}>
+          <Field
+            name="fuelSurcharge"
+            label="Fuel Surcharge"
+            error={e.fuelSurcharge}
+          >
             <Input
               id="fuelSurcharge"
               name="fuelSurcharge"
