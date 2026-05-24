@@ -49,6 +49,7 @@ export function LiveMap({ token }: { token: string | null }) {
   const [zonePins, setZonePins] = useState<ZonePin[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showZones, setShowZones] = useState(true);
+  const [filterDriver, setFilterDriver] = useState<string>("__all__");
 
   // Init map
   useEffect(() => {
@@ -138,6 +139,9 @@ export function LiveMap({ token }: { token: string | null }) {
         marker.setLngLat([p.lng, p.lat]);
         marker.getPopup()?.setHTML(popupHtml);
       }
+      // Apply filter visibility
+      const visible = filterDriver === "__all__" || p.driverId === filterDriver;
+      marker.getElement().style.display = visible ? "" : "none";
     }
     for (const [id, marker] of drMarkersRef.current) {
       if (!seen.has(id)) {
@@ -145,7 +149,7 @@ export function LiveMap({ token }: { token: string | null }) {
         drMarkersRef.current.delete(id);
       }
     }
-  }, [positions]);
+  }, [positions, filterDriver]);
 
   // Update zone pin markers
   useEffect(() => {
@@ -166,6 +170,12 @@ export function LiveMap({ token }: { token: string | null }) {
       const color = PIN_COLOR[pin.status] ?? "#6b7280";
       const label = PIN_LABEL[pin.status] ?? pin.status;
       const name = `${pin.driver.firstName} ${pin.driver.lastName}`;
+      // Check if this pin's driver matches the filter
+      const pinDriverId = `zone__${name}`;
+      const matchesFilter =
+        filterDriver === "__all__" ||
+        filterDriver === pinDriverId ||
+        positions.find((p) => p.driverId === filterDriver)?.driverName === name;
 
       const popupHtml = `
         <div style="font-size:12px;line-height:1.6;min-width:160px">
@@ -187,6 +197,7 @@ export function LiveMap({ token }: { token: string | null }) {
           box-shadow:0 2px 6px rgba(0,0,0,0.35);cursor:pointer;
           opacity:0.85;
         `;
+        el.style.display = matchesFilter ? "" : "none";
         const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
           .setLngLat([pin.lng, pin.lat])
           .setPopup(new mapboxgl.Popup({ offset: 14 }).setHTML(popupHtml))
@@ -196,6 +207,7 @@ export function LiveMap({ token }: { token: string | null }) {
         const m = zoneMarkersRef.current.get(pin.id)!;
         const mEl = m.getElement();
         mEl.style.background = color;
+        mEl.style.display = matchesFilter ? "" : "none";
         m.getPopup()?.setHTML(popupHtml);
       }
     }
@@ -206,7 +218,7 @@ export function LiveMap({ token }: { token: string | null }) {
         zoneMarkersRef.current.delete(id);
       }
     }
-  }, [zonePins, showZones]);
+  }, [zonePins, showZones, filterDriver, positions]);
 
   if (!token) {
     return (
@@ -226,14 +238,44 @@ export function LiveMap({ token }: { token: string | null }) {
   const yellowCount = zonePins.filter((p) => p.status === "YELLOW").length;
   const redCount = zonePins.filter((p) => p.status === "RED").length;
 
+  // Build unique driver list for filter: from GPS positions + zone pin authors
+  const driverOptions = [
+    ...positions.map((p) => ({ id: p.driverId, label: p.driverName })),
+    ...zonePins
+      .map((pin) => ({
+        id: `zone__${pin.driver.firstName} ${pin.driver.lastName}`,
+        label: `${pin.driver.firstName} ${pin.driver.lastName}`,
+      }))
+      .filter(
+        (d) => !positions.find((p) => p.driverName === d.label),
+      ),
+  ].filter(
+    (d, i, arr) => arr.findIndex((x) => x.id === d.id) === i,
+  );
+
   return (
     <div className="space-y-2">
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">
-          {positions.length} active driver{positions.length !== 1 ? "s" : ""} on
-          map
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-muted-foreground">
+            {positions.length} active driver{positions.length !== 1 ? "s" : ""} on map
+          </span>
+          {driverOptions.length > 0 && (
+            <select
+              value={filterDriver}
+              onChange={(e) => setFilterDriver(e.target.value)}
+              className="rounded border border-border bg-card px-2 py-0.5 text-xs text-foreground"
+            >
+              <option value="__all__">All drivers</option>
+              {driverOptions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
 
         {/* Zone pins summary + toggle */}
         <div className="flex items-center gap-3">
