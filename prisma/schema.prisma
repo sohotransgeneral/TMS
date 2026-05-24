@@ -297,8 +297,12 @@ model DriverProfile {
 
   // Employment
   employedSince      DateTime?
-  salaryPerKm        Float?
-  commissionRate     Float?
+  // salaryType: "PER_MI" | "PERCENT_GROSS" | "FIXED"
+  salaryType         String?   @default("PER_MI")
+  salaryPerKm        Float?    // used when salaryType = PER_MI
+  salaryFixedAmount  Float?    // used when salaryType = FIXED
+  grossPercent       Float?    // used when salaryType = PERCENT_GROSS (e.g. 90 = driver keeps 90%)
+  commissionRate     Float?    // bonus commission on top of base (all types)
 
   status             DriverStatus @default(AVAILABLE)
   rating             Float?       @default(5)

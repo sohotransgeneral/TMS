@@ -28,7 +28,10 @@ export const driverCreateSchema = z.object({
   tachoCardNumber: fields.optionalString,
   tachoCardExpiresAt: fields.optionalDate,
   employedSince: fields.optionalDate,
+  salaryType: z.string().optional().default("PER_MI"),
   salaryPerKm: fields.optionalNumber,
+  salaryFixedAmount: fields.optionalNumber,
+  grossPercent: fields.optionalNumber,
   commissionRate: fields.optionalNumber,
 
   status: z.enum(statusValues).default("AVAILABLE"),

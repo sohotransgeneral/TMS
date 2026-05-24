@@ -32,7 +32,10 @@ export type DriverRow = {
   tachoCardNumber: string | null;
   tachoCardExpiresAt: Date | string | null;
   status: string;
+  salaryType: string | null;
   salaryPerKm: number | null;
+  salaryFixedAmount: number | null;
+  grossPercent: number | null;
   commissionRate: number | null;
   internalNotes: string | null;
   user: { id: string; email: string; phone: string | null };
@@ -264,8 +267,22 @@ export function DriverFormDialog({
               </Select>
             </Field>
             <Field
+              name="salaryType"
+              label="Salary Type"
+            >
+              <Select
+                id="salaryType"
+                name="salaryType"
+                defaultValue={initial?.salaryType ?? "PER_MI"}
+              >
+                <option value="PER_MI">Per Mile/Km (€/Mi)</option>
+                <option value="PERCENT_GROSS">% din Gross</option>
+                <option value="FIXED">Salariu Fix (€/lună)</option>
+              </Select>
+            </Field>
+            <Field
               name="salaryPerKm"
-              label="Salary / km (€)"
+              label="Rată €/Mi (dacă Per Mi)"
               error={errors.salaryPerKm}
             >
               <Input
@@ -277,8 +294,36 @@ export function DriverFormDialog({
               />
             </Field>
             <Field
+              name="grossPercent"
+              label="% Gross (dacă % Gross, ex. 90)"
+              error={errors.grossPercent}
+            >
+              <Input
+                id="grossPercent"
+                name="grossPercent"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                defaultValue={initial?.grossPercent ?? ""}
+              />
+            </Field>
+            <Field
+              name="salaryFixedAmount"
+              label="Sumă fixă €/lună (dacă Fix)"
+              error={errors.salaryFixedAmount}
+            >
+              <Input
+                id="salaryFixedAmount"
+                name="salaryFixedAmount"
+                type="number"
+                step="1"
+                defaultValue={initial?.salaryFixedAmount ?? ""}
+              />
+            </Field>
+            <Field
               name="commissionRate"
-              label="Commission (%)"
+              label="Bonus Comision (%)"
               error={errors.commissionRate}
             >
               <Input

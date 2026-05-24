@@ -99,10 +99,15 @@ export function FuelFilters({ trucks, drivers }: Props) {
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-3">
       <div className="flex flex-wrap items-center gap-2">
         {presets.map((p) => {
-          const active = currentPreset === p.key && (p.key !== "all" || !hasAnyFilter || (!dateFrom && !dateTo && !params.get("period")));
-          const realActive = p.key === "all"
-            ? !params.get("period") && !dateFrom && !dateTo
-            : currentPreset === p.key;
+          const active =
+            currentPreset === p.key &&
+            (p.key !== "all" ||
+              !hasAnyFilter ||
+              (!dateFrom && !dateTo && !params.get("period")));
+          const realActive =
+            p.key === "all"
+              ? !params.get("period") && !dateFrom && !dateTo
+              : currentPreset === p.key;
           return (
             <button
               key={p.key}
@@ -139,9 +144,16 @@ export function FuelFilters({ trucks, drivers }: Props) {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {pending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {pending && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
           {hasAnyFilter && (
-            <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 text-xs">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAll}
+              className="h-8 text-xs"
+            >
               <X className="mr-1 h-3.5 w-3.5" /> Clear
             </Button>
           )}
@@ -150,7 +162,11 @@ export function FuelFilters({ trucks, drivers }: Props) {
 
       <div className="flex flex-wrap gap-2">
         <FilterSelect paramKey="truck" options={trucks} allLabel="All trucks" />
-        <FilterSelect paramKey="driver" options={drivers} allLabel="All drivers" />
+        <FilterSelect
+          paramKey="driver"
+          options={drivers}
+          allLabel="All drivers"
+        />
       </div>
     </div>
   );

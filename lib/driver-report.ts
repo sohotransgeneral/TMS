@@ -22,7 +22,10 @@ function fmtDate(d: Date | string | null) {
 
 export async function getDriverFinancialData(
   driverId: string,
+  salaryType: string | null,
   salaryPerKm: number | null,
+  grossPercent: number | null,
+  salaryFixedAmount: number | null,
   commissionRate: number | null,
   period: string,
 ) {
@@ -101,8 +104,16 @@ export async function getDriverFinancialData(
   const totalDeductions = fuelCost + permitsCost + maintCost + tollCost + parkingCost + repairCost + otherCost;
   const netContribution = revenue - totalDeductions;
 
-  const baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
-  const commission = commissionRate ? revenue * (commissionRate / 100) : 0;
+  const type = salaryType ?? "PER_MI";
+  let baseSalary = 0;
+  if (type === "PERCENT_GROSS") {
+    baseSalary = grossPercent ? revenue * (grossPercent / 100) : 0;
+  } else if (type === "FIXED") {
+    baseSalary = salaryFixedAmount ?? 0;
+  } else {
+    baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
+  }
+  const commission = type === "PER_MI" && commissionRate ? revenue * (commissionRate / 100) : 0;
 
   // Manual adjustments
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,6 +132,11 @@ export async function getDriverFinancialData(
     loads,
     revenue,
     totalKm,
+    salaryType: type,
+    salaryPerKm,
+    grossPercent,
+    salaryFixedAmount,
+    commissionRate,
     fuelCost,
     fuelCount: fuelAgg._count,
     tollCost,

@@ -50,7 +50,10 @@ export default async function DriverReportPage({
 
   const data = await getDriverFinancialData(
     driver.id,
+    driver.salaryType,
     driver.salaryPerKm,
+    driver.grossPercent,
+    driver.salaryFixedAmount,
     driver.commissionRate,
     period,
   );

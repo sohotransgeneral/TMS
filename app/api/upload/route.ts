@@ -4,6 +4,9 @@ import { requirePermission } from "@/lib/session";
 import { uploadPrivate } from "@/lib/r2";
 import { DocumentType } from "@prisma/client";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 // Max 20 MB per file
 const MAX_SIZE = 20 * 1024 * 1024;
 

@@ -165,12 +165,18 @@ function fmt(v: number, currency = "EUR") {
 /* ─── main component ────────────────────────────────────────── */
 export async function DriverFinancialReport({
   driverId,
+  salaryType,
   salaryPerKm,
+  grossPercent,
+  salaryFixedAmount,
   commissionRate,
   period,
 }: {
   driverId: string;
+  salaryType?: string | null;
   salaryPerKm: number | null;
+  grossPercent?: number | null;
+  salaryFixedAmount?: number | null;
   commissionRate: number | null;
   period: string;
 }) {
@@ -275,9 +281,17 @@ export async function DriverFinancialReport({
     otherCost;
   const netContribution = revenue - totalDeductions;
 
-  // Salary
-  const baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
-  const commission = commissionRate ? revenue * (commissionRate / 100) : 0;
+  // Salary — branch by type
+  const type = salaryType ?? "PER_MI";
+  let baseSalary = 0;
+  if (type === "PERCENT_GROSS") {
+    baseSalary = grossPercent ? revenue * (grossPercent / 100) : 0;
+  } else if (type === "FIXED") {
+    baseSalary = salaryFixedAmount ?? 0;
+  } else {
+    baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
+  }
+  const commission = type === "PER_MI" && commissionRate ? revenue * (commissionRate / 100) : 0;
   const brutSalary = baseSalary + commission + adjustmentsTotal;
   const taxes = calcTaxes(Math.max(0, brutSalary));
 
@@ -430,12 +444,24 @@ export async function DriverFinancialReport({
               label="Distanță parcursă"
               value={`${Math.round(totalKm).toLocaleString("ro-RO")} km`}
             />
-            <Row
-              label="Rată €/km"
-              value={salaryPerKm ? `${salaryPerKm} €/km` : "—"}
-            />
+            {(type === "PER_MI" || !salaryType) && (
+              <Row
+                label="Rată €/km"
+                value={salaryPerKm ? `${salaryPerKm} €/km` : "—"}
+              />
+            )}
+            {type === "PERCENT_GROSS" && (
+              <Row
+                label={`% din Gross (${grossPercent ?? 0}%)`}
+                value={fmt(baseSalary)}
+                sub={`din ${fmt(revenue, currency)}`}
+              />
+            )}
+            {type === "FIXED" && (
+              <Row label="Salariu fix" value={fmt(baseSalary)} />
+            )}
             <Row label="Salariu bază" value={fmt(baseSalary)} />
-            {commissionRate != null && commissionRate > 0 && (
+            {type === "PER_MI" && commissionRate != null && commissionRate > 0 && (
               <Row
                 label={`Comision (${commissionRate}%)`}
                 value={fmt(commission)}

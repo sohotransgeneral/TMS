@@ -145,12 +145,20 @@ export default async function DriverDetailPage({
                 driver.employedSince ? formatDate(driver.employedSince) : null,
               ],
               [
-                "Salary / km",
-                driver.salaryPerKm ? `${driver.salaryPerKm} €` : null,
+                "Salary Type",
+                driver.salaryType === "PERCENT_GROSS"
+                  ? `${driver.grossPercent ?? 0}% din Gross`
+                  : driver.salaryType === "FIXED"
+                  ? `Fix: ${driver.salaryFixedAmount ?? 0} €`
+                  : driver.salaryPerKm
+                  ? `${driver.salaryPerKm} €/km`
+                  : null,
               ],
               [
                 "Commission",
-                driver.commissionRate ? `${driver.commissionRate}%` : null,
+                !driver.salaryType || driver.salaryType === "PER_MI"
+                  ? driver.commissionRate ? `${driver.commissionRate}%` : null
+                  : null,
               ],
               ["Rating", driver.rating ? `${driver.rating}/5` : null],
             ].map(([k, v]) =>
@@ -230,7 +238,10 @@ export default async function DriverDetailPage({
         >
           <DriverFinancialReport
             driverId={driver.id}
+            salaryType={driver.salaryType}
             salaryPerKm={driver.salaryPerKm}
+            grossPercent={driver.grossPercent}
+            salaryFixedAmount={driver.salaryFixedAmount}
             commissionRate={driver.commissionRate}
             period={period}
           />

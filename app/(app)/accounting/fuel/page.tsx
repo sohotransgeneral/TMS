@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { parseListParams } from "@/lib/action-helpers";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -133,7 +134,10 @@ export default async function FuelPage({
 
   const opts = {
     trucks: trucks.map((t) => ({ id: t.id, label: t.plateNumber })),
-    drivers: drivers.map((d) => ({ id: d.id, label: `${d.firstName} ${d.lastName}` })),
+    drivers: drivers.map((d) => ({
+      id: d.id,
+      label: `${d.firstName} ${d.lastName}`,
+    })),
     loads: loads.map((l) => ({ id: l.id, label: l.referenceNumber })),
   };
 
@@ -154,10 +158,12 @@ export default async function FuelPage({
         description={`${total} fill-ups · ${sumLiters.toFixed(0)} L · ${formatCurrency(sumAmount)} · avg ${avgPpl.toFixed(3)}/L`}
         action={canWrite ? <FuelFormDialog {...opts} /> : null}
       />
-      <FuelFilters
-        trucks={trucks.map((t) => ({ value: t.id, label: t.plateNumber }))}
-        drivers={driverFilterOpts}
-      />
+      <Suspense fallback={<div className="h-16 rounded-lg border bg-card animate-pulse" />}>
+        <FuelFilters
+          trucks={trucks.map((t) => ({ value: t.id, label: t.plateNumber }))}
+          drivers={driverFilterOpts}
+        />
+      </Suspense>
 
       <div className="rounded-lg border bg-card">
         {entries.length === 0 ? (
