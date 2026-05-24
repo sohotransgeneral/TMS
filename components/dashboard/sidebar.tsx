@@ -89,7 +89,7 @@ export function Sidebar({ role, open = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground h-full overflow-y-auto">
+      <aside className="hidden lg:flex w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground h-full">
         {content}
       </aside>
 

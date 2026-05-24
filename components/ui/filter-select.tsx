@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/select";
 
@@ -15,22 +16,27 @@ interface Props {
   allLabel?: string;
 }
 
-/** URL-driven dropdown filter (status, type, etc.). */
+/** URL-driven dropdown filter (status, type, etc.) with optimistic updates. */
 export function FilterSelect({ paramKey, options, allLabel = "Toate" }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const current = params.get(paramKey) ?? "";
+  const [value, setValue] = useState(params.get(paramKey) ?? "");
+  const [, startTransition] = useTransition();
 
   return (
     <Select
-      value={current}
+      value={value}
       onChange={(e) => {
+        const next = e.target.value;
+        setValue(next); // optimistic — UI updates immediately
         const sp = new URLSearchParams(params);
-        if (e.target.value) sp.set(paramKey, e.target.value);
+        if (next) sp.set(paramKey, next);
         else sp.delete(paramKey);
         sp.delete("page");
-        router.replace(`${pathname}?${sp.toString()}`);
+        startTransition(() => {
+          router.replace(`${pathname}?${sp.toString()}`);
+        });
       }}
       className="w-full sm:max-w-[220px]"
     >
