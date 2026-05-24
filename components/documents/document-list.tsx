@@ -157,16 +157,16 @@ export function DocumentList({
     <div className="space-y-4">
       {/* Upload panel */}
       {canUpload && (
-        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+        <div className="rounded-lg border border-dashed border-border bg-muted/40 p-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
                 Document Type
               </label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 {allowedTypes.map((t) => (
                   <option key={t} value={t}>
@@ -177,14 +177,14 @@ export function DocumentList({
             </div>
 
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">
                 Expiry Date (optional)
               </label>
               <input
                 type="date"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
@@ -213,7 +213,7 @@ export function DocumentList({
               </Button>
             </div>
           </div>
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="mt-2 text-xs text-muted-foreground">
             Accepted files: PDF, JPEG, PNG, WEBP, GIF, HEIC — max 20 MB
           </p>
         </div>
@@ -221,24 +221,24 @@ export function DocumentList({
 
       {/* Document list */}
       {documents.length === 0 ? (
-        <p className="py-6 text-center text-sm text-gray-400">
+        <p className="py-6 text-center text-sm text-muted-foreground">
           No documents uploaded
         </p>
       ) : (
-        <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card">
           {documents.map((doc) => {
             const expired = isExpired(doc.expiresAt);
             const expiringSoon = isExpiringSoon(doc.expiresAt);
             return (
               <li
                 key={doc.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50"
               >
                 <DocIcon mimeType={doc.mimeType} />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-gray-800 truncate">
+                    <span className="text-sm font-medium text-foreground truncate">
                       {doc.name}
                     </span>
                     <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
@@ -255,7 +255,7 @@ export function DocumentList({
                       </span>
                     )}
                   </div>
-                  <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-400">
+                  <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
                     <span>
                       {doc.sizeBytes != null ? formatBytes(doc.sizeBytes) : "—"}
                     </span>
@@ -279,7 +279,7 @@ export function DocumentList({
                     href={doc.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                    className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                     title="Open"
                   >
                     <ExternalLink className="h-4 w-4" />
@@ -289,7 +289,7 @@ export function DocumentList({
                       type="button"
                       disabled={isPending}
                       onClick={() => handleDelete(doc.id, doc.name)}
-                      className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="h-4 w-4" />
