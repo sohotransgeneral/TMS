@@ -300,7 +300,11 @@ export function LoadForm({
             />
           </Field>
         </div>
-        <Field name="deliveryWindow" label="Delivery Window" error={e.deliveryWindow}>
+        <Field
+          name="deliveryWindow"
+          label="Delivery Window"
+          error={e.deliveryWindow}
+        >
           <Input
             id="deliveryWindow"
             name="deliveryWindow"

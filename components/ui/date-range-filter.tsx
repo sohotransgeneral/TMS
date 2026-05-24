@@ -31,7 +31,10 @@ export function DateRangeFilter({ dateFrom, dateTo }: Props) {
       <input
         type="date"
         value={from}
-        onChange={(e) => { setFrom(e.target.value); update("dateFrom", e.target.value); }}
+        onChange={(e) => {
+          setFrom(e.target.value);
+          update("dateFrom", e.target.value);
+        }}
         className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         title="Pickup from"
       />
@@ -39,7 +42,10 @@ export function DateRangeFilter({ dateFrom, dateTo }: Props) {
       <input
         type="date"
         value={to}
-        onChange={(e) => { setTo(e.target.value); update("dateTo", e.target.value); }}
+        onChange={(e) => {
+          setTo(e.target.value);
+          update("dateTo", e.target.value);
+        }}
         className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         title="Pickup to"
       />
