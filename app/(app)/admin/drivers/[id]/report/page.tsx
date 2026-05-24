@@ -61,7 +61,7 @@ export default async function DriverReportPage({
   const fullName = `${driver.firstName} ${driver.lastName}`;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-6 py-8 print:px-0 print:py-0 bg-white text-gray-900 rounded-lg">
+    <div style={{ colorScheme: "light" }} className="mx-auto max-w-4xl space-y-8 px-6 py-8 print:px-0 print:py-0 bg-white text-gray-900 rounded-lg">
       {/* Toolbar — hidden on print */}
       <div className="flex items-center justify-between print:hidden">
         <Link
@@ -372,7 +372,19 @@ export default async function DriverReportPage({
       <style>{`
         @media print {
           @page { margin: 1.5cm; size: A4; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            background: white !important;
+            color: #111827 !important;
+            color-scheme: light !important;
+          }
+          * {
+            color-scheme: light !important;
+          }
+        }
+        :root, html, body {
+          color-scheme: light;
         }
       `}</style>
     </div>
