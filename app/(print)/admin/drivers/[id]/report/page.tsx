@@ -20,10 +20,10 @@ function R({
   bold?: boolean;
 }) {
   return (
-    <tr className={bold ? "border-t-2 border-gray-400 font-bold" : ""}>
-      <td className="py-1 pr-4 text-sm text-gray-600">{label}</td>
+    <tr className={bold ? "border-t-2 border-border font-bold" : ""}>
+      <td className="py-1 pr-4 text-sm text-muted-foreground">{label}</td>
       <td
-        className={`py-1 text-right font-mono text-sm ${neg ? "text-red-600" : "text-gray-900"}`}
+        className={`py-1 text-right font-mono text-sm ${neg ? "text-red-500 dark:text-red-400" : "text-foreground"}`}
       >
         {value}
       </td>
@@ -66,7 +66,7 @@ export default async function DriverReportPage({
       <div className="flex items-center justify-between print:hidden">
         <Link
           href={`/admin/drivers/${id}?period=${period}`}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to profile
@@ -75,18 +75,18 @@ export default async function DriverReportPage({
       </div>
 
       {/* Header */}
-      <div className="border-b-2 border-gray-900 pb-4">
+      <div className="border-b-2 border-foreground pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
-            <p className="text-sm text-gray-500">{driver.user.email}</p>
+            <h1 className="text-2xl font-bold text-foreground">{fullName}</h1>
+            <p className="text-sm text-muted-foreground">{driver.user.email}</p>
           </div>
           <div className="text-right">
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-foreground">
               Financial Report
             </div>
-            <div className="text-sm text-gray-600">{data.periodLabel}</div>
-            <div className="text-xs text-gray-500">
+            <div className="text-sm text-muted-foreground">{data.periodLabel}</div>
+            <div className="text-xs text-muted-foreground">
               Generated:{" "}
               {new Date().toLocaleDateString("en-US", {
                 day: "2-digit",
@@ -109,16 +109,16 @@ export default async function DriverReportPage({
           },
           { label: "Net salary", value: fmt(data.taxes.net) },
         ].map((k) => (
-          <div key={k.label} className="rounded border border-gray-300 p-3">
-            <div className="text-xs text-gray-500">{k.label}</div>
-            <div className="text-lg font-bold text-gray-900">{k.value}</div>
+          <div key={k.label} className="rounded border border-border p-3">
+            <div className="text-xs text-muted-foreground">{k.label}</div>
+            <div className="text-lg font-bold text-foreground">{k.value}</div>
           </div>
         ))}
       </div>
 
       {/* Loads table */}
       <div>
-        <h2 className="mb-3 text-base font-bold text-gray-900">
+        <h2 className="mb-3 text-base font-bold text-foreground">
           Loads ({loads.length})
         </h2>
         <table className="w-full text-sm border-collapse table-fixed">
@@ -132,7 +132,7 @@ export default async function DriverReportPage({
             <col style={{ width: "16%" }} />
           </colgroup>
           <thead>
-            <tr className="border-b-2 border-gray-400 text-left text-xs text-gray-600">
+            <tr className="border-b-2 border-border text-left text-xs text-muted-foreground">
               <th className="pb-2 pr-3">Ref. No.</th>
               <th className="pb-2 pr-3">Pickup</th>
               <th className="pb-2 pr-3">Delivery</th>
@@ -145,7 +145,7 @@ export default async function DriverReportPage({
           <tbody>
             {loads.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-4 text-center text-gray-500">
+                <td colSpan={7} className="py-4 text-center text-muted-foreground">
                   No loads in this period
                 </td>
               </tr>
@@ -153,7 +153,7 @@ export default async function DriverReportPage({
             {loads.map((l, i) => (
               <tr
                 key={l.id}
-                className={`border-b border-gray-200 ${i % 2 === 0 ? "" : "bg-gray-50"}`}
+                className={`border-b border-border ${i % 2 === 0 ? "" : "bg-muted/50"}`}
               >
                 <td className="py-1.5 pr-3 font-mono text-xs">
                   {l.referenceNumber}
@@ -162,7 +162,7 @@ export default async function DriverReportPage({
                   <div className="font-medium">
                     {l.pickupCity ?? l.pickupAddress.slice(0, 25)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {fmtDate(l.pickupDate)}
                   </div>
                 </td>
@@ -170,7 +170,7 @@ export default async function DriverReportPage({
                   <div className="font-medium">
                     {l.deliveryCity ?? l.deliveryAddress.slice(0, 25)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {fmtDate(l.deliveryDate)}
                   </div>
                 </td>
@@ -191,7 +191,7 @@ export default async function DriverReportPage({
               </tr>
             ))}
             {loads.length > 0 && (
-              <tr className="border-t-2 border-gray-400 font-bold">
+              <tr className="border-t-2 border-border font-bold">
                 <td colSpan={5} className="py-2 text-sm">
                   TOTAL
                 </td>
@@ -210,7 +210,7 @@ export default async function DriverReportPage({
       {/* Financial breakdown */}
       <div className="grid grid-cols-2 gap-8">
         <div>
-          <h2 className="mb-3 text-base font-bold text-gray-900">
+          <h2 className="mb-3 text-base font-bold text-foreground">
             Expenses &amp; Deductions
           </h2>
           <table className="w-full border-collapse">
@@ -220,7 +220,7 @@ export default async function DriverReportPage({
                 value={fmt(data.revenue, data.currency)}
               />
               <tr>
-                <td colSpan={2} className="py-1 border-b border-gray-300" />
+                <td colSpan={2} className="py-1 border-b border-border" />
               </tr>
               {data.fuelCost > 0 && (
                 <R
@@ -293,7 +293,7 @@ export default async function DriverReportPage({
         </div>
 
         <div>
-          <h2 className="mb-3 text-base font-bold text-gray-900">
+          <h2 className="mb-3 text-base font-bold text-foreground">
             Salary &amp; Tax Breakdown
           </h2>
           <table className="w-full border-collapse">
@@ -332,7 +332,7 @@ export default async function DriverReportPage({
                 ))}
               <R label="GROSS salary" value={fmt(data.brutSalary)} bold />
               <tr>
-                <td colSpan={2} className="py-1 border-b border-gray-300" />
+                <td colSpan={2} className="py-1 border-b border-border" />
               </tr>
               <R
                 label="Employee pension (25%)"
@@ -365,7 +365,7 @@ export default async function DriverReportPage({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-300 pt-4 text-xs text-gray-500">
+      <div className="border-t border-border pt-4 text-xs text-muted-foreground">
         <p>
           Report auto-generated by TMS &mdash; {fullName} &mdash;{" "}
           {data.periodLabel}
@@ -377,12 +377,6 @@ export default async function DriverReportPage({
       </div>
 
       <style>{`
-        /* Force light mode on screen AND print — overrides dark class on <html> */
-        html, body {
-          background-color: white !important;
-          color: #111827 !important;
-          color-scheme: light !important;
-        }
         @media print {
           @page { margin: 1.5cm; size: A4; }
           html, body {
@@ -390,6 +384,7 @@ export default async function DriverReportPage({
             print-color-adjust: exact;
             background: white !important;
             color: #111827 !important;
+            color-scheme: light !important;
             overflow: visible !important;
             height: auto !important;
           }
