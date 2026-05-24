@@ -13,6 +13,7 @@ import {
   getPeriodRange,
 } from "@/components/drivers/driver-financial-report";
 import { PeriodSelector } from "@/components/drivers/period-selector";
+import { DriverAdjustmentsPanel } from "@/components/drivers/driver-adjustments-panel";
 import { FileDown, ExternalLink } from "lucide-react";
 
 export const metadata = { title: "Driver Details" };
@@ -86,7 +87,7 @@ export default async function DriverDetailPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const { from, to } = getPeriodRange(period);
+  const { from, to, periodKey } = getPeriodRange(period);
   const periodLoads = await prisma.load.findMany({
     where: {
       driverId: driver.id,
@@ -106,6 +107,11 @@ export default async function DriverDetailPage({
       estimatedDistanceKm: true,
       customer: { select: { name: true } },
     },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adjustments: any[] = await (prisma as any).driverAdjustment.findMany({
+    where: { driverProfileId: driver.id, periodKey },
+    orderBy: { createdAt: "asc" },
   });
 
   const fullName = `${driver.firstName} ${driver.lastName}`;
@@ -229,6 +235,29 @@ export default async function DriverDetailPage({
             period={period}
           />
         </Suspense>
+      </section>
+
+      {/* Manual Adjustments (bonuses / deductions) */}
+      <section className="rounded-lg border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold">Ajustări Salariale</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Deduceri sau bonusuri manuale cu dovadă — incluse în calculul brut
+            </p>
+          </div>
+        </div>
+        <DriverAdjustmentsPanel
+          driverProfileId={driver.id}
+          periodKey={periodKey}
+          adjustments={adjustments.map((a: { id: string; label: string; amount: number; proofUrl: string | null; createdAt: Date }) => ({
+            id: a.id,
+            label: a.label,
+            amount: a.amount,
+            proofUrl: a.proofUrl,
+            createdAt: a.createdAt,
+          }))}
+        />
       </section>
 
       {/* Loads in period */}

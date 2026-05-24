@@ -312,8 +312,27 @@ model DriverProfile {
   expenses           Expense[]
   fuelEntries        FuelEntry[]
   mapZonePins        MapZonePin[]
+  adjustments        DriverAdjustment[]
 
   @@index([companyId, status])
+}
+
+// Manual salary adjustments (bonuses / deductions) with optional proof photo
+model DriverAdjustment {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  companyId       String        @db.ObjectId
+  driverProfileId String        @db.ObjectId
+  driver          DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+
+  periodKey       String        // "2026-05" for month, "2026" for year, "2026-05-24" for day
+  label           String        // e.g. "Amendă", "Avans", "Bonus"
+  amount          Float         // positive = bonus/addition, negative = deduction
+  proofUrl        String?       // optional photo/doc proof (Vercel Blob URL)
+
+  createdAt       DateTime      @default(now())
+
+  @@index([driverProfileId, periodKey])
+  @@index([companyId])
 }
 
 model Truck {

@@ -26,7 +26,7 @@ export async function getDriverFinancialData(
   commissionRate: number | null,
   period: string,
 ) {
-  const { from, to, label } = getPeriodRange(period);
+  const { from, to, label, periodKey } = getPeriodRange(period);
 
   const loads = await prisma.load.findMany({
     where: {
@@ -103,8 +103,18 @@ export async function getDriverFinancialData(
 
   const baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
   const commission = commissionRate ? revenue * (commissionRate / 100) : 0;
-  const brutSalary = baseSalary + commission;
-  const taxes = calcTaxes(brutSalary);
+
+  // Manual adjustments
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adjustments: Array<{ id: string; label: string; amount: number; proofUrl: string | null }> =
+    await (prisma as any).driverAdjustment.findMany({
+      where: { driverProfileId: driverId, periodKey },
+      orderBy: { createdAt: "asc" },
+    });
+  const adjustmentsTotal = adjustments.reduce((s, a) => s + a.amount, 0);
+
+  const brutSalary = baseSalary + commission + adjustmentsTotal;
+  const taxes = calcTaxes(Math.max(0, brutSalary));
   const currency = loads[0]?.currency ?? "EUR";
 
   return {
@@ -123,6 +133,8 @@ export async function getDriverFinancialData(
     netContribution,
     baseSalary,
     commission,
+    adjustments,
+    adjustmentsTotal,
     brutSalary,
     taxes,
     currency,

@@ -14,11 +14,14 @@ export function getPeriodRange(period: string): {
   from: Date;
   to: Date;
   label: string;
+  periodKey: string;
 } {
   const now = new Date();
   const from = new Date();
   const to = new Date(now);
   to.setHours(23, 59, 59, 999);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
 
   switch (period) {
     case "today":
@@ -31,21 +34,27 @@ export function getPeriodRange(period: string): {
           month: "long",
           year: "numeric",
         }),
+        periodKey: `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`,
       };
     case "week": {
       const day = from.getDay() || 7;
       from.setDate(from.getDate() - day + 1);
       from.setHours(0, 0, 0, 0);
+      // ISO week number
+      const weekNo = Math.ceil(
+        ((from.getTime() - new Date(from.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7,
+      );
       return {
         from,
         to,
         label: `Săptămâna ${from.toLocaleDateString("ro-RO", { day: "numeric", month: "short" })} – ${to.toLocaleDateString("ro-RO", { day: "numeric", month: "short", year: "numeric" })}`,
+        periodKey: `${from.getFullYear()}-W${pad(weekNo)}`,
       };
     }
     case "year":
       from.setMonth(0, 1);
       from.setHours(0, 0, 0, 0);
-      return { from, to, label: `Anul ${from.getFullYear()}` };
+      return { from, to, label: `Anul ${from.getFullYear()}`, periodKey: `${from.getFullYear()}` };
     default: // month
       from.setDate(1);
       from.setHours(0, 0, 0, 0);
@@ -56,6 +65,7 @@ export function getPeriodRange(period: string): {
           month: "long",
           year: "numeric",
         }),
+        periodKey: `${from.getFullYear()}-${pad(from.getMonth() + 1)}`,
       };
   }
 }
@@ -156,7 +166,7 @@ export async function DriverFinancialReport({
   commissionRate: number | null;
   period: string;
 }) {
-  const { from, to } = getPeriodRange(period);
+  const { from, to, periodKey } = getPeriodRange(period);
 
   // 1. Loads livrate
   const loads = await prisma.load.findMany({
@@ -216,6 +226,14 @@ export async function DriverFinancialReport({
       })
     : null;
 
+  // 6. Manual adjustments (bonuses / deductions)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adjustments: any[] = await (prisma as any).driverAdjustment.findMany({
+    where: { driverProfileId: driverId, periodKey },
+    orderBy: { createdAt: "asc" },
+  });
+  const adjustmentsTotal = adjustments.reduce((s: number, a: { amount: number }) => s + a.amount, 0);
+
   // ── calculations ──────────────────────────────────────────────
   const revenue = loads.reduce((s, l) => s + l.price, 0);
   const totalKm = loads.reduce(
@@ -249,8 +267,8 @@ export async function DriverFinancialReport({
   // Salary
   const baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
   const commission = commissionRate ? revenue * (commissionRate / 100) : 0;
-  const brutSalary = baseSalary + commission;
-  const taxes = calcTaxes(brutSalary);
+  const brutSalary = baseSalary + commission + adjustmentsTotal;
+  const taxes = calcTaxes(Math.max(0, brutSalary));
 
   const currency = loads[0]?.currency ?? "EUR";
 
@@ -413,6 +431,12 @@ export async function DriverFinancialReport({
                 sub={`din ${fmt(revenue, currency)}`}
               />
             )}
+            {adjustments.filter((a) => a.amount > 0).map((a) => (
+              <Row key={a.id} label={a.label} value={`+${fmt(a.amount)}`} positive />
+            ))}
+            {adjustments.filter((a) => a.amount < 0).map((a) => (
+              <Row key={a.id} label={a.label} value={`-${fmt(a.amount)}`} negative />
+            ))}
             <Row label="Salariu BRUT" value={fmt(brutSalary)} big />
           </Section>
 
