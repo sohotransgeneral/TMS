@@ -234,6 +234,12 @@ export default async function DriverReportPage({
       </div>
 
       <style>{`
+        /* Force light mode on screen AND print — overrides dark class on <html> */
+        html, body {
+          background-color: white !important;
+          color: #111827 !important;
+          color-scheme: light !important;
+        }
         @media print {
           @page { margin: 1.5cm; size: A4; }
           html, body {
