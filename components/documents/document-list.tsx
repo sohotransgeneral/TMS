@@ -164,18 +164,18 @@ export function DocumentList({
     <div className="space-y-4">
       {/* Upload panel */}
       {canUpload && (
-        <div className="rounded-lg border-2 border-dashed border-border bg-slate-100 dark:bg-muted p-5">
+        <div className="rounded-lg border-2 border-dashed border-border bg-slate-100 dark:bg-slate-800 p-5">
           <div className="mb-3 flex items-center gap-2">
-            <Upload className="h-4 w-4 text-slate-500 dark:text-muted-foreground" />
-            <span className="text-sm font-semibold text-slate-700 dark:text-foreground">Upload Document</span>
+            <Upload className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Upload Document</span>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-foreground/70">
+              <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">
                 Document Type
               </label>
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full bg-white dark:bg-background text-foreground border-border">
+                <SelectTrigger className="w-full bg-white dark:bg-slate-900 text-foreground border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,14 +189,14 @@ export function DocumentList({
             </div>
 
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-foreground/70">
-                Expiry Date <span className="text-slate-400 dark:text-muted-foreground">(optional)</span>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-slate-300">
+                Expiry Date <span className="text-slate-400 dark:text-slate-500">(optional)</span>
               </label>
               <input
                 type="date"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full rounded-md border border-border bg-white dark:bg-background px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-md border border-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
@@ -224,7 +224,7 @@ export function DocumentList({
               </Button>
             </div>
           </div>
-          <p className="mt-3 text-xs text-slate-400 dark:text-muted-foreground">
+          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
             Accepted: PDF, JPEG, PNG, WEBP, GIF, HEIC — max 20 MB
           </p>
         </div>
