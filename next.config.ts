@@ -19,13 +19,6 @@ const nextConfig: NextConfig = {
   // Required for next-auth (bcrypt) in serverless environments
   serverExternalPackages: ["bcryptjs"],
 
-  // Required for Auth.js v5 on Vercel — trusts the X-Forwarded-Host header
-  // Also set AUTH_TRUST_HOST=true in Vercel environment variables
-  env: {
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL ?? process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000",
-  },
 };
 
 export default nextConfig;
