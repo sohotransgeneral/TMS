@@ -37,7 +37,7 @@ Return ONLY a valid JSON object with these fields (use null for missing values):
   "isHazardous": false,
   "price": number or null,
   "currency": "USD",
-  "estimatedDistanceKm": number or null,
+  "estimatedDistanceKm": number or null — for US documents extract the miles value directly (do NOT convert to km; US rate confirmations show miles),
   "internalNotes": "string or null — any other relevant info from the document"
 }
 

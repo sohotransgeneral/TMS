@@ -254,11 +254,13 @@ export function LoadForm({
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-4">
-          <Field name="weightKg" label="Weight (kg)" error={e.weightKg}>
+          <Field name="weightKg" label="Weight (lbs)" error={e.weightKg}>
             <Input
               id="weightKg"
               name="weightKg"
               type="number"
+              step="any"
+              min="0"
               defaultValue={initial?.weightKg ?? ""}
             />
           </Field>
@@ -327,13 +329,15 @@ export function LoadForm({
           </Field>
           <Field
             name="estimatedDistanceKm"
-            label="Estimated Distance (km)"
+            label="Distance (mi)"
             error={e.estimatedDistanceKm}
           >
             <Input
               id="estimatedDistanceKm"
               name="estimatedDistanceKm"
               type="number"
+              step="any"
+              min="0"
               defaultValue={initial?.estimatedDistanceKm ?? ""}
             />
           </Field>

@@ -219,14 +219,14 @@ export default async function LoadDetailPage({
               <dt className="text-muted-foreground">Est. Distance</dt>
               <dd>
                 {load.estimatedDistanceKm
-                  ? `${load.estimatedDistanceKm} km`
+                  ? `${load.estimatedDistanceKm} mi`
                   : "—"}
               </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Actual Distance</dt>
               <dd>
-                {load.actualDistanceKm ? `${load.actualDistanceKm} km` : "—"}
+                {load.actualDistanceKm ? `${load.actualDistanceKm} mi` : "—"}
               </dd>
             </div>
           </dl>

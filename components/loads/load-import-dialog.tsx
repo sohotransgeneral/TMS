@@ -391,10 +391,12 @@ export function LoadImportDialog({
                   />
                 </Field>
                 <div className="grid gap-3 sm:grid-cols-4">
-                  <Field name="weightKg" label="Weight (kg)">
+                  <Field name="weightKg" label="Weight (lbs)">
                     <Input
                       name="weightKg"
                       type="number"
+                      step="any"
+                      min="0"
                       defaultValue={d.weightKg ?? ""}
                     />
                   </Field>
@@ -451,10 +453,12 @@ export function LoadImportDialog({
                       <option value="GBP">GBP</option>
                     </Select>
                   </Field>
-                  <Field name="estimatedDistanceKm" label="Distance (km)">
+                  <Field name="estimatedDistanceKm" label="Distance (mi)">
                     <Input
                       name="estimatedDistanceKm"
                       type="number"
+                      step="any"
+                      min="0"
                       defaultValue={d.estimatedDistanceKm ?? ""}
                     />
                   </Field>
