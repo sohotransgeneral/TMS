@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, daysUntil } from "@/lib/utils";
 import { DocumentSection } from "@/components/documents/document-section";
+import { DriverFinancialReport } from "@/components/drivers/driver-financial-report";
+import { PeriodSelector } from "@/components/drivers/period-selector";
 
 export const metadata = { title: "Driver Details" };
 
@@ -54,11 +57,14 @@ function ExpiryRow({ label, date }: { label: string; date: Date | null }) {
 
 export default async function DriverDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ period?: string }>;
 }) {
   const me = await requirePermission("drivers:read");
   const { id } = await params;
+  const { period = "month" } = await searchParams;
 
   const driver = await prisma.driverProfile.findFirst({
     where: { id, companyId: me.companyId ?? undefined },
@@ -163,6 +169,22 @@ export default async function DriverDetailPage({
           <p className="text-sm">{driver.internalNotes}</p>
         </section>
       )}
+
+      {/* Financial Report */}
+      <section className="rounded-lg border bg-card p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-semibold">Raport Financiar</h3>
+          <PeriodSelector />
+        </div>
+        <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Se calculează...</div>}>
+          <DriverFinancialReport
+            driverId={driver.id}
+            salaryPerKm={driver.salaryPerKm}
+            commissionRate={driver.commissionRate}
+            period={period}
+          />
+        </Suspense>
+      </section>
 
       {/* Documents */}
       <section className="rounded-lg border bg-card p-6">
