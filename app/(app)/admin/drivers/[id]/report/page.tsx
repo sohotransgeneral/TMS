@@ -372,12 +372,17 @@ export default async function DriverReportPage({
       <style>{`
         @media print {
           @page { margin: 1.5cm; size: A4; }
-          body {
+          html, body {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             background: white !important;
             color: #111827 !important;
             color-scheme: light !important;
+            overflow: visible !important;
+            height: auto !important;
+          }
+          body > * {
+            overflow: visible !important;
           }
           * {
             color-scheme: light !important;
