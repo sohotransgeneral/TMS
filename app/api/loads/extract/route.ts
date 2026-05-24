@@ -129,13 +129,41 @@ export async function POST(req: Request) {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content },
       ],
-      max_completion_tokens: 1024,
+      max_completion_tokens: 4096,
     });
 
-    const raw = response.choices[0]?.message?.content ?? "{}";
+    const finishReason = response.choices[0]?.finish_reason;
+    const raw = response.choices[0]?.message?.content ?? "";
+
+    if (!raw) {
+      return NextResponse.json({ error: "AI returned an empty response. Please try again." }, { status: 502 });
+    }
+
+    if (finishReason === "length") {
+      // Response was truncated — try to salvage by closing open JSON object
+      console.warn("OpenAI response truncated (finish_reason=length)");
+    }
+
     // Strip markdown code fences if present
-    const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
-    const extracted = JSON.parse(cleaned);
+    let cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+
+    // Extract first JSON object in case there's surrounding text
+    const jsonStart = cleaned.indexOf("{");
+    const jsonEnd = cleaned.lastIndexOf("}");
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
+    }
+
+    let extracted: Record<string, unknown>;
+    try {
+      extracted = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("JSON parse failed. Raw response:", raw);
+      return NextResponse.json(
+        { error: "AI response could not be parsed. The document may be too complex or the response was cut off. Try a clearer image." },
+        { status: 422 }
+      );
+    }
 
     // Log AI usage for billing
     const inputTokens = response.usage?.prompt_tokens ?? 0;
