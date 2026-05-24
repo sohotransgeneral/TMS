@@ -23,6 +23,7 @@ import {
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Plus, PackageOpen } from "lucide-react";
+import { LoadImportDialog } from "@/components/loads/load-import-dialog";
 
 export const metadata = { title: "Loads" };
 
@@ -50,7 +51,9 @@ export default async function LoadsPage({
     ]),
   };
 
-  const [loads, total] = await Promise.all([
+  const companyWhere = { companyId: me.companyId ?? undefined };
+
+  const [loads, total, customers, drivers, trucks, trailers] = await Promise.all([
     prisma.load.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -63,6 +66,10 @@ export default async function LoadsPage({
       },
     }),
     prisma.load.count({ where }),
+    prisma.customer.findMany({ where: companyWhere, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.driverProfile.findMany({ where: companyWhere, include: { user: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
+    prisma.truck.findMany({ where: companyWhere, orderBy: { plateNumber: "asc" }, select: { id: true, plateNumber: true, make: true, model: true } }),
+    prisma.trailer.findMany({ where: companyWhere, orderBy: { plateNumber: "asc" }, select: { id: true, plateNumber: true } }),
   ]);
 
   return (
@@ -71,11 +78,19 @@ export default async function LoadsPage({
         title="Loads"
         description="All company loads."
         action={
-          <Button asChild>
-            <Link href="/dispatch/loads/new">
-              <Plus className="mr-2 h-4 w-4" /> New Load
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <LoadImportDialog
+              customers={customers.map((c) => ({ id: c.id, label: c.name }))}
+              drivers={drivers.map((d) => ({ id: d.id, label: d.user.name ?? "Driver" }))}
+              trucks={trucks.map((t) => ({ id: t.id, label: `${t.plateNumber}${t.make ? " · " + t.make : ""}${t.model ? " " + t.model : ""}` }))}
+              trailers={trailers.map((t) => ({ id: t.id, label: t.plateNumber }))}
+            />
+            <Button asChild>
+              <Link href="/dispatch/loads/new">
+                <Plus className="mr-2 h-4 w-4" /> New Load
+              </Link>
+            </Button>
+          </div>
         }
       />
 

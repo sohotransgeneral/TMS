@@ -246,12 +246,8 @@ export function LiveMap({ token }: { token: string | null }) {
         id: `zone__${pin.driver.firstName} ${pin.driver.lastName}`,
         label: `${pin.driver.firstName} ${pin.driver.lastName}`,
       }))
-      .filter(
-        (d) => !positions.find((p) => p.driverName === d.label),
-      ),
-  ].filter(
-    (d, i, arr) => arr.findIndex((x) => x.id === d.id) === i,
-  );
+      .filter((d) => !positions.find((p) => p.driverName === d.label)),
+  ].filter((d, i, arr) => arr.findIndex((x) => x.id === d.id) === i);
 
   return (
     <div className="space-y-2">
@@ -259,7 +255,8 @@ export function LiveMap({ token }: { token: string | null }) {
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-3">
           <span className="text-muted-foreground">
-            {positions.length} active driver{positions.length !== 1 ? "s" : ""} on map
+            {positions.length} active driver{positions.length !== 1 ? "s" : ""}{" "}
+            on map
           </span>
           {driverOptions.length > 0 && (
             <select
