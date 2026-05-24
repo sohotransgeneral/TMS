@@ -164,14 +164,18 @@ export function DocumentList({
     <div className="space-y-4">
       {/* Upload panel */}
       {canUpload && (
-        <div className="rounded-lg border border-dashed border-border bg-muted/40 p-4">
+        <div className="rounded-lg border-2 border-dashed border-border bg-card p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Upload Document</span>
+          </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/70">
                 Document Type
               </label>
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full bg-muted text-foreground border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,18 +189,18 @@ export function DocumentList({
             </div>
 
             <div className="flex-1 min-w-[140px]">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Expiry Date (optional)
+              <label className="mb-1.5 block text-xs font-medium text-foreground/70">
+                Expiry Date <span className="text-muted-foreground">(optional)</span>
               </label>
               <input
                 type="date"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
-            <div>
+            <div className="pb-0.5">
               <input
                 ref={fileRef}
                 type="file"
@@ -207,7 +211,6 @@ export function DocumentList({
               />
               <Button
                 type="button"
-                variant="outline"
                 size="sm"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
@@ -221,8 +224,8 @@ export function DocumentList({
               </Button>
             </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Accepted files: PDF, JPEG, PNG, WEBP, GIF, HEIC — max 20 MB
+          <p className="mt-3 text-xs text-muted-foreground">
+            Accepted: PDF, JPEG, PNG, WEBP, GIF, HEIC — max 20 MB
           </p>
         </div>
       )}
