@@ -71,22 +71,28 @@ export default async function MaintenancePage({
     me.companyId
       ? prisma.truck.findMany({
           where: { companyId: me.companyId },
-          select: { id: true, plateNumber: true },
+          select: { id: true, plateNumber: true, make: true, model: true },
           orderBy: { plateNumber: "asc" },
         })
-      : Promise.resolve([]),
+      : prisma.truck.findMany({
+          select: { id: true, plateNumber: true, make: true, model: true },
+          orderBy: { plateNumber: "asc" },
+        }),
     me.companyId
       ? prisma.trailer.findMany({
           where: { companyId: me.companyId },
-          select: { id: true, plateNumber: true },
+          select: { id: true, plateNumber: true, type: true },
           orderBy: { plateNumber: "asc" },
         })
-      : Promise.resolve([]),
+      : prisma.trailer.findMany({
+          select: { id: true, plateNumber: true, type: true },
+          orderBy: { plateNumber: "asc" },
+        }),
   ]);
 
   const opts = {
-    trucks: trucks.map((t) => ({ id: t.id, label: t.plateNumber })),
-    trailers: trailers.map((t) => ({ id: t.id, label: t.plateNumber })),
+    trucks: trucks.map((t) => ({ id: t.id, label: `${t.plateNumber}${t.make ? ` — ${t.make} ${t.model ?? ""}`.trimEnd() : ""}` })),
+    trailers: trailers.map((t) => ({ id: t.id, label: `${t.plateNumber}${t.type ? ` (${t.type})` : ""}` })),
   };
 
   return (

@@ -32,7 +32,9 @@ export function DashboardShell({
           companyName={companyName}
           onMenu={() => setOpen(true)}
         />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/30">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/30">
+          {children}
+        </main>
       </div>
     </div>
   );

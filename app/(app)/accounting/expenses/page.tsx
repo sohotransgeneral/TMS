@@ -66,28 +66,22 @@ export default async function ExpensesPage({
     }),
     prisma.expense.count({ where }),
     prisma.expense.aggregate({ where, _sum: { amount: true } }),
-    me.companyId
-      ? prisma.load.findMany({
-          where: { companyId: me.companyId },
-          select: { id: true, referenceNumber: true },
-          orderBy: { createdAt: "desc" },
-          take: 100,
-        })
-      : Promise.resolve([]),
-    me.companyId
-      ? prisma.truck.findMany({
-          where: { companyId: me.companyId },
-          select: { id: true, plateNumber: true },
-          orderBy: { plateNumber: "asc" },
-        })
-      : Promise.resolve([]),
-    me.companyId
-      ? prisma.user.findMany({
-          where: { companyId: me.companyId, role: "DRIVER" },
-          select: { id: true, name: true },
-          orderBy: { name: "asc" },
-        })
-      : Promise.resolve([]),
+    prisma.load.findMany({
+      where: me.companyId ? { companyId: me.companyId } : {},
+      select: { id: true, referenceNumber: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.truck.findMany({
+      where: me.companyId ? { companyId: me.companyId } : {},
+      select: { id: true, plateNumber: true },
+      orderBy: { plateNumber: "asc" },
+    }),
+    prisma.user.findMany({
+      where: me.companyId ? { companyId: me.companyId, role: "DRIVER" } : { role: "DRIVER" },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const opts = {
