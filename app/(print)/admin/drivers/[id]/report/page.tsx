@@ -102,7 +102,7 @@ export default async function DriverReportPage({
           { label: "Gross revenue", value: fmt(data.revenue, data.currency) },
           {
             label: "Distance",
-            value: `${Math.round(data.totalKm).toLocaleString("en-US")} km`,
+            value: `${Math.round(data.totalKm).toLocaleString("en-US")} Mi`,
           },
           { label: "Net salary", value: fmt(data.taxes.net) },
         ].map((k) => (
@@ -135,7 +135,7 @@ export default async function DriverReportPage({
               <th className="pb-2 pr-3">Delivery</th>
               <th className="pb-2 pr-3">Customer</th>
               <th className="pb-2 pr-3">Truck</th>
-              <th className="pb-2 pr-6 text-right">Mi/Km</th>
+              <th className="pb-2 pr-6 text-right">Mi</th>
               <th className="pb-2 text-right">Price</th>
             </tr>
           </thead>
@@ -297,12 +297,12 @@ export default async function DriverReportPage({
             <tbody>
               <R
                 label="Distance driven"
-                value={`${Math.round(data.totalKm).toLocaleString("en-US")} km`}
+                value={`${Math.round(data.totalKm).toLocaleString("en-US")} Mi`}
               />
               <R
-                label="Rate EUR/km"
+                label="Rate EUR/Mi"
                 value={
-                  driver.salaryPerKm ? `${driver.salaryPerKm} EUR/km` : "-"
+                  driver.salaryPerKm ? `${driver.salaryPerKm} EUR/Mi` : "-"
                 }
               />
               <R label="Base salary" value={fmt(data.baseSalary)} />
