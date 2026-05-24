@@ -24,6 +24,7 @@ import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Plus, PackageOpen } from "lucide-react";
 import { LoadImportDialog } from "@/components/loads/load-import-dialog";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 
 export const metadata = { title: "Loads" };
 
@@ -38,10 +39,26 @@ export default async function LoadsPage({
   const sp = await searchParams;
   const { page, pageSize, q, skip } = parseListParams(sp);
   const status = typeof sp.status === "string" ? sp.status : undefined;
+  const driverId = typeof sp.driver === "string" ? sp.driver : undefined;
+  const truckId = typeof sp.truck === "string" ? sp.truck : undefined;
+  const customerId = typeof sp.customer === "string" ? sp.customer : undefined;
+  const dateFrom = typeof sp.dateFrom === "string" ? sp.dateFrom : undefined;
+  const dateTo = typeof sp.dateTo === "string" ? sp.dateTo : undefined;
 
   const where = {
     companyId: me.companyId ?? undefined,
     ...(status ? { status: status as never } : {}),
+    ...(driverId ? { driverId } : {}),
+    ...(truckId ? { truckId } : {}),
+    ...(customerId ? { customerId } : {}),
+    ...(dateFrom || dateTo
+      ? {
+          pickupDate: {
+            ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
+            ...(dateTo ? { lte: new Date(dateTo + "T23:59:59") } : {}),
+          },
+        }
+      : {}),
     ...buildSearch(q, [
       "referenceNumber",
       "pickupCity",
@@ -130,6 +147,31 @@ export default async function LoadsPage({
             label,
           }))}
         />
+        <FilterSelect
+          paramKey="driver"
+          allLabel="All drivers"
+          options={drivers.map((d) => ({
+            value: d.id,
+            label: d.user?.name ?? "Driver",
+          }))}
+        />
+        <FilterSelect
+          paramKey="truck"
+          allLabel="All trucks"
+          options={trucks.map((t) => ({
+            value: t.id,
+            label: `${t.plateNumber}${t.make ? " · " + t.make : ""}`,
+          }))}
+        />
+        <FilterSelect
+          paramKey="customer"
+          allLabel="All customers"
+          options={customers.map((c) => ({
+            value: c.id,
+            label: c.name,
+          }))}
+        />
+        <DateRangeFilter dateFrom={dateFrom} dateTo={dateTo} />
         <div className="ml-auto flex gap-2 text-sm">
           <Link
             href="/dispatch/cockpit"
