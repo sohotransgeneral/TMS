@@ -21,7 +21,19 @@ export async function GET() {
     include: {
       driver: { select: { id: true, firstName: true, lastName: true } },
       truck: { select: { plateNumber: true } },
-      load: { select: { id: true, referenceNumber: true, status: true } },
+      load: {
+        select: {
+          id: true,
+          referenceNumber: true,
+          status: true,
+          pickupAddress: true,
+          pickupLat: true,
+          pickupLng: true,
+          deliveryAddress: true,
+          deliveryLat: true,
+          deliveryLng: true,
+        },
+      },
     },
   });
 
@@ -42,6 +54,12 @@ export async function GET() {
     loadRef: p.load?.referenceNumber ?? null,
     loadId: p.load?.id ?? null,
     loadStatus: p.load?.status ?? null,
+    pickupAddress: p.load?.pickupAddress ?? null,
+    pickupLat: p.load?.pickupLat ?? null,
+    pickupLng: p.load?.pickupLng ?? null,
+    deliveryAddress: p.load?.deliveryAddress ?? null,
+    deliveryLat: p.load?.deliveryLat ?? null,
+    deliveryLng: p.load?.deliveryLng ?? null,
     lat: p.lat,
     lng: p.lng,
     speed: p.speed,

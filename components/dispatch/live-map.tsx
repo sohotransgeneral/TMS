@@ -16,6 +16,12 @@ type Position = {
   speed: number | null;
   heading: number | null;
   recordedAt: string;
+  pickupAddress: string | null;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  deliveryAddress: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
 };
 
 type ZonePin = {
@@ -45,6 +51,7 @@ export function LiveMap({ token }: { token: string | null }) {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const drMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const zoneMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const routeMarkersRef = useRef<Map<string, mapboxgl.Marker[]>>(new Map());
   const [positions, setPositions] = useState<Position[]>([]);
   const [zonePins, setZonePins] = useState<ZonePin[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +167,120 @@ export function LiveMap({ token }: { token: string | null }) {
         marker.remove();
         drMarkersRef.current.delete(id);
       }
+    }
+  }, [positions, filterDriver]);
+
+  // Draw route lines + pickup/delivery markers for each driver with a load
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    function setupRoutes() {
+      const seen = new Set<string>();
+
+      for (const p of positions) {
+        const hasRoute =
+          p.pickupLat != null &&
+          p.pickupLng != null &&
+          p.deliveryLat != null &&
+          p.deliveryLng != null;
+        const visible =
+          filterDriver === "__all__" || p.driverId === filterDriver;
+        const sourceId = `route-${p.driverId}`;
+        const layerId = `route-line-${p.driverId}`;
+
+        seen.add(p.driverId);
+
+        if (hasRoute && visible) {
+          const coords: [number, number][] = [
+            [p.pickupLng!, p.pickupLat!],
+            [p.lng, p.lat],
+            [p.deliveryLng!, p.deliveryLat!],
+          ];
+          const geojson: GeoJSON.Feature<GeoJSON.LineString> = {
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: coords },
+          };
+
+          if (map.getSource(sourceId)) {
+            (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(geojson);
+            if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "visible");
+          } else {
+            map.addSource(sourceId, { type: "geojson", data: geojson });
+            map.addLayer({
+              id: layerId,
+              type: "line",
+              source: sourceId,
+              layout: { "line-cap": "round", "line-join": "round" },
+              paint: {
+                "line-color": "#2563eb",
+                "line-width": 2.5,
+                "line-dasharray": [2, 3],
+                "line-opacity": 0.65,
+              },
+            });
+            // Fit map to show full route on first draw
+            const bounds = coords.reduce(
+              (b, c) => b.extend(c as [number, number]),
+              new mapboxgl.LngLatBounds(coords[0], coords[0]),
+            );
+            map.fitBounds(bounds, { padding: 80, maxZoom: 10, duration: 1200 });
+          }
+
+          // Pickup / delivery markers
+          const existing = routeMarkersRef.current.get(p.driverId);
+          if (existing) {
+            existing[0].setLngLat([p.pickupLng!, p.pickupLat!]);
+            existing[1].setLngLat([p.deliveryLng!, p.deliveryLat!]);
+            existing.forEach((m) => (m.getElement().style.display = ""));
+          } else {
+            const mkPickup = makeEndpointMarker("#16a34a", "P");
+            mkPickup
+              .setLngLat([p.pickupLng!, p.pickupLat!])
+              .setPopup(
+                new mapboxgl.Popup({ offset: 14 }).setHTML(
+                  `<div style="font-size:12px;color:#111827"><b>📍 Pickup</b><br/>${escapeHtml(p.pickupAddress ?? "")}</div>`,
+                ),
+              )
+              .addTo(map);
+            const mkDelivery = makeEndpointMarker("#dc2626", "D");
+            mkDelivery
+              .setLngLat([p.deliveryLng!, p.deliveryLat!])
+              .setPopup(
+                new mapboxgl.Popup({ offset: 14 }).setHTML(
+                  `<div style="font-size:12px;color:#111827"><b>🏁 Delivery</b><br/>${escapeHtml(p.deliveryAddress ?? "")}</div>`,
+                ),
+              )
+              .addTo(map);
+            routeMarkersRef.current.set(p.driverId, [mkPickup, mkDelivery]);
+          }
+        } else {
+          // Hide route if driver not visible or no coords
+          if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "none");
+          routeMarkersRef.current.get(p.driverId)?.forEach((m) => {
+            m.getElement().style.display = "none";
+          });
+        }
+      }
+
+      // Remove routes for drivers no longer in positions
+      for (const [driverId, markers] of routeMarkersRef.current) {
+        if (!seen.has(driverId)) {
+          markers.forEach((m) => m.remove());
+          routeMarkersRef.current.delete(driverId);
+          const layerId = `route-line-${driverId}`;
+          const sourceId = `route-${driverId}`;
+          if (map.getLayer(layerId)) map.removeLayer(layerId);
+          if (map.getSource(sourceId)) map.removeSource(sourceId);
+        }
+      }
+    }
+
+    if (map.isStyleLoaded()) {
+      setupRoutes();
+    } else {
+      map.once("load", setupRoutes);
     }
   }, [positions, filterDriver]);
 
@@ -349,6 +470,19 @@ export function LiveMap({ token }: { token: string | null }) {
       />
     </div>
   );
+}
+
+function makeEndpointMarker(color: string, letter: string) {
+  const el = document.createElement("div");
+  el.style.cssText = `
+    width:20px;height:20px;border-radius:50%;
+    background:${color};border:2.5px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;font-weight:700;color:#fff;cursor:pointer;
+  `;
+  el.textContent = letter;
+  return new mapboxgl.Marker({ element: el, anchor: "center" });
 }
 
 function escapeHtml(s: string) {

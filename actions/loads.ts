@@ -13,6 +13,7 @@ import {
   LOAD_NEXT_STATUSES,
 } from "@/lib/validators/load";
 import { nextLoadReference } from "@/lib/load-reference";
+import { geocodeAddress } from "@/lib/geocode";
 
 export async function createLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
@@ -26,6 +27,20 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
 
   const referenceNumber = await nextLoadReference(me.companyId);
   const status = d.driverId ? "ASSIGNED" : "DRAFT";
+
+  // Geocode pickup/delivery if coords not provided
+  if (!d.pickupLat || !d.pickupLng) {
+    const geo = await geocodeAddress(
+      [d.pickupAddress, d.pickupCity, d.pickupCountry].filter(Boolean).join(", "),
+    );
+    if (geo) { d.pickupLat = geo.lat; d.pickupLng = geo.lng; }
+  }
+  if (!d.deliveryLat || !d.deliveryLng) {
+    const geo = await geocodeAddress(
+      [d.deliveryAddress, d.deliveryCity, d.deliveryCountry].filter(Boolean).join(", "),
+    );
+    if (geo) { d.deliveryLat = geo.lat; d.deliveryLng = geo.lng; }
+  }
 
   const load = await prisma.load.create({
     data: {
@@ -95,6 +110,20 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   if (!target || target.companyId !== me.companyId) return failure("Cursă inexistentă.");
   if (["PAID", "CANCELLED"].includes(target.status)) {
     return failure("Cursa nu mai poate fi modificată.");
+  }
+
+  // Re-geocode if address changed but coords are missing
+  if (rest.pickupAddress && !rest.pickupLat && !rest.pickupLng) {
+    const geo = await geocodeAddress(
+      [rest.pickupAddress, rest.pickupCity, rest.pickupCountry].filter(Boolean).join(", "),
+    );
+    if (geo) { rest.pickupLat = geo.lat; rest.pickupLng = geo.lng; }
+  }
+  if (rest.deliveryAddress && !rest.deliveryLat && !rest.deliveryLng) {
+    const geo = await geocodeAddress(
+      [rest.deliveryAddress, rest.deliveryCity, rest.deliveryCountry].filter(Boolean).join(", "),
+    );
+    if (geo) { rest.deliveryLat = geo.lat; rest.deliveryLng = geo.lng; }
   }
 
   await prisma.load.update({
