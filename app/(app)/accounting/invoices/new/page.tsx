@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { InvoiceForm } from "@/components/accounting/invoice-form";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Factură nouă" };
+export const metadata = { title: "New invoice" };
 
 export default async function NewInvoicePage({
   searchParams,
@@ -16,33 +16,33 @@ export default async function NewInvoicePage({
   const me = await requirePermission("invoices:write");
   const sp = await searchParams;
 
-  // SUPER_ADMIN fără companie — ia prima companie din sistem
+  // SUPER_ADMIN without a company - take the first company in the system
   const companyId =
     me.companyId ??
     (await prisma.company.findFirst({ select: { id: true } }))?.id;
 
-  // Nicio companie în sistem încă
+  // No company in the system yet
   if (!companyId) {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Factură nouă"
-          description="Emite o factură pentru un client."
+          title="New invoice"
+          description="Issue an invoice for a customer."
         />
         <div className="rounded-lg border bg-card p-8 text-center space-y-3">
           <p className="text-muted-foreground">
-            Nu există nicio companie înregistrată în sistem. Înregistrează mai
-            întâi o companie.
+            No company is registered in the system. Please register a
+            company first.
           </p>
           <Link href="/register">
-            <Button>Înregistrează companie</Button>
+            <Button>Register company</Button>
           </Link>
         </div>
       </div>
     );
   }
 
-  // Dacă venim dintr-un load, includem și acel load chiar dacă are deja factură
+  // If coming from a load, include that load even if it already has an invoice
   const loadIdFromUrl = sp.loadId ?? null;
   const [customers, loads, company] = await Promise.all([
     prisma.customer.findMany({
@@ -68,13 +68,13 @@ export default async function NewInvoicePage({
     }),
   ]);
 
-  // Pre-completare linie factură din prețul cursei
+  // Pre-fill invoice line from load price
   const priceFromUrl = sp.price ? Number(sp.price) : null;
   const defaultItems =
     priceFromUrl && priceFromUrl > 0
       ? [
           {
-            description: "Transport marfă",
+            description: "Freight transport",
             quantity: 1,
             unitPrice: priceFromUrl,
           },
@@ -84,8 +84,8 @@ export default async function NewInvoicePage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Factură nouă"
-        description="Emite o factură pentru un client."
+        title="New invoice"
+        description="Issue an invoice for a customer."
       />
       <InvoiceForm
         customers={customers.map((c) => ({ id: c.id, label: c.name }))}

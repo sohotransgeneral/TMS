@@ -11,7 +11,7 @@ export function AcceptLoadButton({ loadId }: { loadId: string }) {
   function handleClick() {
     startTransition(async () => {
       const result = await acceptLoad(loadId);
-      if (result.ok) toast.success(result.message ?? "Cursă acceptată.");
+      if (result.ok) toast.success(result.message ?? "Load accepted.");
       else toast.error(result.error);
     });
   }
@@ -23,7 +23,7 @@ export function AcceptLoadButton({ loadId }: { loadId: string }) {
       disabled={pending}
       className="w-full cursor-pointer"
     >
-      {pending ? "Se trimite…" : "✓ Acceptă cursa"}
+      {pending ? "Sending…" : "✓ Accept load"}
     </Button>
   );
 }

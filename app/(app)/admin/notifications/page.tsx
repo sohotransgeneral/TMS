@@ -17,7 +17,7 @@ import { formatDate } from "@/lib/utils";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 
-export const metadata = { title: "Notificări" };
+export const metadata = { title: "Notifications" };
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -68,7 +68,7 @@ export default async function NotificationsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Notificări"
+        title="Notifications"
         description={`${unreadCount} necitite din total ${total}.`}
         action={unreadCount > 0 ? <MarkAllReadButton /> : null}
       />
@@ -88,7 +88,7 @@ export default async function NotificationsPage({
         <EmptyState
           icon={<Bell className="h-10 w-10" />}
           title="Nicio notificare"
-          description="Aici vor apărea avertizările tale."
+          description="Your alerts will appear here."
         />
       ) : (
         <ul className="space-y-2">

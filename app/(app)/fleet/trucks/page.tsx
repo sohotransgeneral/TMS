@@ -27,18 +27,18 @@ export const metadata = { title: "Trucks" };
 
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  MAINTENANCE: "In Service",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  IN_SERVICE: "In Service",
+  UNAVAILABLE: "Unavailable",
 };
 const STATUS_VARIANT: Record<
   string,
   "default" | "secondary" | "outline" | "destructive"
 > = {
   AVAILABLE: "default",
-  ON_ROUTE: "secondary",
-  MAINTENANCE: "outline",
-  INACTIVE: "destructive",
+  ON_TRIP: "secondary",
+  IN_SERVICE: "outline",
+  UNAVAILABLE: "destructive",
 };
 
 function nextExpiry(truck: {
@@ -119,7 +119,7 @@ export default async function TrucksPage({
               <TableRow>
                 <TableHead>Plate</TableHead>
                 <TableHead>Vehicle</TableHead>
-                <TableHead>Year / km</TableHead>
+                <TableHead>Year / mi</TableHead>
                 <TableHead>Next Expiry</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -152,7 +152,7 @@ export default async function TrucksPage({
                     <TableCell className="text-sm">
                       {t.year ?? "—"} ·{" "}
                       {t.mileage != null
-                        ? `${t.mileage.toLocaleString("ro-RO")} km`
+                        ? `${t.mileage.toLocaleString("en-US")} mi`
                         : "—"}
                     </TableCell>
                     <TableCell>

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const PERIODS = [
   { value: "today", label: "Azi" },
-  { value: "week", label: "Săptămâna" },
+  { value: "week", label: "Week" },
   { value: "month", label: "Luna" },
   { value: "year", label: "Anul" },
 ] as const;

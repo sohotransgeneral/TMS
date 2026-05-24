@@ -6,14 +6,14 @@ export const loginSchema = z.object({
 });
 
 export const registerSchema = z.object({
-  companyName: z.string().min(2, "Numele companiei este obligatoriu"),
-  name: z.string().min(2, "Numele este obligatoriu"),
+  companyName: z.string().min(2, "Company name is required"),
+  name: z.string().min(2, "Name is required"),
   email: z.string().email("Email invalid"),
   password: z
     .string()
     .min(8, "Minim 8 caractere")
-    .regex(/[A-Z]/, "Cel puțin o literă mare")
-    .regex(/[0-9]/, "Cel puțin o cifră"),
+    .regex(/[A-Z]/, "At least one uppercase letter")
+    .regex(/[0-9]/, "At least one digit"),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -25,8 +25,8 @@ export const resetPasswordSchema = z.object({
   password: z
     .string()
     .min(8, "Minim 8 caractere")
-    .regex(/[A-Z]/, "Cel puțin o literă mare")
-    .regex(/[0-9]/, "Cel puțin o cifră"),
+    .regex(/[A-Z]/, "At least one uppercase letter")
+    .regex(/[0-9]/, "At least one digit"),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

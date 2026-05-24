@@ -12,10 +12,10 @@ import {
 
 export async function createMaintenance(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("maintenance:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = maintenanceCreateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   const m = await prisma.maintenance.create({
@@ -47,19 +47,19 @@ export async function createMaintenance(formData: FormData): Promise<ActionResul
   });
 
   revalidatePath("/fleet/maintenance");
-  return success({ id: m.id }, "Mentenanță înregistrată.");
+  return success({ id: m.id }, "Maintenance recorded.");
 }
 
 export async function updateMaintenance(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("maintenance:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = maintenanceUpdateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.maintenance.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Mentenanță inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Maintenance not found.");
 
   const data: Record<string, unknown> = { ...rest };
   if (rest.truckId !== undefined) data.truckId = rest.truckId || null;
@@ -71,17 +71,17 @@ export async function updateMaintenance(formData: FormData): Promise<ActionResul
 
   await prisma.maintenance.update({ where: { id }, data });
   revalidatePath("/fleet/maintenance");
-  return success({ id }, "Mentenanță actualizată.");
+  return success({ id }, "Maintenance updated.");
 }
 
 export async function deleteMaintenance(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("maintenance:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
-  if (!id) return failure("ID lipsă.");
+  if (!id) return failure("ID is missing.");
   const target = await prisma.maintenance.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Mentenanță inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Maintenance not found.");
   await prisma.maintenance.delete({ where: { id } });
   revalidatePath("/fleet/maintenance");
-  return success(null, "Mentenanță ștearsă.");
+  return success(null, "Maintenance deleted.");
 }

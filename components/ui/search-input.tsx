@@ -15,7 +15,7 @@ interface Props {
  * param and lets server components re-fetch.
  */
 export function SearchInput({
-  placeholder = "Caută...",
+  placeholder = "Search...",
   paramKey = "q",
 }: Props) {
   const router = useRouter();
@@ -52,7 +52,7 @@ export function SearchInput({
           type="button"
           onClick={() => setValue("")}
           className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          aria-label="Șterge"
+          aria-label="Delete"
         >
           <X className="h-4 w-4" />
         </button>

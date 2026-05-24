@@ -19,13 +19,13 @@ export default function AuthLayout({
         </Link>
         <div className="z-10">
           <h2 className="text-3xl font-bold leading-tight">
-            Gestionează-ți flota,
+            Manage your fleet,
             <br />
-            ușor și profesional.
+            easily and professionally.
           </h2>
           <p className="mt-3 text-primary-foreground/80 max-w-md">
-            Dispatch, șoferi, camioane, GPS, facturare — tot ce ai nevoie
-            într-un singur loc.
+            Dispatch, drivers, trucks, GPS, facturare — tot ce ai nevoie
+            in one place.
           </p>
         </div>
         <p className="text-xs text-primary-foreground/60 z-10">

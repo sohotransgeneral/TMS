@@ -26,7 +26,7 @@ export function MarkReadButton({ id }: { id: string }) {
     <form action={formAction}>
       <input type="hidden" name="id" value={id} />
       <Button type="submit" size="sm" variant="ghost" disabled={pending}>
-        Marchează citit
+        Mark as read
       </Button>
     </form>
   );
@@ -40,7 +40,7 @@ export function DeleteNotificationButton({ id }: { id: string }) {
   >(action, null);
   useEffect(() => {
     if (!state) return;
-    if (state.ok) toast.success(state.message ?? "Șters.");
+    if (state.ok) toast.success(state.message ?? "Deleted.");
     else toast.error(state.error);
   }, [state]);
   return (
@@ -67,7 +67,7 @@ export function MarkAllReadButton() {
   return (
     <form action={formAction}>
       <Button type="submit" variant="outline" disabled={pending}>
-        Marchează toate citite
+        Mark all as read
       </Button>
     </form>
   );

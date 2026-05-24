@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { InvoiceForm } from "@/components/accounting/invoice-form";
 
-export const metadata = { title: "Editare factură" };
+export const metadata = { title: "Edit invoice" };
 
 type InvoiceItem = {
   description: string;
@@ -55,7 +55,7 @@ export default async function EditInvoicePage({
     <div className="space-y-6">
       <PageHeader
         title={`Editare ${invoice.number}`}
-        description="Modifică datele facturii."
+        description="Modify invoice data."
       />
       <InvoiceForm
         initial={{

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { getDriverFinancialData } from "@/lib/driver-report";
+import { getCompanyCurrency } from "@/lib/company-context";
 import { PrintButton } from "@/components/drivers/print-button";
 import { ArrowLeft } from "lucide-react";
 
@@ -56,6 +57,7 @@ export default async function DriverReportPage({
     driver.salaryFixedAmount,
     driver.commissionRate,
     period,
+    await getCompanyCurrency(me.companyId),
   );
   const { loads, fmt, fmtDate, adjustments } = data;
   const fullName = `${driver.firstName} ${driver.lastName}`;
@@ -308,12 +310,12 @@ export default async function DriverReportPage({
                 value={`${Math.round(data.totalKm).toLocaleString("en-US")} Mi`}
               />
               <R
-                label="Rate EUR/Mi"
+                label={`Rate ${data.currency}/Mi`}
                 value={
-                  driver.salaryPerKm ? `${driver.salaryPerKm} EUR/Mi` : "-"
+                  driver.salaryPerKm ? `${driver.salaryPerKm} ${data.currency}/Mi` : "-"
                 }
               />
-              <R label="Base salary" value={fmt(data.baseSalary)} />
+              <R label="Base salary" value={fmt(data.baseSalary, data.currency)} />
               {driver.commissionRate && driver.commissionRate > 0 && (
                 <R
                   label={`Commission (${driver.commissionRate}%)`}

@@ -110,3 +110,34 @@
   }
 }
 
+/* ── Print: force light theme regardless of dark mode ── */
+@media print {
+  :root,
+  .dark {
+    --color-background: hsl(0 0% 100%) !important;
+    --color-foreground: hsl(222.2 47.4% 11.2%) !important;
+    --color-card: hsl(0 0% 100%) !important;
+    --color-card-foreground: hsl(222.2 47.4% 11.2%) !important;
+    --color-popover: hsl(0 0% 100%) !important;
+    --color-popover-foreground: hsl(222.2 47.4% 11.2%) !important;
+    --color-primary: hsl(221.2 83.2% 53.3%) !important;
+    --color-primary-foreground: hsl(210 40% 98%) !important;
+    --color-secondary: hsl(210 40% 96.1%) !important;
+    --color-secondary-foreground: hsl(222.2 47.4% 11.2%) !important;
+    --color-muted: hsl(210 40% 96.1%) !important;
+    --color-muted-foreground: hsl(215.4 16.3% 35%) !important;
+    --color-accent: hsl(210 40% 96.1%) !important;
+    --color-accent-foreground: hsl(222.2 47.4% 11.2%) !important;
+    --color-border: hsl(214.3 31.8% 80%) !important;
+    --color-input: hsl(214.3 31.8% 80%) !important;
+    color-scheme: light !important;
+  }
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+    color: hsl(222.2 47.4% 11.2%) !important;
+  }
+}
+

@@ -36,21 +36,21 @@ export type TrailerRow = {
   status: string;
 };
 
-const STATUSES = ["AVAILABLE", "ON_ROUTE", "MAINTENANCE", "INACTIVE"] as const;
+const STATUSES = ["AVAILABLE", "ON_TRIP", "IN_SERVICE", "UNAVAILABLE"] as const;
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  MAINTENANCE: "In Service",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  IN_SERVICE: "In Service",
+  UNAVAILABLE: "Unavailable",
 };
 const TYPES = [
   "TAUTLINER",
-  "FRIGORIFIC",
-  "PLATFORMA",
-  "CISTERNA",
-  "PORT_CONTAINER",
-  "BENA",
-  "ALTUL",
+  "REEFER",
+  "FLATBED",
+  "TANKER",
+  "CONTAINER",
+  "DUMP",
+  "OTHER",
 ];
 const toDateInput = (d: Date | string | null | undefined) =>
   d ? (typeof d === "string" ? new Date(d) : d).toISOString().slice(0, 10) : "";
@@ -73,7 +73,7 @@ export function TrailerFormDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -107,7 +107,7 @@ export function TrailerFormDialog({
                 required
               />
             </Field>
-            <Field name="type" label="Tip" error={e.type}>
+            <Field name="type" label="Type" error={e.type}>
               <Select
                 id="type"
                 name="type"
@@ -165,7 +165,7 @@ export function TrailerFormDialog({
             </Field>
             <Field
               name="itpExpiresAt"
-              label="ITP expiră"
+              label="ITP expires"
               error={e.itpExpiresAt}
             >
               <Input

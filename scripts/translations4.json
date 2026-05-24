@@ -1,0 +1,19 @@
+[
+  ["// SUPER_ADMIN fără companie alocată vede toate facturile din sistem", "// SUPER_ADMIN without an assigned company sees all invoices in the system"],
+  ["// SUPER_ADMIN fără companie alocată → afișează lista tuturor companiilor", "// SUPER_ADMIN without an assigned company -> show list of all companies"],
+  ["// SUPER_ADMIN fără companie — ia prima companie din sistem", "// SUPER_ADMIN without a company - take the first company in the system"],
+  ["// Nicio companie în sistem încă", "// No company in the system yet"],
+  ["// Dacă venim dintr-un load, includem și acel load chiar dacă are deja factură", "// If coming from a load, include that load even if it already has an invoice"],
+  ["// Pre-completare linie factură din prețul cursei", "// Pre-fill invoice line from load price"],
+  ["Resetare parolă TMS", "TMS password reset"],
+  ["Toate notificările au fost marcate.", "All notifications marked as read."],
+  ["Factura este anulată.", "Invoice is canceled."],
+  ["Există deja o remorcă cu acest număr.", "A trailer with this number already exists."],
+  ["Remorcă created.", "Trailer created."],
+  ["Remorcă inexistentă.", "Trailer not found."],
+  ["Remorcă actualizată.", "Trailer updated."],
+  ["Există deja un utilizator cu acest email.", "A user with this email already exists."],
+  ["Există deja un camion cu acest număr.", "A truck with this number already exists."],
+  ["Clientul are curse sau facturi asociate și nu poate fi șters.", "The customer has linked loads or invoices and cannot be deleted."],
+  ["Client șters.", "Customer deleted."]
+]

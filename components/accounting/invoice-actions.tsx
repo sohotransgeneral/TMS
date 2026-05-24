@@ -39,7 +39,7 @@ export function InvoiceStatusDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -49,7 +49,7 @@ export function InvoiceStatusDialog({
       <div onClick={() => setOpen(true)}>{trigger}</div>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schimbă status factură</DialogTitle>
+          <DialogTitle>Change invoice status</DialogTitle>
         </DialogHeader>
         <form action={formAction} className="grid gap-4">
           <input type="hidden" name="id" value={invoiceId} />
@@ -68,10 +68,10 @@ export function InvoiceStatusDialog({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Anulează
+              Cancel
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Se salvează…" : "Confirmă"}
+              {pending ? "Saving…" : "Confirm"}
             </Button>
           </DialogFooter>
         </form>
@@ -98,12 +98,12 @@ export function DeleteInvoiceButton({ invoiceId }: { invoiceId: string }) {
     <form
       action={formAction}
       onSubmit={(e) => {
-        if (!confirm("Sigur ștergi factura?")) e.preventDefault();
+        if (!confirm("Delete this invoice?")) e.preventDefault();
       }}
     >
       <input type="hidden" name="id" value={invoiceId} />
       <Button type="submit" variant="destructive" disabled={pending}>
-        {pending ? "Se șterge…" : "Șterge"}
+        {pending ? "Deleting…" : "Delete"}
       </Button>
     </form>
   );

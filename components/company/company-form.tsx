@@ -147,7 +147,7 @@ export function CompanyForm({
 
   useEffect(() => {
     if (!state) return;
-    if (state.ok) toast.success(state.message ?? "Salvat.");
+    if (state.ok) toast.success(state.message ?? "Saved.");
     else toast.error(state.error);
   }, [state]);
 
@@ -158,20 +158,20 @@ export function CompanyForm({
       {companyId && <input type="hidden" name="id" value={companyId} />}
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
-        <h3 className="font-semibold">Logo companie</h3>
+        <h3 className="font-semibold">Company logo</h3>
         <LogoUpload companyId={companyId} initial={initial.logoUrl} />
       </section>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Date generale</h3>
-        <Field name="name" label="Denumire companie" required error={e.name}>
+        <Field name="name" label="Company name" required error={e.name}>
           <Input id="name" name="name" defaultValue={initial.name} required />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field name="taxId" label="CUI" error={e.taxId}>
             <Input id="taxId" name="taxId" defaultValue={initial.taxId ?? ""} />
           </Field>
-          <Field name="regCom" label="Reg. comerțului" error={e.regCom}>
+          <Field name="regCom" label="Trade Register" error={e.regCom}>
             <Input
               id="regCom"
               name="regCom"
@@ -179,7 +179,7 @@ export function CompanyForm({
             />
           </Field>
         </div>
-        <Field name="address" label="Adresă" error={e.address}>
+        <Field name="address" label="Address" error={e.address}>
           <Input
             id="address"
             name="address"
@@ -187,10 +187,10 @@ export function CompanyForm({
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="city" label="Oraș" error={e.city}>
+          <Field name="city" label="City" error={e.city}>
             <Input id="city" name="city" defaultValue={initial.city ?? ""} />
           </Field>
-          <Field name="country" label="Țară" error={e.country}>
+          <Field name="country" label="Country" error={e.country}>
             <Input
               id="country"
               name="country"
@@ -225,9 +225,9 @@ export function CompanyForm({
       </section>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
-        <h3 className="font-semibold">Bancă & facturare</h3>
+        <h3 className="font-semibold">Bank & invoicing</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="bankName" label="Bancă" error={e.bankName}>
+          <Field name="bankName" label="Bank" error={e.bankName}>
             <Input
               id="bankName"
               name="bankName"
@@ -245,7 +245,7 @@ export function CompanyForm({
         <div className="grid gap-4 sm:grid-cols-3">
           <Field
             name="invoicePrefix"
-            label="Prefix factură"
+            label="Invoice prefix"
             error={e.invoicePrefix}
           >
             <Input
@@ -254,7 +254,7 @@ export function CompanyForm({
               defaultValue={initial.invoicePrefix ?? "FCT"}
             />
           </Field>
-          <Field name="currency" label="Monedă" error={e.currency}>
+          <Field name="currency" label="Currency" error={e.currency}>
             <Input
               id="currency"
               name="currency"
@@ -279,7 +279,7 @@ export function CompanyForm({
               defaultValue={initial.timezone ?? "Europe/Bucharest"}
             />
           </Field>
-          <Field name="locale" label="Limbă" error={e.locale}>
+          <Field name="locale" label="Language" error={e.locale}>
             <Input
               id="locale"
               name="locale"
@@ -291,7 +291,7 @@ export function CompanyForm({
 
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>
-          {pending ? "Se salvează…" : "Salvează modificările"}
+          {pending ? "Saving…" : "Save changes"}
         </Button>
       </div>
     </form>

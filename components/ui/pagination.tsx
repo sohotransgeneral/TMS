@@ -54,7 +54,7 @@ export function Pagination({ page, pageSize, total }: Props) {
           className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
         >
           <Link href={makeHref(page + 1)} prefetch={false}>
-            Următor
+            Next
             <ChevronRight className="h-4 w-4" />
           </Link>
         </Button>

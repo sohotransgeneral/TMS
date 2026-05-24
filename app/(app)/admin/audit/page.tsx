@@ -76,14 +76,14 @@ export default async function AuditPage({
     <div className="space-y-6">
       <PageHeader
         title="Jurnal audit"
-        description={`${total} evenimente înregistrate.`}
+        description={`${total} events recorded.`}
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <SearchInput placeholder="Caută acțiune, entitate, ID…" />
+        <SearchInput placeholder="Search action, entity, ID…" />
         <FilterSelect
           paramKey="entity"
-          allLabel="Toate entitățile"
+          allLabel="All entities"
           options={entityOptions}
         />
       </div>
@@ -93,7 +93,7 @@ export default async function AuditPage({
           <EmptyState
             icon={<ScrollText className="h-10 w-10" />}
             title="Niciun eveniment"
-            description="Acțiunile importante vor apărea aici."
+            description="Important actions will appear here."
           />
         ) : (
           <Table>
@@ -101,7 +101,7 @@ export default async function AuditPage({
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Utilizator</TableHead>
-                <TableHead>Acțiune</TableHead>
+                <TableHead>Action</TableHead>
                 <TableHead>Entitate</TableHead>
                 <TableHead>IP</TableHead>
                 <TableHead>Detalii</TableHead>

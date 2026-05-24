@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
+import { getCompanyCurrency } from "@/lib/company-context";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,20 +21,18 @@ export const metadata = { title: "Driver Details" };
 
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  REST: "Resting",
-  ON_LEAVE: "On Leave",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  OFF_DUTY: "Off Duty",
+  UNAVAILABLE: "Unavailable",
 };
 const STATUS_VARIANT: Record<
   string,
   "default" | "secondary" | "outline" | "destructive"
 > = {
   AVAILABLE: "default",
-  ON_ROUTE: "secondary",
-  REST: "outline",
-  ON_LEAVE: "outline",
-  INACTIVE: "destructive",
+  ON_TRIP: "secondary",
+  OFF_DUTY: "outline",
+  UNAVAILABLE: "destructive",
 };
 
 function ExpiryRow({ label, date }: { label: string; date: Date | null }) {
@@ -72,6 +71,7 @@ export default async function DriverDetailPage({
   const me = await requirePermission("drivers:read");
   const { id } = await params;
   const { period = "month" } = await searchParams;
+  const companyCurrency = await getCompanyCurrency(me.companyId);
 
   const driver = await prisma.driverProfile.findFirst({
     where: { id, companyId: me.companyId ?? undefined },
@@ -147,11 +147,11 @@ export default async function DriverDetailPage({
               [
                 "Salary Type",
                 driver.salaryType === "PERCENT_GROSS"
-                  ? `${driver.grossPercent ?? 0}% din Gross`
+                  ? `${driver.grossPercent ?? 0}% of Gross`
                   : driver.salaryType === "FIXED"
-                    ? `Fix: ${driver.salaryFixedAmount ?? 0} €`
+                    ? `Fixed: ${driver.salaryFixedAmount ?? 0}`
                     : driver.salaryPerKm
-                      ? `${driver.salaryPerKm} €/km`
+                      ? `${driver.salaryPerKm} /mi`
                       : null,
               ],
               [
@@ -176,7 +176,7 @@ export default async function DriverDetailPage({
 
         {/* License & tachograph */}
         <section className="rounded-lg border bg-card p-6">
-          <h3 className="mb-3 font-semibold">Permis & Tahograf</h3>
+          <h3 className="mb-3 font-semibold">License & Tachograph</h3>
           <dl className="divide-y divide-border text-sm">
             {[
               ["License No.", driver.licenseNumber],
@@ -217,7 +217,7 @@ export default async function DriverDetailPage({
       {/* Financial Report */}
       <section className="rounded-lg border bg-card p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-semibold">Raport Financiar</h3>
+          <h3 className="font-semibold">Financial Report</h3>
           <div className="flex items-center gap-2">
             <PeriodSelector />
             <Button asChild variant="outline" size="sm">
@@ -234,7 +234,7 @@ export default async function DriverDetailPage({
         <Suspense
           fallback={
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Se calculează...
+              Calculating...
             </div>
           }
         >
@@ -246,6 +246,7 @@ export default async function DriverDetailPage({
             salaryFixedAmount={driver.salaryFixedAmount}
             commissionRate={driver.commissionRate}
             period={period}
+            companyCurrency={companyCurrency}
           />
         </Suspense>
       </section>
@@ -254,9 +255,9 @@ export default async function DriverDetailPage({
       <section className="rounded-lg border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">Ajustări Salariale</h3>
+            <h3 className="font-semibold">Salary Adjustments</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Deduceri sau bonusuri manuale cu dovadă — incluse în calculul brut
+              Manual deductions or bonuses with proof — included in gross calculation
             </p>
           </div>
         </div>
@@ -284,23 +285,23 @@ export default async function DriverDetailPage({
       {/* Loads in period */}
       <section className="rounded-lg border bg-card p-6">
         <h3 className="mb-4 font-semibold">
-          Curse în perioadă ({periodLoads.length})
+          Loads in period ({periodLoads.length})
         </h3>
         {periodLoads.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
-            Fără curse în această perioadă.
+            No loads in this period.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th className="pb-2 pr-4">Referință</th>
-                  <th className="pb-2 pr-4">Pickup → Livrare</th>
-                  <th className="pb-2 pr-4">Client</th>
-                  <th className="pb-2 pr-4">Data</th>
-                  <th className="pb-2 pr-4 text-right">Km</th>
-                  <th className="pb-2 pr-4 text-right">Preț</th>
+                  <th className="pb-2 pr-4">Reference</th>
+                  <th className="pb-2 pr-4">Pickup → Delivery</th>
+                  <th className="pb-2 pr-4">Customer</th>
+                  <th className="pb-2 pr-4">Date</th>
+                  <th className="pb-2 pr-4 text-right">Mi</th>
+                  <th className="pb-2 pr-4 text-right">Price</th>
                   <th className="pb-2">Status</th>
                 </tr>
               </thead>
@@ -327,7 +328,7 @@ export default async function DriverDetailPage({
                       {l.customer?.name ?? "—"}
                     </td>
                     <td className="py-2 pr-4 text-muted-foreground tabular-nums">
-                      {new Date(l.pickupDate).toLocaleDateString("ro-RO", {
+                      {new Date(l.pickupDate).toLocaleDateString("en-US", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
@@ -336,10 +337,10 @@ export default async function DriverDetailPage({
                     <td className="py-2 pr-4 text-right tabular-nums">
                       {Math.round(
                         l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0,
-                      ).toLocaleString("ro-RO")}
+                      ).toLocaleString("en-US")}
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums font-semibold">
-                      {new Intl.NumberFormat("ro-RO", {
+                      {new Intl.NumberFormat("en-US", {
                         style: "currency",
                         currency: l.currency,
                       }).format(l.price)}

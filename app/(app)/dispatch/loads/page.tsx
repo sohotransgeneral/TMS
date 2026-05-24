@@ -189,12 +189,12 @@ export default async function LoadsPage({
         {loads.length === 0 ? (
           <EmptyState
             icon={<PackageOpen className="h-10 w-10" />}
-            title="Nu există curse"
-            description="Creează prima cursă pentru a o aloca unui șofer."
+            title="No loads found"
+            description="Create the first load to assign it to a driver."
             action={
               <Button asChild>
                 <Link href="/dispatch/loads/new">
-                  <Plus className="mr-2 h-4 w-4" /> Cursă nouă
+                  <Plus className="mr-2 h-4 w-4" /> New load
                 </Link>
               </Button>
             }
@@ -203,13 +203,13 @@ export default async function LoadsPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Referință</TableHead>
+                <TableHead>Reference</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Traseu</TableHead>
-                <TableHead>Încărcare</TableHead>
-                <TableHead>Șofer / Camion</TableHead>
+                <TableHead>Pickup</TableHead>
+                <TableHead>Driver / Truck</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Preț</TableHead>
+                <TableHead className="text-right">Price</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

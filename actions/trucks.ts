@@ -9,17 +9,17 @@ import { truckSchema, truckUpdateSchema } from "@/lib/validators/truck";
 
 export async function createTruck(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = truckSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
 
   const exists = await prisma.truck.findFirst({
     where: { companyId: me.companyId, plateNumber: parsed.data.plateNumber },
   });
-  if (exists) return failure("Există deja un camion cu acest număr.");
+  if (exists) return failure("A truck with this number already exists.");
 
   const truck = await prisma.truck.create({
     data: { ...parsed.data, companyId: me.companyId },
@@ -39,17 +39,17 @@ export async function createTruck(formData: FormData): Promise<ActionResult> {
 
 export async function updateTruck(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = truckUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, ...data } = parsed.data;
 
   const target = await prisma.truck.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) {
-    return failure("Camion inexistent.");
+    return failure("Truck not found.");
   }
 
   await prisma.truck.update({ where: { id }, data });
@@ -70,7 +70,7 @@ export async function deleteTruck(id: string): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
   const target = await prisma.truck.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) {
-    return failure("Camion inexistent.");
+    return failure("Truck not found.");
   }
 
   await prisma.truck.delete({ where: { id } });
@@ -84,5 +84,5 @@ export async function deleteTruck(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/fleet/trucks");
-  return success(undefined, "Camion șters.");
+  return success(undefined, "Truck deleted.");
 }

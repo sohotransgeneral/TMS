@@ -8,12 +8,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Building2, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Date companie" };
+export const metadata = { title: "Company details" };
 
 export default async function CompanyPage() {
   const me = await requirePermission("company:read");
 
-  // SUPER_ADMIN fără companie alocată → afișează lista tuturor companiilor
+  // SUPER_ADMIN without an assigned company -> show list of all companies
   if (!me.companyId) {
     const companies = await prisma.company.findMany({
       orderBy: { name: "asc" },
@@ -22,7 +22,7 @@ export default async function CompanyPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Companies"
+          title="Companys"
           description="All companies registered in the system."
           action={
             <Button asChild>
@@ -34,7 +34,7 @@ export default async function CompanyPage() {
         />
         {companies.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            Nicio companie înregistrată.
+            No company registered.
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -70,8 +70,8 @@ export default async function CompanyPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Date companie"
-        description="Informații fiscale, bancare și setări de facturare."
+        title="Company details"
+        description="Tax, banking, and invoicing settings."
       />
       <CompanyForm
         initial={{

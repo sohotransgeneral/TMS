@@ -12,7 +12,7 @@ import { gpsPingSchema } from "@/lib/validators/gps";
  */
 export async function pingGps(input: unknown): Promise<ActionResult> {
   const me = await requirePermission("gps:write");
-  if (!me.companyId) return failure("Lipsă companie.");
+  if (!me.companyId) return failure("Missing company.");
 
   const parsed = gpsPingSchema.safeParse(input);
   if (!parsed.success) {
@@ -20,7 +20,7 @@ export async function pingGps(input: unknown): Promise<ActionResult> {
   }
 
   const driver = await prisma.driverProfile.findUnique({ where: { userId: me.id } });
-  if (!driver) return failure("Utilizatorul nu este șofer.");
+  if (!driver) return failure("User is not a driver.");
 
   let loadId = parsed.data.loadId;
   let truckId: string | undefined;
@@ -56,5 +56,5 @@ export async function pingGps(input: unknown): Promise<ActionResult> {
     },
   });
 
-  return success(undefined, "Poziție înregistrată.");
+  return success(undefined, "Position recorded.");
 }

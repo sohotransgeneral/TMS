@@ -13,10 +13,10 @@ import {
 
 export async function createExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = expenseCreateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   // For drivers, auto-attach driverId from their profile.
@@ -53,20 +53,20 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/accounting/expenses");
-  return success({ id: expense.id }, "Cheltuială înregistrată.");
+  return success({ id: expense.id }, "Expense recorded.");
 }
 
 export async function updateExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = expenseUpdateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.expense.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Cheltuială inexistentă.");
-  if (target.status === "APPROVED") return failure("Cheltuiala aprobată nu poate fi modificată.");
+  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+  if (target.status === "APPROVED") return failure("Approved expense cannot be modified.");
 
   const data: Record<string, unknown> = { ...rest };
   if (rest.loadId !== undefined) data.loadId = rest.loadId || null;
@@ -84,18 +84,18 @@ export async function updateExpense(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/accounting/expenses");
-  return success({ id }, "Cheltuială actualizată.");
+  return success({ id }, "Expense updated.");
 }
 
 export async function decideExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:approve");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const parsed = expenseDecisionSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, decision } = parsed.data;
 
   const target = await prisma.expense.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Cheltuială inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
 
   await prisma.expense.update({
     where: { id },
@@ -116,18 +116,18 @@ export async function decideExpense(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/accounting/expenses");
-  return success({ id }, decision === "APPROVED" ? "Cheltuială aprobată." : "Cheltuială respinsă.");
+  return success({ id }, decision === "APPROVED" ? "Expense approved." : "Expense rejected.");
 }
 
 export async function deleteExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
-  if (!id) return failure("ID lipsă.");
+  if (!id) return failure("ID is missing.");
 
   const target = await prisma.expense.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Cheltuială inexistentă.");
-  if (target.status === "APPROVED") return failure("Cheltuiala aprobată nu poate fi ștearsă.");
+  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+  if (target.status === "APPROVED") return failure("Approved expense cannot be deleted.");
 
   await prisma.expense.delete({ where: { id } });
   await logAudit({
@@ -138,5 +138,5 @@ export async function deleteExpense(formData: FormData): Promise<ActionResult> {
     entityId: id,
   });
   revalidatePath("/accounting/expenses");
-  return success(null, "Cheltuială ștearsă.");
+  return success(null, "Expense deleted.");
 }

@@ -78,7 +78,7 @@ export function InvoiceForm({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       const id = (state.data as { id?: string } | undefined)?.id ?? initial?.id;
       if (id) router.push(`/accounting/invoices/${id}`);
       else router.push("/accounting/invoices");

@@ -9,7 +9,7 @@ export async function createDriverAdjustment(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const driverProfileId = String(formData.get("driverProfileId") ?? "");
   const periodKey = String(formData.get("periodKey") ?? "");
@@ -18,16 +18,16 @@ export async function createDriverAdjustment(
   const sign = formData.get("sign") === "deduction" ? -1 : 1;
   const proofUrl = String(formData.get("proofUrl") ?? "").trim() || null;
 
-  if (!driverProfileId) return failure("Driver lipsă.");
-  if (!periodKey) return failure("Perioadă lipsă.");
-  if (!label) return failure("Eticheta este obligatorie.");
-  if (isNaN(rawAmount) || rawAmount <= 0) return failure("Suma trebuie să fie pozitivă.");
+  if (!driverProfileId) return failure("Driver is missing.");
+  if (!periodKey) return failure("Period is missing.");
+  if (!label) return failure("Label is required.");
+  if (isNaN(rawAmount) || rawAmount <= 0) return failure("Amount must be positive.");
 
   // Verify driver belongs to this company
   const driver = await prisma.driverProfile.findFirst({
     where: { id: driverProfileId, companyId: me.companyId },
   });
-  if (!driver) return failure("Driver inexistent.");
+  if (!driver) return failure("Driver not found.");
 
   const amount = sign * Math.abs(rawAmount);
 
@@ -44,24 +44,24 @@ export async function createDriverAdjustment(
   });
 
   revalidatePath(`/admin/drivers/${driverProfileId}`);
-  return success(null, "Ajustare adăugată.");
+  return success(null, "Adjustment added.");
 }
 
 export async function deleteDriverAdjustment(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const id = String(formData.get("id") ?? "");
-  if (!id) return failure("ID lipsă.");
+  if (!id) return failure("ID is missing.");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adj = await (prisma as any).driverAdjustment.findUnique({ where: { id } });
-  if (!adj || adj.companyId !== me.companyId) return failure("Ajustare inexistentă.");
+  if (!adj || adj.companyId !== me.companyId) return failure("Adjustment not found.");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (prisma as any).driverAdjustment.delete({ where: { id } });
   revalidatePath(`/admin/drivers/${adj.driverProfileId}`);
-  return success(null, "Ajustare ștearsă.");
+  return success(null, "Adjustment deleted.");
 }

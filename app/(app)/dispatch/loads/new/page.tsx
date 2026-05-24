@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LoadForm } from "@/components/loads/load-form";
 
-export const metadata = { title: "Cursă nouă" };
+export const metadata = { title: "New load" };
 
 export default async function NewLoadPage() {
   const me = await requirePermission("loads:write");
@@ -35,14 +35,14 @@ export default async function NewLoadPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Cursă nouă"
-        description="Creează o cursă nouă și (opțional) alochează direct resursele."
+        title="New load"
+        description="Create a new load and (optionally) assign resources directly."
       />
       <LoadForm
         customers={customers.map((c) => ({ id: c.id, label: c.name }))}
         drivers={drivers.map((d) => ({
           id: d.id,
-          label: d.user?.name ?? "Șofer",
+          label: d.user?.name ?? "Driver",
         }))}
         trucks={trucks.map((t) => ({
           id: t.id,

@@ -50,7 +50,7 @@ export function getPeriodRange(period: string): {
       return {
         from,
         to,
-        label: `Săptămâna ${from.toLocaleDateString("ro-RO", { day: "numeric", month: "short" })} – ${to.toLocaleDateString("ro-RO", { day: "numeric", month: "short", year: "numeric" })}`,
+        label: `Week ${from.toLocaleDateString("ro-RO", { day: "numeric", month: "short" })} – ${to.toLocaleDateString("ro-RO", { day: "numeric", month: "short", year: "numeric" })}`,
         periodKey: `${from.getFullYear()}-W${pad(weekNo)}`,
       };
     }
@@ -154,8 +154,8 @@ function Section({
   );
 }
 
-function fmt(v: number, currency = "EUR") {
-  return new Intl.NumberFormat("ro-RO", {
+function fmt(v: number, currency = "USD") {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
@@ -171,6 +171,7 @@ export async function DriverFinancialReport({
   salaryFixedAmount,
   commissionRate,
   period,
+  companyCurrency = "USD",
 }: {
   driverId: string;
   salaryType?: string | null;
@@ -179,6 +180,7 @@ export async function DriverFinancialReport({
   salaryFixedAmount?: number | null;
   commissionRate: number | null;
   period: string;
+  companyCurrency?: string;
 }) {
   const { from, to, periodKey } = getPeriodRange(period);
 
@@ -296,7 +298,7 @@ export async function DriverFinancialReport({
   const brutSalary = baseSalary + commission + adjustmentsTotal;
   const taxes = calcTaxes(Math.max(0, brutSalary));
 
-  const currency = loads[0]?.currency ?? "EUR";
+  const currency = loads[0]?.currency ?? companyCurrency;
 
   return (
     <div className="space-y-4">
@@ -304,26 +306,26 @@ export async function DriverFinancialReport({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           {
-            label: "Loads livrate",
+            label: "Loads delivered",
             value: String(loads.length),
             icon: TrendingUp,
             color: "text-blue-500",
           },
           {
-            label: "Venit brut",
+            label: "Gross revenue",
             value: fmt(revenue, currency),
             icon: DollarSign,
             color: "text-green-500",
           },
           {
-            label: "Km parcurși",
-            value: `${Math.round(totalKm).toLocaleString("ro-RO")} km`,
+            label: "Distance",
+            value: `${Math.round(totalKm).toLocaleString("en-US")} mi`,
             icon: TrendingUp,
             color: "text-purple-500",
           },
           {
-            label: "Salariu net",
-            value: fmt(taxes.net),
+            label: "Net salary",
+            value: fmt(taxes.net, currency),
             icon: Calculator,
             color: "text-amber-500",
           },
@@ -342,79 +344,79 @@ export async function DriverFinancialReport({
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Revenue & deductions */}
         <div className="lg:col-span-2 space-y-3">
-          <Section title="Venituri" icon={TrendingUp}>
+          <Section title="Revenue" icon={TrendingUp}>
             <Row
-              label="Loads livrate"
+              label="Loads delivered"
               value={fmt(revenue, currency)}
-              sub={`${loads.length} curse`}
+              sub={`${loads.length} loads`}
               positive
             />
             <Row
-              label="Total venituri"
+              label="Total revenue"
               value={fmt(revenue, currency)}
               big
               positive
             />
           </Section>
 
-          <Section title="Cheltuieli & Deduceri" icon={TrendingDown}>
+          <Section title="Expenses & Deductions" icon={TrendingDown}>
             {fuelCost > 0 && (
               <Row
-                label="Combustibil"
+                label="Fuel"
                 value={`-${fmt(fuelCost, currency)}`}
-                sub={`${fuelAgg._count} înregistrări`}
+                sub={`${fuelAgg._count} entries`}
                 negative
               />
             )}
             {tollCost > 0 && (
               <Row
-                label="Taxe drum / Pod"
+                label="Tolls / Bridge"
                 value={`-${fmt(tollCost, currency)}`}
                 negative
               />
             )}
             {parkingCost > 0 && (
               <Row
-                label="Parcare"
+                label="Parking"
                 value={`-${fmt(parkingCost, currency)}`}
                 negative
               />
             )}
             {repairCost > 0 && (
               <Row
-                label="Reparații"
+                label="Repairs"
                 value={`-${fmt(repairCost, currency)}`}
                 negative
               />
             )}
             {maintCost > 0 && (
               <Row
-                label="Mentenanță"
+                label="Maintenance"
                 value={`-${fmt(maintCost, currency)}`}
                 negative
               />
             )}
             {permitsCost > 0 && (
               <Row
-                label="Permits speciale"
+                label="Special permits"
                 value={`-${fmt(permitsCost, currency)}`}
                 negative
               />
             )}
             {otherCost > 0 && (
               <Row
-                label="Alte cheltuieli"
+                label="Other expenses"
                 value={`-${fmt(otherCost, currency)}`}
                 negative
               />
             )}
             {totalDeductions === 0 && (
               <p className="py-2 text-sm text-muted-foreground">
-                Fără cheltuieli înregistrate în această perioadă.
+                No expenses recorded in this period.
               </p>
             )}
             <Row
-              label="Total deduceri"
+              label="Total deductions"
               value={`-${fmt(totalDeductions, currency)}`}
               big
               negative
@@ -424,7 +426,7 @@ export async function DriverFinancialReport({
           <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3">
             <div className="flex items-baseline justify-between">
               <span className="font-semibold text-foreground">
-                Contribuție netă
+                Net contribution
               </span>
               <span
                 className={`font-mono text-xl font-bold ${netContribution >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}
@@ -433,42 +435,42 @@ export async function DriverFinancialReport({
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Venit – Total cheltuieli
+              Revenue – Total expenses
             </p>
           </div>
         </div>
 
         {/* Salary & taxes */}
         <div className="space-y-3">
-          <Section title="Calcul Salariu" icon={Calculator}>
+          <Section title="Salary Calculation" icon={Calculator}>
             <Row
-              label="Distanță parcursă"
-              value={`${Math.round(totalKm).toLocaleString("ro-RO")} km`}
+              label="Distance driven"
+              value={`${Math.round(totalKm).toLocaleString("en-US")} mi`}
             />
             {(type === "PER_MI" || !salaryType) && (
               <Row
-                label="Rată €/km"
-                value={salaryPerKm ? `${salaryPerKm} €/km` : "—"}
+                label={`Rate per mile (${currency}/mi)`}
+                value={salaryPerKm ? `${salaryPerKm} ${currency}/mi` : "—"}
               />
             )}
             {type === "PERCENT_GROSS" && (
               <Row
-                label={`% din Gross (${grossPercent ?? 0}%)`}
-                value={fmt(baseSalary)}
-                sub={`din ${fmt(revenue, currency)}`}
+                label={`% of Gross (${grossPercent ?? 0}%)`}
+                value={fmt(baseSalary, currency)}
+                sub={`of ${fmt(revenue, currency)}`}
               />
             )}
             {type === "FIXED" && (
-              <Row label="Salariu fix" value={fmt(baseSalary)} />
+              <Row label="Fixed salary" value={fmt(baseSalary, currency)} />
             )}
-            <Row label="Salariu bază" value={fmt(baseSalary)} />
+            <Row label="Base salary" value={fmt(baseSalary, currency)} />
             {type === "PER_MI" &&
               commissionRate != null &&
               commissionRate > 0 && (
                 <Row
-                  label={`Comision (${commissionRate}%)`}
-                  value={fmt(commission)}
-                  sub={`din ${fmt(revenue, currency)}`}
+                  label={`Commission (${commissionRate}%)`}
+                  value={fmt(commission, currency)}
+                  sub={`of ${fmt(revenue, currency)}`}
                 />
               )}
             {adjustments
@@ -477,7 +479,7 @@ export async function DriverFinancialReport({
                 <Row
                   key={a.id}
                   label={a.label}
-                  value={`+${fmt(a.amount)}`}
+                  value={`+${fmt(a.amount, currency)}`}
                   positive
                 />
               ))}
@@ -487,32 +489,32 @@ export async function DriverFinancialReport({
                 <Row
                   key={a.id}
                   label={a.label}
-                  value={`-${fmt(a.amount)}`}
+                  value={`-${fmt(a.amount, currency)}`}
                   negative
                 />
               ))}
-            <Row label="Salariu BRUT" value={fmt(brutSalary)} big />
+            <Row label="GROSS salary" value={fmt(brutSalary, currency)} big />
           </Section>
 
-          <Section title="Taxe (RO)" icon={Receipt}>
+          <Section title="Taxes (RO)" icon={Receipt}>
             <Row
-              label="CAS angajat (25%)"
-              value={`-${fmt(taxes.cas)}`}
+              label="Employee pension (25%)"
+              value={`-${fmt(taxes.cas, currency)}`}
               negative
             />
             <Row
-              label="CASS angajat (10%)"
-              value={`-${fmt(taxes.cass)}`}
+              label="Employee health (10%)"
+              value={`-${fmt(taxes.cass, currency)}`}
               negative
             />
             <Row
-              label="Impozit venit (10%)"
-              value={`-${fmt(taxes.impozit)}`}
+              label="Income tax (10%)"
+              value={`-${fmt(taxes.impozit, currency)}`}
               negative
             />
             <Row
-              label="Total taxe"
-              value={`-${fmt(taxes.total)}`}
+              label="Total taxes"
+              value={`-${fmt(taxes.total, currency)}`}
               big
               negative
             />
@@ -520,13 +522,13 @@ export async function DriverFinancialReport({
 
           <div className="rounded-lg border-2 border-green-500/30 bg-green-500/5 px-4 py-3">
             <div className="flex items-baseline justify-between">
-              <span className="font-semibold text-foreground">Salariu NET</span>
+              <span className="font-semibold text-foreground">NET salary</span>
               <span className="font-mono text-xl font-bold text-green-600 dark:text-green-400">
-                {fmt(taxes.net)}
+                {fmt(taxes.net, currency)}
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Brut – CAS – CASS – Impozit
+              Gross – Pension – Health – Income tax
             </p>
           </div>
         </div>

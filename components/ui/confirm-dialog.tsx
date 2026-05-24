@@ -26,7 +26,7 @@ export function ConfirmDialog({
   trigger,
   title,
   description,
-  confirmLabel = "Confirmă",
+  confirmLabel = "Confirm",
   destructive = true,
   action,
 }: ConfirmDialogProps) {
@@ -47,7 +47,7 @@ export function ConfirmDialog({
             onClick={() => setOpen(false)}
             disabled={pending}
           >
-            Anulează
+            Cancel
           </Button>
           <Button
             variant={destructive ? "destructive" : "default"}
@@ -64,7 +64,7 @@ export function ConfirmDialog({
               })
             }
           >
-            {pending ? "Se procesează…" : confirmLabel}
+            {pending ? "Processing…" : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -78,11 +78,11 @@ function AddAdjustmentForm({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Ajustare adăugată.");
+      toast.success(state.message ?? "Adjustment added.");
       formRef.current?.reset();
       setProofUrl("");
     } else {
-      toast.error(state.error ?? "Eroare.");
+      toast.error(state.error ?? "Error.");
     }
   }, [state]);
 
@@ -99,9 +99,9 @@ function AddAdjustmentForm({
       });
       const data = await res.json();
       if (data.url) setProofUrl(data.url);
-      else toast.error("Upload eșuat.");
+      else toast.error("Upload failed.");
     } catch {
-      toast.error("Upload eșuat.");
+      toast.error("Upload failed.");
     } finally {
       setUploading(false);
     }
@@ -120,17 +120,17 @@ function AddAdjustmentForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 items-end">
         <div className="space-y-1">
-          <Label className="text-xs">Descriere</Label>
+          <Label className="text-xs">Description</Label>
           <Input
             name="label"
-            placeholder="e.g. Amendă autostradă, Avans, Bonus"
+            placeholder="e.g. Highway fine, Advance, Bonus"
             required
             className="h-8 text-sm"
           />
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">Tip</Label>
+          <Label className="text-xs">Type</Label>
           <Select
             value={sign}
             onChange={(e) => setSign(e.target.value as "bonus" | "deduction")}
@@ -142,7 +142,7 @@ function AddAdjustmentForm({
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">Sumă (EUR)</Label>
+          <Label className="text-xs">Amount</Label>
           <Input
             name="amount"
             type="number"
@@ -177,7 +177,7 @@ function AddAdjustmentForm({
           ) : (
             <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
           )}
-          {proofUrl ? "Dovadă atașată ✓" : "Atașează dovadă"}
+          {proofUrl ? "Proof attached ✓" : "Attach proof"}
         </Button>
         {proofUrl && (
           <a
@@ -200,7 +200,7 @@ function AddAdjustmentForm({
           ) : (
             <Plus className="mr-1.5 h-3.5 w-3.5" />
           )}
-          Adaugă
+          Add
         </Button>
       </div>
     </form>
@@ -225,7 +225,7 @@ export function DriverAdjustmentsPanel({
     <div className="space-y-3">
       {adjustments.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          Fără ajustări manuale în această perioadă.
+          No manual adjustments in this period.
         </p>
       )}
 
@@ -301,7 +301,7 @@ export function DriverAdjustmentsPanel({
 
       {adjustments.length > 0 && (
         <div className="flex justify-end text-sm">
-          <span className="text-muted-foreground mr-2">Total ajustări:</span>
+          <span className="text-muted-foreground mr-2">Total adjustments:</span>
           <span
             className={`font-mono font-bold ${total >= 0 ? "text-green-600" : "text-red-500"}`}
           >

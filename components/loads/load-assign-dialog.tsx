@@ -48,7 +48,7 @@ export function LoadAssignDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -99,7 +99,7 @@ export function LoadAssignDialog({
               name="trailerId"
               defaultValue={current.trailerId ?? ""}
             >
-              <option value="">— fără remorcă —</option>
+              <option value="">— no trailer —</option>
               {trailers.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.label}
@@ -113,10 +113,10 @@ export function LoadAssignDialog({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Anulează
+              Cancel
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Se salvează…" : "Alocă"}
+              {pending ? "Saving…" : "Assign"}
             </Button>
           </DialogFooter>
         </form>

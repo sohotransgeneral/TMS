@@ -17,11 +17,11 @@ import { geocodeAddress } from "@/lib/geocode";
 
 export async function createLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = loadCreateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const d = parsed.data;
 
@@ -96,7 +96,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       dispatcherId: me.id,
       createdById: me.id,
       statusHistory: {
-        create: { status, changedById: me.id, note: "Cursă creată" },
+        create: { status, changedById: me.id, note: "Load created" },
       },
     },
   });
@@ -111,23 +111,23 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/dispatch/loads");
-  return success({ id: load.id, referenceNumber }, `Cursă ${referenceNumber} creată.`);
+  return success({ id: load.id, referenceNumber }, `Load ${referenceNumber} created.`);
 }
 
 export async function updateLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = loadUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.load.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Cursă inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
   if (["PAID", "CANCELLED"].includes(target.status)) {
-    return failure("Cursa nu mai poate fi modificată.");
+    return failure("Load can no longer be modified.");
   }
 
   // Re-geocode if address changed but coords are missing
@@ -165,21 +165,21 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/dispatch/loads");
   revalidatePath(`/dispatch/loads/${id}`);
-  return success(undefined, "Cursă actualizată.");
+  return success(undefined, "Load updated.");
 }
 
 export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:assign");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = loadAssignSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, driverId, truckId, trailerId } = parsed.data;
 
   const target = await prisma.load.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Cursă inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
 
   const shouldFlip = target.status === "DRAFT" && driverId;
   const newStatus = shouldFlip ? "ASSIGNED" : target.status;
@@ -194,7 +194,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
       dispatcherId: target.dispatcherId ?? me.id,
       ...(shouldFlip && {
         statusHistory: {
-          create: { status: "ASSIGNED", changedById: me.id, note: "Cursă alocată" },
+          create: { status: "ASSIGNED", changedById: me.id, note: "Load assigned" },
         },
       }),
     },
@@ -211,16 +211,16 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/dispatch/loads");
   revalidatePath(`/dispatch/loads/${id}`);
-  return success(undefined, "Alocare salvată.");
+  return success(undefined, "Assignment saved.");
 }
 
 export async function changeLoadStatus(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:update_status");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = loadStatusSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, status, note, lat, lng } = parsed.data;
 
@@ -228,12 +228,12 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
     where: { id },
     include: { driver: true },
   });
-  if (!target || target.companyId !== me.companyId) return failure("Cursă inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
 
   // Drivers can only update statuses of their own loads
   if (me.role === "DRIVER") {
     if (!target.driver || target.driver.userId !== me.id) {
-      return failure("Nu ai acces la această cursă.");
+      return failure("You do not have access to this load.");
     }
   }
 
@@ -241,7 +241,7 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
   const allowed = LOAD_NEXT_STATUSES[target.status] ?? [];
   const canForce = me.role === "COMPANY_ADMIN" || me.role === "SUPER_ADMIN";
   if (!allowed.includes(status) && status !== target.status && !canForce) {
-    return failure(`Tranziție invalidă: ${target.status} → ${status}.`);
+    return failure(`Invalid transition: ${target.status} → ${status}.`);
   }
 
   await prisma.load.update({
@@ -272,9 +272,9 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
 export async function deleteLoad(id: string): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
   const target = await prisma.load.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Cursă inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
   if (target.status !== "DRAFT" && target.status !== "CANCELLED") {
-    return failure("Doar cursele DRAFT sau ANULATE pot fi șterse.");
+    return failure("Only DRAFT or CANCELED loads can be deleted.");
   }
 
   await prisma.load.delete({ where: { id } });
@@ -286,28 +286,28 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
     entityId: id,
   });
   revalidatePath("/dispatch/loads");
-  return success(undefined, "Cursă ștearsă.");
+  return success(undefined, "Load deleted.");
 }
 
 /** Driver acknowledges receiving the load. */
 export async function acceptLoad(id: string): Promise<ActionResult> {
   const me = await requirePermission("loads:update_status");
   const load = await prisma.load.findUnique({ where: { id }, include: { driver: true } });
-  if (!load || load.companyId !== me.companyId) return failure("Cursă inexistentă.");
-  if (load.driver?.userId !== me.id) return failure("Nu ai acces la această cursă.");
-  if (load.status !== "ASSIGNED") return failure("Cursa nu mai poate fi acceptată.");
+  if (!load || load.companyId !== me.companyId) return failure("Load not found.");
+  if (load.driver?.userId !== me.id) return failure("You do not have access to this load.");
+  if (load.status !== "ASSIGNED") return failure("Load can no longer be accepted.");
 
   await prisma.load.update({
     where: { id },
     data: {
       status: "DRIVER_ACCEPTED",
       statusHistory: {
-        create: { status: "DRIVER_ACCEPTED", changedById: me.id, note: "Acceptată de șofer" },
+        create: { status: "DRIVER_ACCEPTED", changedById: me.id, note: "Accepted by driver" },
       },
     },
   });
 
   revalidatePath(`/dispatch/loads/${id}`);
   revalidatePath("/driver/dashboard");
-  return success(undefined, "Cursă acceptată.");
+  return success(undefined, "Load accepted.");
 }

@@ -11,13 +11,13 @@ function calcTaxes(brut: number) {
   return { cas, cass, impozit, total, net };
 }
 
-function fmt(v: number, currency = "EUR") {
-  return new Intl.NumberFormat("ro-RO", { style: "currency", currency, minimumFractionDigits: 2 }).format(v);
+function fmt(v: number, currency = "USD") {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(v);
 }
 
 function fmtDate(d: Date | string | null) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export async function getDriverFinancialData(
@@ -28,6 +28,7 @@ export async function getDriverFinancialData(
   salaryFixedAmount: number | null,
   commissionRate: number | null,
   period: string,
+  companyCurrency: string = "USD",
 ) {
   const { from, to, label, periodKey } = getPeriodRange(period);
 
@@ -126,7 +127,7 @@ export async function getDriverFinancialData(
 
   const brutSalary = baseSalary + commission + adjustmentsTotal;
   const taxes = calcTaxes(Math.max(0, brutSalary));
-  const currency = loads[0]?.currency ?? "EUR";
+  const currency = loads[0]?.currency ?? companyCurrency;
 
   return {
     loads,

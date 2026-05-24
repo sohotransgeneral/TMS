@@ -36,7 +36,7 @@ export async function loginAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Date invalide",
+      error: "Invalid data",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -49,7 +49,7 @@ export async function loginAction(
     });
   } catch (err) {
     if (err instanceof AuthError) {
-      return { ok: false, error: "Email sau parolă greșite." };
+      return { ok: false, error: "Wrong email or password." };
     }
     throw err;
   }
@@ -79,7 +79,7 @@ export async function registerAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Date invalide",
+      error: "Invalid data",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -87,7 +87,7 @@ export async function registerAction(
   const email = parsed.data.email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    return { ok: false, error: "Există deja un cont cu acest email." };
+    return { ok: false, error: "An account with this email already exists." };
   }
 
   const hashed = await bcrypt.hash(parsed.data.password, 10);
@@ -128,7 +128,7 @@ export async function registerAction(
   } catch {
     return {
       ok: true,
-      message: "Cont creat. Te poți autentifica.",
+      message: "Account created. You can log in.",
       redirectTo: "/login",
     };
   }
@@ -174,14 +174,14 @@ export async function forgotPasswordAction(
     const url = `${process.env.APP_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
     await sendMail({
       to: email,
-      subject: "Resetare parolă TMS",
-      html: `<p>Pentru a-ți reseta parola, accesează link-ul:</p><p><a href="${url}">${url}</a></p><p>Link-ul expiră în 1 oră.</p>`,
+      subject: "TMS password reset",
+      html: `<p>To reset your password, open this link:</p><p><a href="${url}">${url}</a></p><p>The link expires in 1 hour.</p>`,
     });
   }
 
   return {
     ok: true,
-    message: "Dacă există un cont cu acest email, vei primi instrucțiuni.",
+    message: "If an account exists for this email, you will receive instructions.",
   };
 }
 
@@ -199,7 +199,7 @@ export async function resetPasswordAction(
   if (!parsed.success) {
     return {
       ok: false,
-      error: "Date invalide",
+      error: "Invalid data",
       fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
@@ -230,5 +230,5 @@ export async function resetPasswordAction(
     companyId: user.companyId,
   });
 
-  return { ok: true, message: "Parolă schimbată. Te poți autentifica.", redirectTo: "/login" };
+  return { ok: true, message: "Password changed. You can log in.", redirectTo: "/login" };
 }

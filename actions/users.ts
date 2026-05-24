@@ -23,12 +23,12 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
 
   const parsed = userCreateSchema.safeParse(raw);
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
 
   const email = parsed.data.email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return failure("Există deja un utilizator cu acest email.");
+  if (existing) return failure("A user with this email already exists.");
 
   const hashed = await bcrypt.hash(parsed.data.password, 10);
   const user = await prisma.user.create({
@@ -69,7 +69,7 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
 
   const parsed = userUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, password, email, ...rest } = parsed.data;
 
@@ -111,7 +111,7 @@ export async function toggleUserActive(id: string): Promise<ActionResult> {
     return failure("Utilizator inexistent.");
   }
   if (target.id === me.id) {
-    return failure("Nu te poți dezactiva pe tine.");
+    return failure("You cannot deactivate yourself.");
   }
 
   await prisma.user.update({
@@ -138,7 +138,7 @@ export async function deleteUser(id: string): Promise<ActionResult> {
   if (me.role !== "SUPER_ADMIN" && target.companyId !== me.companyId) {
     return failure("Utilizator inexistent.");
   }
-  if (target.id === me.id) return failure("Nu te poți șterge pe tine.");
+  if (target.id === me.id) return failure("You cannot delete yourself.");
 
   await prisma.user.delete({ where: { id } });
 
@@ -151,5 +151,5 @@ export async function deleteUser(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/users");
-  return success(undefined, "Utilizator șters.");
+  return success(undefined, "User deleted.");
 }

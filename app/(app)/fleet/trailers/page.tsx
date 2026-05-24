@@ -26,9 +26,9 @@ export const metadata = { title: "Trailers" };
 
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  MAINTENANCE: "In Service",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  IN_SERVICE: "In Service",
+  UNAVAILABLE: "Unavailable",
 };
 
 type SP = Record<string, string | string[] | undefined>;

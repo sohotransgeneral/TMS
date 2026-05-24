@@ -43,17 +43,15 @@ export type DriverRow = {
 
 const STATUSES = [
   "AVAILABLE",
-  "ON_ROUTE",
-  "REST",
-  "ON_LEAVE",
-  "INACTIVE",
+  "ON_TRIP",
+  "OFF_DUTY",
+  "UNAVAILABLE",
 ] as const;
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  REST: "Resting",
-  ON_LEAVE: "On Leave",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  OFF_DUTY: "Off Duty",
+  UNAVAILABLE: "Unavailable",
 };
 
 function toDateInput(d: Date | string | null | undefined) {
@@ -80,7 +78,7 @@ export function DriverFormDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -192,7 +190,7 @@ export function DriverFormDialog({
             </Field>
             <Field
               name="licenseCategories"
-              label="Categorii (B,C,CE…)"
+              label="Categories (B, C, CE…)"
               error={errors.licenseCategories}
             >
               <Input
@@ -272,14 +270,14 @@ export function DriverFormDialog({
                 name="salaryType"
                 defaultValue={initial?.salaryType ?? "PER_MI"}
               >
-                <option value="PER_MI">Per Mile/Km (€/Mi)</option>
-                <option value="PERCENT_GROSS">% din Gross</option>
-                <option value="FIXED">Salariu Fix (€/lună)</option>
+                <option value="PER_MI">Per Mile</option>
+                <option value="PERCENT_GROSS">% of Gross</option>
+                <option value="FIXED">Fixed Salary</option>
               </Select>
             </Field>
             <Field
               name="salaryPerKm"
-              label="Rată €/Mi (dacă Per Mi)"
+              label="Rate per mile (if Per Mile)"
               error={errors.salaryPerKm}
             >
               <Input
@@ -292,7 +290,7 @@ export function DriverFormDialog({
             </Field>
             <Field
               name="grossPercent"
-              label="% Gross (dacă % Gross, ex. 90)"
+              label="% of Gross (e.g. 90)"
               error={errors.grossPercent}
             >
               <Input
@@ -307,7 +305,7 @@ export function DriverFormDialog({
             </Field>
             <Field
               name="salaryFixedAmount"
-              label="Sumă fixă €/lună (dacă Fix)"
+              label="Fixed amount per month"
               error={errors.salaryFixedAmount}
             >
               <Input
@@ -320,7 +318,7 @@ export function DriverFormDialog({
             </Field>
             <Field
               name="commissionRate"
-              label="Bonus Comision (%)"
+              label="Commission bonus (%)"
               error={errors.commissionRate}
             >
               <Input
@@ -335,7 +333,7 @@ export function DriverFormDialog({
 
           <Field
             name="internalNotes"
-            label="Note interne"
+            label="Internal notes"
             error={errors.internalNotes}
           >
             <Textarea

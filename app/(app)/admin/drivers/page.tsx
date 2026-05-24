@@ -27,20 +27,18 @@ export const metadata = { title: "Drivers" };
 
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  REST: "Resting",
-  ON_LEAVE: "On Leave",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  OFF_DUTY: "Off Duty",
+  UNAVAILABLE: "Unavailable",
 };
 const STATUS_VARIANT: Record<
   string,
   "default" | "secondary" | "outline" | "destructive"
 > = {
   AVAILABLE: "default",
-  ON_ROUTE: "secondary",
-  REST: "outline",
-  ON_LEAVE: "outline",
-  INACTIVE: "destructive",
+  ON_TRIP: "secondary",
+  OFF_DUTY: "outline",
+  UNAVAILABLE: "destructive",
 };
 
 function expiryBadge(date: Date | string | null) {

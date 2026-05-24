@@ -12,18 +12,18 @@ export const metadata = { title: "Truck Details" };
 
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  MAINTENANCE: "In Service",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  IN_SERVICE: "In Service",
+  UNAVAILABLE: "Unavailable",
 };
 const STATUS_VARIANT: Record<
   string,
   "default" | "secondary" | "outline" | "destructive"
 > = {
   AVAILABLE: "default",
-  ON_ROUTE: "secondary",
-  MAINTENANCE: "outline",
-  INACTIVE: "destructive",
+  ON_TRIP: "secondary",
+  IN_SERVICE: "outline",
+  UNAVAILABLE: "destructive",
 };
 
 function ExpiryRow({ label, date }: { label: string; date: Date | null }) {
@@ -102,13 +102,13 @@ export default async function TruckDetailPage({
               [
                 "Consum mediu",
                 truck.avgConsumption
-                  ? `${truck.avgConsumption} L/100 km`
+                  ? `${truck.avgConsumption} mpg`
                   : null,
               ],
               [
                 "Kilometraj",
                 truck.mileage != null
-                  ? `${truck.mileage.toLocaleString("en")} km`
+                  ? `${truck.mileage.toLocaleString("en")} mi`
                   : null,
               ],
               ["Culoare", truck.color],

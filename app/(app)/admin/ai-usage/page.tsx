@@ -106,7 +106,7 @@ export default async function AiUsagePage() {
             sub="actual API spend"
           />
           <StatCard
-            label="Billed to Companies"
+            label="Billed to Companys"
             value={fmtUsd(totals.billed)}
             icon={<DollarSign className="h-4 w-4 text-green-500" />}
             sub="$2 per extraction"

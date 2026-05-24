@@ -63,7 +63,7 @@ export function UserFormDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else {
       toast.error(state.error);
@@ -78,24 +78,20 @@ export function UserFormDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {editing ? "Editează utilizator" : "Utilizator nou"}
+            {editing ? "Edit User" : "New User"}
           </DialogTitle>
           <DialogDescription>
             {editing
-              ? "Actualizează datele utilizatorului."
-              : "Adaugă un membru nou în echipa companiei."}
+              ? "Update the user's details."
+              : "Add a new member to your company's team."}
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="grid gap-4">
           {editing && <input type="hidden" name="id" value={initial!.id} />}
           {companies.length > 0 && !editing && (
-            <Field
-              name="companyId"
-              label="Companie"
-              error={errors.companyId}
-            >
+            <Field name="companyId" label="Company" error={errors.companyId}>
               <Select id="companyId" name="companyId" defaultValue="">
-                <option value="">— Selectează compania —</option>
+                <option value="">— Select company —</option>
                 {companies.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -104,7 +100,7 @@ export function UserFormDialog({
               </Select>
             </Field>
           )}
-          <Field name="name" label="Nume complet" required error={errors.name}>
+          <Field name="name" label="Full name" required error={errors.name}>
             <Input
               id="name"
               name="name"
@@ -122,7 +118,7 @@ export function UserFormDialog({
                 required
               />
             </Field>
-            <Field name="phone" label="Telefon" error={errors.phone}>
+            <Field name="phone" label="Phone" error={errors.phone}>
               <Input
                 id="phone"
                 name="phone"
@@ -131,7 +127,7 @@ export function UserFormDialog({
             </Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="role" label="Rol" required error={errors.role}>
+            <Field name="role" label="Role" required error={errors.role}>
               <Select
                 id="role"
                 name="role"
@@ -151,19 +147,19 @@ export function UserFormDialog({
                 name="active"
                 defaultValue={initial ? String(initial.active) : "true"}
               >
-                <option value="true">Activ</option>
-                <option value="false">Inactiv</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
               </Select>
             </Field>
           </div>
           {!editing && selectedRole === "CUSTOMER" && customers.length > 0 && (
             <Field
               name="customerId"
-              label="Asociază client existent"
+              label="Link existing customer"
               error={errors.customerId}
             >
               <Select id="customerId" name="customerId" defaultValue="">
-                <option value="">— Selectează clientul —</option>
+                <option value="">— Select customer —</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -175,7 +171,7 @@ export function UserFormDialog({
           )}
           <Field
             name="password"
-            label={editing ? "Parolă nouă (opțional)" : "Parolă"}
+            label={editing ? "New password (optional)" : "Password"}
             required={!editing}
             error={errors.password}
           >
@@ -186,7 +182,7 @@ export function UserFormDialog({
               minLength={8}
               required={!editing}
               placeholder={
-                editing ? "Lasă gol pentru a păstra" : "Minim 8 caractere"
+                editing ? "Leave blank to keep current" : "At least 8 characters"
               }
             />
           </Field>
@@ -196,10 +192,10 @@ export function UserFormDialog({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Anulează
+              Cancel
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Se salvează…" : "Salvează"}
+              {pending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>
@@ -221,7 +217,7 @@ export function NewUserButton({
       customers={customers}
       trigger={
         <Button>
-          <Plus className="h-4 w-4" /> Utilizator nou
+          <Plus className="h-4 w-4" /> New User
         </Button>
       }
     />
@@ -233,7 +229,7 @@ export function EditUserButton({ user }: { user: UserRow }) {
     <UserFormDialog
       initial={user}
       trigger={
-        <Button variant="ghost" size="icon" aria-label="Editează">
+        <Button variant="ghost" size="icon" aria-label="Edit">
           <Pencil className="h-4 w-4" />
         </Button>
       }

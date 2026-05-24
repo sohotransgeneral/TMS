@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { CompanyForm } from "@/components/company/company-form";
 import { notFound } from "next/navigation";
 
-export const metadata = { title: "Date companie" };
+export const metadata = { title: "Company details" };
 
 export default async function CompanyDetailPage({
   params,
@@ -21,7 +21,7 @@ export default async function CompanyDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={company.name}
-        description="Informații fiscale, bancare și setări de facturare."
+        description="Tax, banking, and invoicing settings."
       />
       <CompanyForm
         companyId={company.id}

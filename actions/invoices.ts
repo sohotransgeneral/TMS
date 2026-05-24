@@ -41,12 +41,12 @@ function totalsOf(items: InvoiceItem[], vatRate: number) {
 
 export async function createInvoice(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const items = parseItems(formData);
   const raw = Object.fromEntries(formData);
   const parsed = invoiceCreateSchema.safeParse({ ...raw, items });
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   const { subtotal, vatAmount, total } = totalsOf(d.items, d.vatRate);
@@ -82,23 +82,23 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/accounting/invoices");
-  return success({ id: invoice.id, number }, `Factură ${number} creată.`);
+  return success({ id: invoice.id, number }, `Invoice ${number} created.`);
 }
 
 export async function updateInvoice(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const items = parseItems(formData);
   const raw = Object.fromEntries(formData);
   const parsed = invoiceUpdateSchema.safeParse({ ...raw, items: items.length ? items : undefined });
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
 
   const { id, items: newItems, ...rest } = parsed.data;
   const target = await prisma.invoice.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Factură inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Invoice not found.");
   if (target.status === "PAID" || target.status === "CANCELLED")
-    return failure("Factura nu mai poate fi modificată.");
+    return failure("Invoice can no longer be modified.");
 
   const data: Record<string, unknown> = { ...rest };
   if (newItems && newItems.length) {
@@ -123,18 +123,18 @@ export async function updateInvoice(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/accounting/invoices");
   revalidatePath(`/accounting/invoices/${id}`);
-  return success({ id }, "Factură actualizată.");
+  return success({ id }, "Invoice updated.");
 }
 
 export async function changeInvoiceStatus(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const parsed = invoiceStatusSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, status } = parsed.data;
 
   const target = await prisma.invoice.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Factură inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Invoice not found.");
 
   await prisma.invoice.update({ where: { id }, data: { status } });
 
@@ -154,15 +154,15 @@ export async function changeInvoiceStatus(formData: FormData): Promise<ActionRes
 
 export async function deleteInvoice(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
-  if (!id) return failure("ID lipsă.");
+  if (!id) return failure("ID is missing.");
 
   const target = await prisma.invoice.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Factură inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Invoice not found.");
   if (target.status !== "DRAFT" && target.status !== "CANCELLED")
-    return failure("Doar facturile DRAFT/Anulate pot fi șterse.");
-  if (target.paidAmount > 0) return failure("Există plăți; nu se poate șterge.");
+    return failure("Only DRAFT/Canceled invoices can be deleted.");
+  if (target.paidAmount > 0) return failure("Payments exist; cannot delete.");
 
   await prisma.invoice.delete({ where: { id } });
   await logAudit({

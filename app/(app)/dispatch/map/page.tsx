@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LiveMap } from "@/components/dispatch/live-map";
 
-export const metadata = { title: "Hartă live" };
+export const metadata = { title: "Live map" };
 
 export default async function MapPage() {
   await requirePermission("gps:read");
@@ -10,8 +10,8 @@ export default async function MapPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Hartă live"
-        description="Pozițiile curente ale șoferilor pe curse active."
+        title="Live map"
+        description="Current driver positions on active loads."
       />
       <LiveMap token={token} />
     </div>

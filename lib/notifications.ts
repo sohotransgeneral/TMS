@@ -64,12 +64,12 @@ export async function notifyRoles(args: {
 }
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
-  INFO: "Informație",
+  INFO: "Information",
   WARNING: "Avertisment",
-  ERROR: "Eroare",
+  ERROR: "Error",
   SUCCESS: "Succes",
-  DOCUMENT_EXPIRING: "Document expiră",
-  LOAD_UPDATE: "Cursă actualizată",
-  INVOICE_DUE: "Factură scadentă",
-  MAINTENANCE: "Mentenanță",
+  DOCUMENT_EXPIRING: "Document expiring",
+  LOAD_UPDATE: "Load updated",
+  INVOICE_DUE: "Invoice due",
+  MAINTENANCE: "Maintenance",
 };

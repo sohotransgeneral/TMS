@@ -46,7 +46,7 @@ export const invoiceStatusSchema = z.object({
 
 export const paymentCreateSchema = z.object({
   invoiceId: z.string().min(1),
-  amount: z.coerce.number().min(0.01, "Sumă invalidă"),
+  amount: z.coerce.number().min(0.01, "Invalid amount"),
   currency: z.string().default("RON"),
   method: optionalString,
   reference: optionalString,
@@ -67,7 +67,7 @@ export const EXPENSE_STATUS_LABELS: Record<string, string> = {
 
 export const expenseCreateSchema = z.object({
   type: z.enum(EXPENSE_TYPES),
-  amount: z.coerce.number().min(0.01, "Sumă invalidă"),
+  amount: z.coerce.number().min(0.01, "Invalid amount"),
   currency: z.string().default("RON"),
   description: optionalString,
   occurredAt: z.coerce.date({ message: "Invalid date" }),

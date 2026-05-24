@@ -9,15 +9,15 @@ import { paymentCreateSchema } from "@/lib/validators/accounting";
 
 export async function recordPayment(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("payments:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = paymentCreateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   const invoice = await prisma.invoice.findUnique({ where: { id: d.invoiceId } });
-  if (!invoice || invoice.companyId !== me.companyId) return failure("Factură inexistentă.");
-  if (invoice.status === "CANCELLED") return failure("Factura este anulată.");
+  if (!invoice || invoice.companyId !== me.companyId) return failure("Invoice not found.");
+  if (invoice.status === "CANCELLED") return failure("Invoice is canceled.");
 
   const newPaid = +(invoice.paidAmount + d.amount).toFixed(2);
   const status = newPaid + 0.005 >= invoice.total ? "PAID" : invoice.status === "DRAFT" ? "SENT" : invoice.status;
@@ -52,20 +52,20 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/accounting/invoices");
   revalidatePath(`/accounting/invoices/${d.invoiceId}`);
-  return success(null, "Plată înregistrată.");
+  return success(null, "Payment recorded.");
 }
 
 export async function deletePayment(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("payments:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
-  if (!id) return failure("ID lipsă.");
+  if (!id) return failure("ID is missing.");
 
   const pay = await prisma.payment.findUnique({ where: { id } });
-  if (!pay || pay.companyId !== me.companyId) return failure("Plată inexistentă.");
+  if (!pay || pay.companyId !== me.companyId) return failure("Payment not found.");
 
   const invoice = await prisma.invoice.findUnique({ where: { id: pay.invoiceId } });
-  if (!invoice) return failure("Factură inexistentă.");
+  if (!invoice) return failure("Invoice not found.");
 
   const newPaid = +(invoice.paidAmount - pay.amount).toFixed(2);
   const status = newPaid <= 0 ? "SENT" : invoice.status === "PAID" ? "SENT" : invoice.status;
@@ -87,5 +87,5 @@ export async function deletePayment(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath(`/accounting/invoices/${pay.invoiceId}`);
-  return success(null, "Plată ștearsă.");
+  return success(null, "Payment deleted.");
 }

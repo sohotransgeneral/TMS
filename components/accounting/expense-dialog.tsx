@@ -74,7 +74,7 @@ export function ExpenseFormDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -238,7 +238,7 @@ export function ExpenseDecisionButtons({ expenseId }: { expenseId: string }) {
 
   useEffect(() => {
     if (!state) return;
-    if (state.ok) toast.success(state.message ?? "Salvat.");
+    if (state.ok) toast.success(state.message ?? "Saved.");
     else toast.error(state.error);
   }, [state]);
 
@@ -270,14 +270,14 @@ export function DeleteExpenseButton({ expenseId }: { expenseId: string }) {
   >(action, null);
   useEffect(() => {
     if (!state) return;
-    if (state.ok) toast.success(state.message ?? "Șters.");
+    if (state.ok) toast.success(state.message ?? "Deleted.");
     else toast.error(state.error);
   }, [state]);
   return (
     <form
       action={formAction}
       onSubmit={(e) => {
-        if (!confirm("Sigur ștergi?")) e.preventDefault();
+        if (!confirm("Delete this item?")) e.preventDefault();
       }}
     >
       <input type="hidden" name="id" value={expenseId} />

@@ -30,7 +30,7 @@ export function UserRowActions({
           <ConfirmDialog
             trigger={
               <Button variant="ghost" size="sm">
-                {user.active ? "Dezactivează" : "Activează"}
+                {user.active ? "Deactivate" : "Activate"}
               </Button>
             }
             title={
@@ -40,22 +40,22 @@ export function UserRowActions({
             }
             description={
               user.active
-                ? "Nu va mai putea autentifica până la reactivare."
-                : "Va putea autentifica din nou."
+                ? "They will no longer be able to log in until reactivated."
+                : "They will be able to log in again."
             }
             destructive={user.active}
-            confirmLabel={user.active ? "Dezactivează" : "Activează"}
+            confirmLabel={user.active ? "Deactivate" : "Activate"}
             action={async () => toggleUserActive(user.id)}
           />
           <ConfirmDialog
             trigger={
-              <Button variant="ghost" size="icon" aria-label="Șterge">
+              <Button variant="ghost" size="icon" aria-label="Delete">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             }
-            title="Ștergi utilizatorul?"
-            description="Acțiunea este ireversibilă."
-            confirmLabel="Șterge"
+            title="Delete user?"
+            description="This action is irreversible."
+            confirmLabel="Delete"
             action={async () => deleteUser(user.id)}
           />
         </>

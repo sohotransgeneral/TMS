@@ -84,12 +84,12 @@ export default async function UsersPage({
     <div className="space-y-6">
       <PageHeader
         title="Utilizatori"
-        description="Membrii echipei cu acces la platformă."
+        description="Team members with access to the platform."
         action={<NewUserButton companies={companies} customers={customers} />}
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <SearchInput placeholder="Caută după nume, email…" />
+        <SearchInput placeholder="Search by name, email…" />
         <FilterSelect
           paramKey="role"
           allLabel="Toate rolurile"
@@ -111,8 +111,8 @@ export default async function UsersPage({
         {users.length === 0 ? (
           <EmptyState
             icon={<Users className="h-10 w-10" />}
-            title="Nu există utilizatori"
-            description="Adaugă primul membru al echipei."
+            title="No users found"
+            description="Add primul membru al echipei."
             action={
               <NewUserButton companies={companies} customers={customers} />
             }
@@ -124,10 +124,10 @@ export default async function UsersPage({
                 <TableHead>Nume</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Telefon</TableHead>
-                {isSuperAdmin && <TableHead>Companie</TableHead>}
+                {isSuperAdmin && <TableHead>Company</TableHead>}
                 <TableHead>Rol</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Acțiuni</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

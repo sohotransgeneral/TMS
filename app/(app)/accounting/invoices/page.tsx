@@ -26,7 +26,7 @@ export default async function InvoicesPage({
   searchParams: Promise<Record<string, string>>;
 }) {
   const me = await requirePermission("invoices:read");
-  // SUPER_ADMIN fără companie alocată vede toate facturile din sistem
+  // SUPER_ADMIN without an assigned company sees all invoices in the system
   const companyFilter = me.companyId ? { companyId: me.companyId } : {};
 
   const sp = await searchParams;

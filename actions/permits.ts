@@ -24,18 +24,18 @@ const permitSchema = z.object({
 
 export async function createPermit(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const truckId = formData.get("truckId") as string | null;
-  if (!truckId) return failure("truckId lipsește.");
+  if (!truckId) return failure("truckId is missing.");
 
   const truck = await prisma.truck.findFirst({
     where: { id: truckId, companyId: me.companyId },
   });
-  if (!truck) return failure("Camion inexistent.");
+  if (!truck) return failure("Truck not found.");
 
   const parsed = permitSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   const permit = await prisma.truckPermit.create({
@@ -67,23 +67,23 @@ export async function createPermit(formData: FormData): Promise<ActionResult> {
 
   revalidatePath(`/fleet/trucks/${truckId}`);
   revalidatePath("/fleet/permits");
-  return success({ id: permit.id }, "Permit adăugat.");
+  return success({ id: permit.id }, "Permit added.");
 }
 
 export async function updatePermit(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const id = formData.get("id") as string | null;
-  if (!id) return failure("id lipsește.");
+  if (!id) return failure("id is missing.");
 
   const permit = await prisma.truckPermit.findFirst({
     where: { id, companyId: me.companyId },
   });
-  if (!permit) return failure("Permit inexistent.");
+  if (!permit) return failure("Permit not found.");
 
   const parsed = permitSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   await prisma.truckPermit.update({
@@ -105,21 +105,21 @@ export async function updatePermit(formData: FormData): Promise<ActionResult> {
 
   revalidatePath(`/fleet/trucks/${permit.truckId}`);
   revalidatePath("/fleet/permits");
-  return success(undefined, "Permit actualizat.");
+  return success(undefined, "Permit updated.");
 }
 
 export async function deletePermit(id: string): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const permit = await prisma.truckPermit.findFirst({
     where: { id, companyId: me.companyId },
   });
-  if (!permit) return failure("Permit inexistent.");
+  if (!permit) return failure("Permit not found.");
 
   await prisma.truckPermit.delete({ where: { id } });
 
   revalidatePath(`/fleet/trucks/${permit.truckId}`);
   revalidatePath("/fleet/permits");
-  return success(undefined, "Permit șters.");
+  return success(undefined, "Permit deleted.");
 }

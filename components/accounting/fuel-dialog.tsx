@@ -74,7 +74,7 @@ export function FuelFormDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -259,7 +259,7 @@ export function DeleteFuelButton({ id }: { id: string }) {
   >(action, null);
   useEffect(() => {
     if (!state) return;
-    if (state.ok) toast.success(state.message ?? "Șters.");
+    if (state.ok) toast.success(state.message ?? "Deleted.");
     else toast.error(state.error);
   }, [state]);
   return (

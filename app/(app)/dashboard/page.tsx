@@ -12,6 +12,7 @@ import {
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
+import { getCompanyCurrency } from "@/lib/company-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -147,7 +148,7 @@ export default async function DashboardPage() {
   }
 
   const data = await getOverview(user.companyId);
-  const currency = "USD";
+  const currency = await getCompanyCurrency(user.companyId);
 
   return (
     <div className="space-y-6">

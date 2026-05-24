@@ -9,17 +9,17 @@ import { trailerSchema, trailerUpdateSchema } from "@/lib/validators/trailer";
 
 export async function createTrailer(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trailers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = trailerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
 
   const exists = await prisma.trailer.findFirst({
     where: { companyId: me.companyId, plateNumber: parsed.data.plateNumber },
   });
-  if (exists) return failure("Există deja o remorcă cu acest număr.");
+  if (exists) return failure("A trailer with this number already exists.");
 
   const trailer = await prisma.trailer.create({
     data: { ...parsed.data, companyId: me.companyId },
@@ -34,22 +34,22 @@ export async function createTrailer(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/fleet/trailers");
-  return success({ id: trailer.id }, "Remorcă creată.");
+  return success({ id: trailer.id }, "Trailer created.");
 }
 
 export async function updateTrailer(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trailers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = trailerUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, ...data } = parsed.data;
 
   const target = await prisma.trailer.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) {
-    return failure("Remorcă inexistentă.");
+    return failure("Trailer not found.");
   }
 
   await prisma.trailer.update({ where: { id }, data });
@@ -63,14 +63,14 @@ export async function updateTrailer(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/fleet/trailers");
-  return success(undefined, "Remorcă actualizată.");
+  return success(undefined, "Trailer updated.");
 }
 
 export async function deleteTrailer(id: string): Promise<ActionResult> {
   const me = await requirePermission("trailers:write");
   const target = await prisma.trailer.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) {
-    return failure("Remorcă inexistentă.");
+    return failure("Trailer not found.");
   }
 
   await prisma.trailer.delete({ where: { id } });
@@ -84,5 +84,5 @@ export async function deleteTrailer(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/fleet/trailers");
-  return success(undefined, "Remorcă ștearsă.");
+  return success(undefined, "Trailer deleted.");
 }

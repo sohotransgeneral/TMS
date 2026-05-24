@@ -9,10 +9,10 @@ import { fuelCreateSchema, fuelUpdateSchema } from "@/lib/validators/accounting"
 
 export async function createFuelEntry(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = fuelCreateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   let driverId = d.driverId || null;
@@ -57,19 +57,19 @@ export async function createFuelEntry(formData: FormData): Promise<ActionResult>
   });
 
   revalidatePath("/accounting/fuel");
-  return success({ id: entry.id }, "Alimentare înregistrată.");
+  return success({ id: entry.id }, "Fuel entry recorded.");
 }
 
 export async function updateFuelEntry(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = fuelUpdateSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return failure("Date invalide", parsed.error.flatten().fieldErrors);
+  if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.fuelEntry.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Alimentare inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Fuel entry not found.");
 
   const data: Record<string, unknown> = { ...rest };
   if (rest.truckId !== undefined) data.truckId = rest.truckId || null;
@@ -81,17 +81,17 @@ export async function updateFuelEntry(formData: FormData): Promise<ActionResult>
 
   await prisma.fuelEntry.update({ where: { id }, data });
   revalidatePath("/accounting/fuel");
-  return success({ id }, "Alimentare actualizată.");
+  return success({ id }, "Fuel entry updated.");
 }
 
 export async function deleteFuelEntry(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
-  if (!id) return failure("ID lipsă.");
+  if (!id) return failure("ID is missing.");
   const target = await prisma.fuelEntry.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Alimentare inexistentă.");
+  if (!target || target.companyId !== me.companyId) return failure("Fuel entry not found.");
   await prisma.fuelEntry.delete({ where: { id } });
   revalidatePath("/accounting/fuel");
-  return success(null, "Alimentare ștearsă.");
+  return success(null, "Fuel entry deleted.");
 }

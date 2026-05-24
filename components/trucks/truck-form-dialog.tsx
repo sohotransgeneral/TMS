@@ -38,12 +38,12 @@ export type TruckRow = {
   notes: string | null;
 };
 
-const STATUSES = ["AVAILABLE", "ON_ROUTE", "MAINTENANCE", "INACTIVE"] as const;
+const STATUSES = ["AVAILABLE", "ON_TRIP", "IN_SERVICE", "UNAVAILABLE"] as const;
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
-  ON_ROUTE: "On Route",
-  MAINTENANCE: "In Service",
-  INACTIVE: "Inactive",
+  ON_TRIP: "On Trip",
+  IN_SERVICE: "In Service",
+  UNAVAILABLE: "Unavailable",
 };
 
 const toDateInput = (d: Date | string | null | undefined) =>
@@ -67,7 +67,7 @@ export function TruckFormDialog({
   useEffect(() => {
     if (!state) return;
     if (state.ok) {
-      toast.success(state.message ?? "Salvat.");
+      toast.success(state.message ?? "Saved.");
       setOpen(false);
     } else toast.error(state.error);
   }, [state]);
@@ -130,7 +130,7 @@ export function TruckFormDialog({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field name="mileage" label="Mileage (km)" error={e.mileage}>
+            <Field name="mileage" label="Mileage (mi)" error={e.mileage}>
               <Input
                 id="mileage"
                 name="mileage"
@@ -140,7 +140,7 @@ export function TruckFormDialog({
             </Field>
             <Field
               name="avgConsumption"
-              label="Consumption (L/100)"
+              label="Consumption (mpg)"
               error={e.avgConsumption}
             >
               <Input

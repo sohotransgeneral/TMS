@@ -165,11 +165,11 @@ export function PermitFormDialog({
     if (!state) return;
     if (state.ok) {
       toast.success(
-        state.message ?? (isEdit ? "Permit actualizat." : "Permit adăugat."),
+        state.message ?? (isEdit ? "Permit updated." : "Permit added."),
       );
       setOpen(false);
     } else {
-      toast.error(state.error ?? "Eroare");
+      toast.error(state.error ?? "Error");
     }
   }, [state, isEdit]);
 

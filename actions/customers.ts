@@ -9,11 +9,11 @@ import { customerSchema, customerUpdateSchema } from "@/lib/validators/customer"
 
 export async function createCustomer(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("customers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = customerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
 
   const customer = await prisma.customer.create({
@@ -34,11 +34,11 @@ export async function createCustomer(formData: FormData): Promise<ActionResult> 
 
 export async function updateCustomer(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("customers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = customerUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, ...data } = parsed.data;
 
@@ -74,7 +74,7 @@ export async function deleteCustomer(id: string): Promise<ActionResult> {
     prisma.invoice.count({ where: { customerId: id } }),
   ]);
   if (loads > 0 || invoices > 0) {
-    return failure("Clientul are curse sau facturi asociate și nu poate fi șters.");
+    return failure("The customer has linked loads or invoices and cannot be deleted.");
   }
 
   await prisma.customer.delete({ where: { id } });
@@ -88,5 +88,5 @@ export async function deleteCustomer(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/customers");
-  return success(undefined, "Client șters.");
+  return success(undefined, "Customer deleted.");
 }

@@ -12,7 +12,7 @@ export function PrintButton() {
       className="print:hidden"
     >
       <Printer className="mr-2 h-4 w-4" />
-      Descarcă / Printează PDF
+      Download / Print PDF
     </Button>
   );
 }

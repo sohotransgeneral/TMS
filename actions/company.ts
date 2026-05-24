@@ -69,7 +69,7 @@ export async function updateMyCompany(formData: FormData): Promise<ActionResult>
   const raw = Object.fromEntries(formData);
   // Super admin passes an explicit id; company admin uses their own companyId
   const targetId = (typeof raw.id === "string" && raw.id) ? raw.id : user.companyId;
-  if (!targetId) return failure("Nu ești asociat unei companii.");
+  if (!targetId) return failure("You are not assigned to a company.");
 
   // Non-super-admin can only edit their own company
   if (user.role !== "SUPER_ADMIN" && targetId !== user.companyId) {
@@ -78,7 +78,7 @@ export async function updateMyCompany(formData: FormData): Promise<ActionResult>
 
   const parsed = companySchema.safeParse(raw);
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
 
   await prisma.company.update({
@@ -96,5 +96,5 @@ export async function updateMyCompany(formData: FormData): Promise<ActionResult>
 
   revalidatePath("/admin/company");
   revalidatePath(`/admin/company/${targetId}`);
-  return success(undefined, "Modificările au fost salvate.");
+  return success(undefined, "Changes saved.");
 }

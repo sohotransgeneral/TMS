@@ -32,9 +32,9 @@ export function renderReportPdf(data: ReportData): Uint8Array {
 
   // ── Title ──────────────────────────────────────────────────
   doc.setFont("helvetica", "bold").setFontSize(18);
-  doc.text("RAPORT OPERAȚIONAL", M, 18);
+  doc.text("OPERATIONAL REPORT", M, 18);
   doc.setFont("helvetica", "normal").setFontSize(10);
-  doc.text(`Companie: ${data.companyName}`, M, 26);
+  doc.text(`Company: ${data.companyName}`, M, 26);
   doc.text(`Generat: ${fmtDate(data.generatedAt)}`, M, 31);
 
   // ── KPI summary ────────────────────────────────────────────
@@ -43,9 +43,9 @@ export function renderReportPdf(data: ReportData): Uint8Array {
   y += 6;
   const kpis = [
     ["Facturi (an)", `${data.invoices.length} facturi · ${fmtMoney(data.invoices.reduce((s, i) => s + i.total, 0))} total`],
-    ["Încasări (an)", `${data.paymentsSummary.count} plăți · ${fmtMoney(data.paymentsSummary.total)}`],
+    ["Payments (year)", `${data.paymentsSummary.count} payments · ${fmtMoney(data.paymentsSummary.total)}`],
     ["Curse (30 zile)", `${data.loads.length} curse`],
-    ["Flotă", `${data.fleetCount} camioane · ${data.driverCount} șoferi`],
+    ["Fleet", `${data.fleetCount} trucks · ${data.driverCount} drivers`],
     ["Combustibil (total)", `${data.fuelSummary.liters.toFixed(0)} L · ${fmtMoney(data.fuelSummary.amount)}`],
     ["Cheltuieli aprobate (an)", fmtMoney(data.expenses.reduce((s, e) => s + e.amount, 0))],
   ];
@@ -62,7 +62,7 @@ export function renderReportPdf(data: ReportData): Uint8Array {
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [["Număr", "Client", "Data", "Total", "Achitat", "Status"]],
+    head: [["Number", "Client", "Data", "Total", "Paid", "Status"]],
     body: data.invoices.map((i) => [
       i.number,
       i.customer,
@@ -83,7 +83,7 @@ export function renderReportPdf(data: ReportData): Uint8Array {
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [["Referință", "Client", "Data", "Preț", "Status"]],
+    head: [["Reference", "Client", "Data", "Price", "Status"]],
     body: data.loads.map((l) => [
       l.ref,
       l.customer,
@@ -103,7 +103,7 @@ export function renderReportPdf(data: ReportData): Uint8Array {
   y += 3;
   autoTable(doc, {
     startY: y,
-    head: [["Descriere", "Tip", "Data", "Sumă"]],
+    head: [["Description", "Type", "Data", "Amount"]],
     body: data.expenses.map((e) => [
       e.description,
       e.type,

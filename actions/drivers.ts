@@ -10,19 +10,19 @@ import { driverCreateSchema, driverUpdateSchema } from "@/lib/validators/driver"
 
 export async function createDriver(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   // Convert FormData (licenseCategories may come as comma-separated)
   const raw = Object.fromEntries(formData);
   const parsed = driverCreateSchema.safeParse(raw);
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const d = parsed.data;
   const email = d.email.toLowerCase();
 
   if (await prisma.user.findUnique({ where: { email } })) {
-    return failure("Există deja un cont cu acest email.");
+    return failure("An account with this email already exists.");
   }
 
   const hashed = await bcrypt.hash(d.password, 10);
@@ -73,16 +73,16 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/drivers");
-  return success({ id: driver.id }, "Șofer creat.");
+  return success({ id: driver.id }, "Driver created.");
 }
 
 export async function updateDriver(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
+  if (!me.companyId) return failure("You are not assigned to a company.");
 
   const parsed = driverUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
-    return failure("Date invalide", parsed.error.flatten().fieldErrors);
+    return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, password, email, phone, firstName, lastName, ...rest } = parsed.data;
 
@@ -91,7 +91,7 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
     include: { user: true },
   });
   if (!target || target.companyId !== me.companyId) {
-    return failure("Șofer inexistent.");
+    return failure("Driver not found.");
   }
 
   await prisma.driverProfile.update({
@@ -125,14 +125,14 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/drivers");
-  return success(undefined, "Șofer actualizat.");
+  return success(undefined, "Driver updated.");
 }
 
 export async function deleteDriver(id: string): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
   const target = await prisma.driverProfile.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) {
-    return failure("Șofer inexistent.");
+    return failure("Driver not found.");
   }
 
   // Delete driver profile + linked user; loads keep historic reference via SetNull
@@ -148,5 +148,5 @@ export async function deleteDriver(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/admin/drivers");
-  return success(undefined, "Șofer șters.");
+  return success(undefined, "Driver deleted.");
 }
