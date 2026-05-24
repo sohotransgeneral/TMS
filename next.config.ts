@@ -15,6 +15,9 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   transpilePackages: ["mapbox-gl"],
 
+  // Turbopack is default in Next.js 16; next-pwa adds a webpack config — this silences the mismatch warning
+  turbopack: {},
+
   images: {
     remotePatterns: [
       // AWS S3
