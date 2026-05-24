@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { parseListParams } from "@/lib/action-helpers";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { FilterSelect } from "@/components/ui/filter-select";
 import { Pagination } from "@/components/ui/pagination";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -17,6 +16,7 @@ import {
   FuelFormDialog,
   DeleteFuelButton,
 } from "@/components/accounting/fuel-dialog";
+import { FuelFilters } from "@/components/accounting/fuel-filters";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Fuel } from "lucide-react";
 import { hasPermission } from "@/lib/permissions";
@@ -34,6 +34,9 @@ export default async function FuelPage({
   const sp = await searchParams;
   const { page, pageSize, skip } = parseListParams(sp);
   const truckId = typeof sp.truck === "string" ? sp.truck : undefined;
+  const driverParam = typeof sp.driver === "string" ? sp.driver : undefined;
+  const dateFrom = typeof sp.dateFrom === "string" ? sp.dateFrom : undefined;
+  const dateTo = typeof sp.dateTo === "string" ? sp.dateTo : undefined;
   const canWrite = hasPermission(me.role, "expenses:write");
 
   // If driver, restrict to their assigned truck only
@@ -59,6 +62,25 @@ export default async function FuelPage({
     }
   }
 
+  // Resolve driverParam (userId) → driverProfileId for filtering
+  let filterDriverProfileId: string | undefined;
+  if (driverParam) {
+    const dp = await prisma.driverProfile.findFirst({
+      where: { userId: driverParam, companyId: me.companyId ?? undefined },
+      select: { id: true },
+    });
+    filterDriverProfileId = dp?.id;
+  }
+
+  // Date range filter
+  const dateFilter =
+    dateFrom || dateTo
+      ? {
+          gte: dateFrom ? new Date(dateFrom) : undefined,
+          lte: dateTo ? new Date(`${dateTo}T23:59:59`) : undefined,
+        }
+      : undefined;
+
   const where = {
     companyId: me.companyId ?? undefined,
     ...(truckId
@@ -66,6 +88,8 @@ export default async function FuelPage({
       : driverTruckId
         ? { truckId: driverTruckId }
         : {}),
+    ...(filterDriverProfileId ? { driverId: filterDriverProfileId } : {}),
+    ...(dateFilter ? { occurredAt: dateFilter } : {}),
   };
 
   const [entries, total, agg, trucks, drivers, loads] = await Promise.all([
@@ -94,12 +118,10 @@ export default async function FuelPage({
       select: { id: true, plateNumber: true },
       orderBy: { plateNumber: "asc" },
     }),
-    prisma.user.findMany({
-      where: me.companyId
-        ? { companyId: me.companyId, role: "DRIVER" }
-        : { role: "DRIVER" },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
+    prisma.driverProfile.findMany({
+      where: me.companyId ? { companyId: me.companyId } : {},
+      select: { id: true, firstName: true, lastName: true, userId: true },
+      orderBy: { firstName: "asc" },
     }),
     prisma.load.findMany({
       where: me.companyId ? { companyId: me.companyId } : {},
@@ -111,9 +133,15 @@ export default async function FuelPage({
 
   const opts = {
     trucks: trucks.map((t) => ({ id: t.id, label: t.plateNumber })),
-    drivers: drivers.map((d) => ({ id: d.id, label: d.name ?? "" })),
+    drivers: drivers.map((d) => ({ id: d.id, label: `${d.firstName} ${d.lastName}` })),
     loads: loads.map((l) => ({ id: l.id, label: l.referenceNumber })),
   };
+
+  // For FuelFilters: driver options keyed by userId (for URL param)
+  const driverFilterOpts = drivers.map((d) => ({
+    value: d.userId,
+    label: `${d.firstName} ${d.lastName}`,
+  }));
 
   const sumLiters = agg._sum.liters ?? 0;
   const sumAmount = agg._sum.totalAmount ?? 0;
@@ -126,13 +154,10 @@ export default async function FuelPage({
         description={`${total} fill-ups · ${sumLiters.toFixed(0)} L · ${formatCurrency(sumAmount)} · avg ${avgPpl.toFixed(3)}/L`}
         action={canWrite ? <FuelFormDialog {...opts} /> : null}
       />
-      <div className="flex flex-wrap gap-3">
-        <FilterSelect
-          paramKey="truck"
-          allLabel="All trucks"
-          options={trucks.map((t) => ({ value: t.id, label: t.plateNumber }))}
-        />
-      </div>
+      <FuelFilters
+        trucks={trucks.map((t) => ({ value: t.id, label: t.plateNumber }))}
+        drivers={driverFilterOpts}
+      />
 
       <div className="rounded-lg border bg-card">
         {entries.length === 0 ? (

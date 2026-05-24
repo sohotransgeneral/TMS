@@ -250,13 +250,21 @@ export default async function DriverDetailPage({
         <DriverAdjustmentsPanel
           driverProfileId={driver.id}
           periodKey={periodKey}
-          adjustments={adjustments.map((a: { id: string; label: string; amount: number; proofUrl: string | null; createdAt: Date }) => ({
-            id: a.id,
-            label: a.label,
-            amount: a.amount,
-            proofUrl: a.proofUrl,
-            createdAt: a.createdAt,
-          }))}
+          adjustments={adjustments.map(
+            (a: {
+              id: string;
+              label: string;
+              amount: number;
+              proofUrl: string | null;
+              createdAt: Date;
+            }) => ({
+              id: a.id,
+              label: a.label,
+              amount: a.amount,
+              proofUrl: a.proofUrl,
+              createdAt: a.createdAt,
+            }),
+          )}
         />
       </section>
 

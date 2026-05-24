@@ -93,7 +93,10 @@ function AddAdjustmentForm({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/upload-proof", { method: "POST", body: fd });
+      const res = await fetch("/api/upload-proof", {
+        method: "POST",
+        body: fd,
+      });
       const data = await res.json();
       if (data.url) setProofUrl(data.url);
       else toast.error("Upload eșuat.");
@@ -105,7 +108,11 @@ function AddAdjustmentForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-3 pt-3 border-t border-border">
+    <form
+      ref={formRef}
+      action={formAction}
+      className="space-y-3 pt-3 border-t border-border"
+    >
       <input type="hidden" name="driverProfileId" value={driverProfileId} />
       <input type="hidden" name="periodKey" value={periodKey} />
       <input type="hidden" name="sign" value={sign} />
@@ -173,7 +180,11 @@ function AddAdjustmentForm({
           {proofUrl ? "Dovadă atașată ✓" : "Atașează dovadă"}
         </Button>
         {proofUrl && (
-          <a href={proofUrl} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1">
+          <a
+            href={proofUrl}
+            target="_blank"
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
             <ExternalLink className="h-3 w-3" /> Vezi
           </a>
         )}
@@ -220,20 +231,31 @@ export function DriverAdjustmentsPanel({
 
       {deductions.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Deduceri</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+            Deduceri
+          </p>
           <div className="divide-y divide-border rounded-md border border-border">
             {deductions.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-3 py-2 text-sm">
+              <div
+                key={a.id}
+                className="flex items-center justify-between px-3 py-2 text-sm"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="truncate font-medium">{a.label}</span>
                   {a.proofUrl && (
-                    <a href={a.proofUrl} target="_blank" className="shrink-0 text-primary hover:underline">
+                    <a
+                      href={a.proofUrl}
+                      target="_blank"
+                      className="shrink-0 text-primary hover:underline"
+                    >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-mono text-red-500 font-semibold">-{fmt(a.amount)}</span>
+                  <span className="font-mono text-red-500 font-semibold">
+                    -{fmt(a.amount)}
+                  </span>
                   <DeleteAdjustmentButton id={a.id} />
                 </div>
               </div>
@@ -244,20 +266,31 @@ export function DriverAdjustmentsPanel({
 
       {bonuses.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Bonusuri</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+            Bonusuri
+          </p>
           <div className="divide-y divide-border rounded-md border border-border">
             {bonuses.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-3 py-2 text-sm">
+              <div
+                key={a.id}
+                className="flex items-center justify-between px-3 py-2 text-sm"
+              >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="truncate font-medium">{a.label}</span>
                   {a.proofUrl && (
-                    <a href={a.proofUrl} target="_blank" className="shrink-0 text-primary hover:underline">
+                    <a
+                      href={a.proofUrl}
+                      target="_blank"
+                      className="shrink-0 text-primary hover:underline"
+                    >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-mono text-green-600 font-semibold">+{fmt(a.amount)}</span>
+                  <span className="font-mono text-green-600 font-semibold">
+                    +{fmt(a.amount)}
+                  </span>
                   <DeleteAdjustmentButton id={a.id} />
                 </div>
               </div>
@@ -269,13 +302,19 @@ export function DriverAdjustmentsPanel({
       {adjustments.length > 0 && (
         <div className="flex justify-end text-sm">
           <span className="text-muted-foreground mr-2">Total ajustări:</span>
-          <span className={`font-mono font-bold ${total >= 0 ? "text-green-600" : "text-red-500"}`}>
-            {total >= 0 ? "+" : ""}{fmt(total)}
+          <span
+            className={`font-mono font-bold ${total >= 0 ? "text-green-600" : "text-red-500"}`}
+          >
+            {total >= 0 ? "+" : ""}
+            {fmt(total)}
           </span>
         </div>
       )}
 
-      <AddAdjustmentForm driverProfileId={driverProfileId} periodKey={periodKey} />
+      <AddAdjustmentForm
+        driverProfileId={driverProfileId}
+        periodKey={periodKey}
+      />
     </div>
   );
 }

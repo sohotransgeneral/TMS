@@ -42,7 +42,10 @@ export function getPeriodRange(period: string): {
       from.setHours(0, 0, 0, 0);
       // ISO week number
       const weekNo = Math.ceil(
-        ((from.getTime() - new Date(from.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7,
+        ((from.getTime() - new Date(from.getFullYear(), 0, 1).getTime()) /
+          86400000 +
+          1) /
+          7,
       );
       return {
         from,
@@ -54,7 +57,12 @@ export function getPeriodRange(period: string): {
     case "year":
       from.setMonth(0, 1);
       from.setHours(0, 0, 0, 0);
-      return { from, to, label: `Anul ${from.getFullYear()}`, periodKey: `${from.getFullYear()}` };
+      return {
+        from,
+        to,
+        label: `Anul ${from.getFullYear()}`,
+        periodKey: `${from.getFullYear()}`,
+      };
     default: // month
       from.setDate(1);
       from.setHours(0, 0, 0, 0);
@@ -232,7 +240,10 @@ export async function DriverFinancialReport({
     where: { driverProfileId: driverId, periodKey },
     orderBy: { createdAt: "asc" },
   });
-  const adjustmentsTotal = adjustments.reduce((s: number, a: { amount: number }) => s + a.amount, 0);
+  const adjustmentsTotal = adjustments.reduce(
+    (s: number, a: { amount: number }) => s + a.amount,
+    0,
+  );
 
   // ── calculations ──────────────────────────────────────────────
   const revenue = loads.reduce((s, l) => s + l.price, 0);
@@ -431,12 +442,26 @@ export async function DriverFinancialReport({
                 sub={`din ${fmt(revenue, currency)}`}
               />
             )}
-            {adjustments.filter((a) => a.amount > 0).map((a) => (
-              <Row key={a.id} label={a.label} value={`+${fmt(a.amount)}`} positive />
-            ))}
-            {adjustments.filter((a) => a.amount < 0).map((a) => (
-              <Row key={a.id} label={a.label} value={`-${fmt(a.amount)}`} negative />
-            ))}
+            {adjustments
+              .filter((a) => a.amount > 0)
+              .map((a) => (
+                <Row
+                  key={a.id}
+                  label={a.label}
+                  value={`+${fmt(a.amount)}`}
+                  positive
+                />
+              ))}
+            {adjustments
+              .filter((a) => a.amount < 0)
+              .map((a) => (
+                <Row
+                  key={a.id}
+                  label={a.label}
+                  value={`-${fmt(a.amount)}`}
+                  negative
+                />
+              ))}
             <Row label="Salariu BRUT" value={fmt(brutSalary)} big />
           </Section>
 

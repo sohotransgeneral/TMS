@@ -312,12 +312,21 @@ export default async function DriverReportPage({
                   value={fmt(data.commission)}
                 />
               )}
-              {adjustments.filter((a) => a.amount > 0).map((a) => (
-                <R key={a.id} label={`+ ${a.label}`} value={fmt(a.amount)} />
-              ))}
-              {adjustments.filter((a) => a.amount < 0).map((a) => (
-                <R key={a.id} label={`– ${a.label}`} value={`- ${fmt(Math.abs(a.amount))}`} neg />
-              ))}
+              {adjustments
+                .filter((a) => a.amount > 0)
+                .map((a) => (
+                  <R key={a.id} label={`+ ${a.label}`} value={fmt(a.amount)} />
+                ))}
+              {adjustments
+                .filter((a) => a.amount < 0)
+                .map((a) => (
+                  <R
+                    key={a.id}
+                    label={`– ${a.label}`}
+                    value={`- ${fmt(Math.abs(a.amount))}`}
+                    neg
+                  />
+                ))}
               <R label="GROSS salary" value={fmt(data.brutSalary)} bold />
               <tr>
                 <td colSpan={2} className="py-1 border-b border-gray-300" />

@@ -19,22 +19,20 @@ export default async function Icon() {
 
   // Default: truck emoji icon
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          background: "#2563eb",
-          borderRadius: 6,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 20,
-        }}
-      >
-        🚛
-      </div>
-    ),
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        background: "#2563eb",
+        borderRadius: 6,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 20,
+      }}
+    >
+      🚛
+    </div>,
     { ...size },
   );
 }
