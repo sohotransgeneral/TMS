@@ -78,7 +78,9 @@ export default async function ExpensesPage({
       orderBy: { plateNumber: "asc" },
     }),
     prisma.user.findMany({
-      where: me.companyId ? { companyId: me.companyId, role: "DRIVER" } : { role: "DRIVER" },
+      where: me.companyId
+        ? { companyId: me.companyId, role: "DRIVER" }
+        : { role: "DRIVER" },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

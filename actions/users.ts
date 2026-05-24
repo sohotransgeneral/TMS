@@ -11,9 +11,17 @@ import { userCreateSchema, userUpdateSchema } from "@/lib/validators/user";
 
 export async function createUser(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("users:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
 
-  const parsed = userCreateSchema.safeParse(Object.fromEntries(formData));
+  const raw = Object.fromEntries(formData);
+  // Super admin can pick any company via the form; others are locked to their own
+  const targetCompanyId =
+    me.role === "SUPER_ADMIN"
+      ? (typeof raw.companyId === "string" && raw.companyId ? raw.companyId : null)
+      : me.companyId;
+
+  if (!targetCompanyId) return failure("Selectează o companie.");
+
+  const parsed = userCreateSchema.safeParse(raw);
   if (!parsed.success) {
     return failure("Date invalide", parsed.error.flatten().fieldErrors);
   }
@@ -31,14 +39,14 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       role: parsed.data.role,
       active: parsed.data.active,
       password: hashed,
-      companyId: me.companyId,
+      companyId: targetCompanyId,
     },
   });
 
   await logAudit({
     action: "user.create",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: targetCompanyId,
     entityType: "User",
     entityId: user.id,
   });
@@ -49,7 +57,6 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
 
 export async function updateUser(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("users:write");
-  if (!me.companyId) return failure("Nu ești asociat unei companii.");
 
   const parsed = userUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -57,9 +64,11 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
   }
   const { id, password, email, ...rest } = parsed.data;
 
-  // Ownership check: user must belong to same company
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target) return failure("Utilizator inexistent.");
+
+  // Non-super-admin can only edit users in their own company
+  if (me.role !== "SUPER_ADMIN" && target.companyId !== me.companyId) {
     return failure("Utilizator inexistent.");
   }
 
@@ -76,7 +85,7 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "user.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId ?? me.companyId,
     entityType: "User",
     entityId: id,
   });
@@ -88,7 +97,8 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
 export async function toggleUserActive(id: string): Promise<ActionResult> {
   const me = await requirePermission("users:write");
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target) return failure("Utilizator inexistent.");
+  if (me.role !== "SUPER_ADMIN" && target.companyId !== me.companyId) {
     return failure("Utilizator inexistent.");
   }
   if (target.id === me.id) {
@@ -103,7 +113,7 @@ export async function toggleUserActive(id: string): Promise<ActionResult> {
   await logAudit({
     action: target.active ? "user.deactivate" : "user.activate",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId ?? me.companyId,
     entityType: "User",
     entityId: id,
   });
@@ -115,7 +125,8 @@ export async function toggleUserActive(id: string): Promise<ActionResult> {
 export async function deleteUser(id: string): Promise<ActionResult> {
   const me = await requirePermission("users:write");
   const target = await prisma.user.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target) return failure("Utilizator inexistent.");
+  if (me.role !== "SUPER_ADMIN" && target.companyId !== me.companyId) {
     return failure("Utilizator inexistent.");
   }
   if (target.id === me.id) return failure("Nu te poți șterge pe tine.");
@@ -125,7 +136,7 @@ export async function deleteUser(id: string): Promise<ActionResult> {
   await logAudit({
     action: "user.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId ?? me.companyId,
     entityType: "User",
     entityId: id,
   });

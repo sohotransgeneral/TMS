@@ -29,6 +29,8 @@ type UserRow = {
   active: boolean;
 };
 
+type CompanyOpt = { id: string; name: string };
+
 const ROLE_OPTIONS = (
   Object.keys(ROLE_LABELS) as Array<keyof typeof ROLE_LABELS>
 ).filter((r) => r !== "SUPER_ADMIN");
@@ -36,9 +38,10 @@ const ROLE_OPTIONS = (
 interface UserFormDialogProps {
   initial?: UserRow;
   trigger: React.ReactNode;
+  companies?: CompanyOpt[];
 }
 
-export function UserFormDialog({ initial, trigger }: UserFormDialogProps) {
+export function UserFormDialog({ initial, trigger, companies = [] }: UserFormDialogProps) {
   const [open, setOpen] = useState(false);
   const editing = Boolean(initial);
   const action = toActionState(editing ? updateUser : createUser);
@@ -75,6 +78,16 @@ export function UserFormDialog({ initial, trigger }: UserFormDialogProps) {
         </DialogHeader>
         <form action={formAction} className="grid gap-4">
           {editing && <input type="hidden" name="id" value={initial!.id} />}
+          {companies.length > 0 && !editing && (
+            <Field name="companyId" label="Companie" required error={errors.companyId}>
+              <Select id="companyId" name="companyId" defaultValue="">
+                <option value="">— Selectează compania —</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <Field name="name" label="Nume complet" required error={errors.name}>
             <Input
               id="name"
@@ -161,9 +174,10 @@ export function UserFormDialog({ initial, trigger }: UserFormDialogProps) {
   );
 }
 
-export function NewUserButton() {
+export function NewUserButton({ companies = [] }: { companies?: CompanyOpt[] }) {
   return (
     <UserFormDialog
+      companies={companies}
       trigger={
         <Button>
           <Plus className="h-4 w-4" /> Utilizator nou

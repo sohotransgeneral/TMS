@@ -91,8 +91,14 @@ export default async function MaintenancePage({
   ]);
 
   const opts = {
-    trucks: trucks.map((t) => ({ id: t.id, label: `${t.plateNumber}${t.make ? ` — ${t.make} ${t.model ?? ""}`.trimEnd() : ""}` })),
-    trailers: trailers.map((t) => ({ id: t.id, label: `${t.plateNumber}${t.type ? ` (${t.type})` : ""}` })),
+    trucks: trucks.map((t) => ({
+      id: t.id,
+      label: `${t.plateNumber}${t.make ? ` — ${t.make} ${t.model ?? ""}`.trimEnd() : ""}`,
+    })),
+    trailers: trailers.map((t) => ({
+      id: t.id,
+      label: `${t.plateNumber}${t.type ? ` (${t.type})` : ""}`,
+    })),
   };
 
   return (

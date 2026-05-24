@@ -29,7 +29,13 @@ export type CompanyData = {
   locale: string | null;
 };
 
-export function CompanyForm({ initial, companyId }: { initial: CompanyData; companyId?: string }) {
+export function CompanyForm({
+  initial,
+  companyId,
+}: {
+  initial: CompanyData;
+  companyId?: string;
+}) {
   const action = toActionState(updateMyCompany);
   const [state, formAction, pending] = useActionState<
     ActionResult | null,

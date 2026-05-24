@@ -34,9 +34,10 @@ export default async function UsersPage({
   const { page, pageSize, q, skip } = parseListParams(sp);
   const role = typeof sp.role === "string" ? sp.role : undefined;
   const status = typeof sp.status === "string" ? sp.status : undefined;
+  const isSuperAdmin = me.role === "SUPER_ADMIN";
 
   const where = {
-    companyId: me.companyId ?? undefined,
+    ...(me.companyId ? { companyId: me.companyId } : {}),
     ...(role ? { role: role as never } : {}),
     ...(status === "active"
       ? { active: true }
@@ -46,7 +47,7 @@ export default async function UsersPage({
     ...buildSearch(q, ["name", "email", "phone"]),
   };
 
-  const [users, total] = await Promise.all([
+  const [users, total, companies] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -60,9 +61,13 @@ export default async function UsersPage({
         role: true,
         active: true,
         createdAt: true,
+        company: { select: { name: true } },
       },
     }),
     prisma.user.count({ where }),
+    isSuperAdmin
+      ? prisma.company.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -70,7 +75,7 @@ export default async function UsersPage({
       <PageHeader
         title="Utilizatori"
         description="Membrii echipei cu acces la platformă."
-        action={<NewUserButton />}
+        action={<NewUserButton companies={companies} />}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -98,7 +103,7 @@ export default async function UsersPage({
             icon={<Users className="h-10 w-10" />}
             title="Nu există utilizatori"
             description="Adaugă primul membru al echipei."
-            action={<NewUserButton />}
+            action={<NewUserButton companies={companies} />}
           />
         ) : (
           <Table>
@@ -107,6 +112,7 @@ export default async function UsersPage({
                 <TableHead>Nume</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Telefon</TableHead>
+                {isSuperAdmin && <TableHead>Companie</TableHead>}
                 <TableHead>Rol</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Acțiuni</TableHead>
@@ -118,6 +124,11 @@ export default async function UsersPage({
                   <TableCell className="font-medium">{u.name ?? "—"}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell>{u.phone ?? "—"}</TableCell>
+                  {isSuperAdmin && (
+                    <TableCell className="text-muted-foreground text-sm">
+                      {u.company?.name ?? "—"}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Badge variant="secondary">
                       {ROLE_LABELS[u.role as keyof typeof ROLE_LABELS] ??
