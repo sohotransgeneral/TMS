@@ -1,4 +1,5 @@
-import { requirePermission } from "@/lib/session";
+import { requireUser } from "@/lib/session";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { TelegramSetupClient } from "@/components/admin/telegram-setup-client";
@@ -6,7 +7,8 @@ import { TelegramSetupClient } from "@/components/admin/telegram-setup-client";
 export const metadata = { title: "Telegram setup" };
 
 export default async function TelegramSetupPage() {
-  await requirePermission("users:write");
+  const me = await requireUser();
+  if (me.role !== "SUPER_ADMIN") redirect("/dashboard");
 
   const hasToken = Boolean(process.env.TELEGRAM_BOT_TOKEN);
   const hasChat = Boolean(process.env.TELEGRAM_CHAT_ID);

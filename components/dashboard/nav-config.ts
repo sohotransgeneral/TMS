@@ -203,7 +203,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/telegram",
         label: "Telegram",
         icon: Send,
-        permissions: ["users:write"],
+        roles: ["SUPER_ADMIN"],
       },
       {
         href: "/admin/audit",
