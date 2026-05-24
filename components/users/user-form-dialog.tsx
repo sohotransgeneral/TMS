@@ -94,7 +94,11 @@ export function UserFormDialog({
               : "Add a new member to your company's team."}
           </DialogDescription>
         </DialogHeader>
-        <form action={formAction} className="grid gap-4" key={open ? "open" : "closed"}>
+        <form
+          action={formAction}
+          className="grid gap-4"
+          key={open ? "open" : "closed"}
+        >
           {editing && <input type="hidden" name="id" value={initial!.id} />}
           {companies.length > 0 && !editing && (
             <Field name="companyId" label="Company" error={errors.companyId}>

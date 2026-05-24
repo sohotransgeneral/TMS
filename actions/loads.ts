@@ -16,6 +16,29 @@ import { nextLoadReference } from "@/lib/load-reference";
 import { geocodeAddress } from "@/lib/geocode";
 import { notifyEvent } from "@/lib/notifications";
 
+/** Build a clean multi-line notification body for load events. */
+function loadNotifyBody(args: {
+  pickupCity?: string | null;
+  pickupAddress?: string | null;
+  deliveryCity?: string | null;
+  deliveryAddress?: string | null;
+  driverName?: string | null;
+  truckPlate?: string | null;
+  poNumber?: string | null;
+  note?: string | null;
+}): string {
+  const lines: string[] = [
+    `${args.pickupCity ?? args.pickupAddress ?? "Pickup"} → ${args.deliveryCity ?? args.deliveryAddress ?? "Delivery"}`,
+  ];
+  const details: string[] = [];
+  if (args.driverName) details.push(`Driver: ${args.driverName}`);
+  if (args.truckPlate) details.push(`Truck: ${args.truckPlate}`);
+  if (details.length) lines.push(details.join(" | "));
+  if (args.poNumber) lines.push(`PO: ${args.poNumber}`);
+  if (args.note) lines.push(`Note: ${args.note}`);
+  return lines.join("\n");
+}
+
 export async function createLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
   if (!me.companyId) return failure("You are not assigned to a company.");
@@ -121,13 +144,6 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       ? prisma.truck.findUnique({ where: { id: load.truckId }, select: { plateNumber: true } })
       : null,
   ]);
-  const notifyBodyParts = [
-    `${d.pickupCity ?? d.pickupAddress ?? "Pickup"} → ${d.deliveryCity ?? d.deliveryAddress ?? "Delivery"}`,
-    assignedDriver ? `Driver: ${assignedDriver.firstName} ${assignedDriver.lastName}` : null,
-    assignedTruck ? `Truck: ${assignedTruck.plateNumber}` : null,
-    d.poNumber ? `PO: ${d.poNumber}` : null,
-  ].filter(Boolean).join(" | ");
-
   await notifyEvent({
     companyId: me.companyId,
     topic: "loads",
@@ -136,7 +152,13 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       status === "ASSIGNED"
         ? `Load ${referenceNumber} assigned`
         : `Load ${referenceNumber} created`,
-    body: notifyBodyParts,
+    body: loadNotifyBody({
+      pickupCity: d.pickupCity, pickupAddress: d.pickupAddress,
+      deliveryCity: d.deliveryCity, deliveryAddress: d.deliveryAddress,
+      driverName: assignedDriver ? `${assignedDriver.firstName} ${assignedDriver.lastName}` : null,
+      truckPlate: assignedTruck?.plateNumber,
+      poNumber: d.poNumber,
+    }),
     link: `/dispatch/loads/${load.id}`,
     roles: ["COMPANY_ADMIN", "DISPATCHER"],
     userIds: assignedDriver?.userId ? [assignedDriver.userId] : undefined,
@@ -246,19 +268,18 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
       prisma.driverProfile.findUnique({ where: { id: driverId }, select: { userId: true, firstName: true, lastName: true } }),
       truckId ? prisma.truck.findUnique({ where: { id: truckId }, select: { plateNumber: true } }) : null,
     ]);
-    const assignParts = [
-      `${target.pickupCity ?? target.pickupAddress ?? "Pickup"} → ${target.deliveryCity ?? target.deliveryAddress ?? "Delivery"}`,
-      assignDriver ? `Driver: ${assignDriver.firstName} ${assignDriver.lastName}` : null,
-      assignTruck ? `Truck: ${assignTruck.plateNumber}` : null,
-      target.poNumber ? `PO: ${target.poNumber}` : null,
-    ].filter(Boolean).join(" | ");
-
     await notifyEvent({
       companyId: me.companyId,
       topic: "loads",
       type: "LOAD_ASSIGNED",
       title: `Load ${target.referenceNumber} assigned`,
-      body: assignParts,
+      body: loadNotifyBody({
+        pickupCity: target.pickupCity, pickupAddress: target.pickupAddress,
+        deliveryCity: target.deliveryCity, deliveryAddress: target.deliveryAddress,
+        driverName: assignDriver ? `${assignDriver.firstName} ${assignDriver.lastName}` : null,
+        truckPlate: assignTruck?.plateNumber,
+        poNumber: target.poNumber,
+      }),
       link: `/dispatch/loads/${id}`,
       roles: ["COMPANY_ADMIN", "DISPATCHER"],
       userIds: assignDriver?.userId ? [assignDriver.userId] : undefined,
@@ -322,20 +343,19 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
     meta: { status, note },
   });
 
-  const statusBodyParts = [
-    `${target.pickupCity ?? target.pickupAddress ?? "Pickup"} → ${target.deliveryCity ?? target.deliveryAddress ?? "Delivery"}`,
-    target.driver ? `Driver: ${target.driver.firstName} ${target.driver.lastName}` : null,
-    target.truck ? `Truck: ${target.truck.plateNumber}` : null,
-    target.poNumber ? `PO: ${target.poNumber}` : null,
-    note ?? null,
-  ].filter(Boolean).join(" | ");
-
   await notifyEvent({
     companyId: me.companyId,
     topic: "loads",
     type: "LOAD_STATUS",
     title: `Load ${target.referenceNumber}: ${status}`,
-    body: statusBodyParts,
+    body: loadNotifyBody({
+      pickupCity: target.pickupCity, pickupAddress: target.pickupAddress,
+      deliveryCity: target.deliveryCity, deliveryAddress: target.deliveryAddress,
+      driverName: target.driver ? `${target.driver.firstName} ${target.driver.lastName}` : null,
+      truckPlate: target.truck?.plateNumber,
+      poNumber: target.poNumber,
+      note,
+    }),
     link: `/dispatch/loads/${id}`,
     roles: ["COMPANY_ADMIN", "DISPATCHER"],
   });
@@ -391,18 +411,18 @@ export async function acceptLoad(id: string): Promise<ActionResult> {
   });
 
   if (load.companyId) {
-    const acceptParts = [
-      `${load.pickupCity ?? load.pickupAddress ?? "Pickup"} → ${load.deliveryCity ?? load.deliveryAddress ?? "Delivery"}`,
-      load.driver ? `Driver: ${load.driver.firstName} ${load.driver.lastName}` : null,
-      load.truck ? `Truck: ${load.truck.plateNumber}` : null,
-      load.poNumber ? `PO: ${load.poNumber}` : null,
-    ].filter(Boolean).join(" | ");
     await notifyEvent({
       companyId: load.companyId,
       topic: "loads",
       type: "LOAD_ACCEPTED",
       title: `Load ${load.referenceNumber} accepted by driver`,
-      body: acceptParts,
+      body: loadNotifyBody({
+        pickupCity: load.pickupCity, pickupAddress: load.pickupAddress,
+        deliveryCity: load.deliveryCity, deliveryAddress: load.deliveryAddress,
+        driverName: load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : null,
+        truckPlate: load.truck?.plateNumber,
+        poNumber: load.poNumber,
+      }),
       link: `/dispatch/loads/${id}`,
       roles: ["COMPANY_ADMIN", "DISPATCHER"],
     });
