@@ -183,6 +183,11 @@ export default async function LoadDetailPage({
             <div className="mt-1 font-medium">
               {formatDate(load.pickupDate, true)}
             </div>
+            {(load as { pickupWindow?: string | null }).pickupWindow && (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                🕐 {(load as { pickupWindow?: string | null }).pickupWindow}
+              </div>
+            )}
             {(load.pickupContact || load.pickupPhone) && (
               <div className="mt-2 space-y-1 border-t pt-2">
                 {load.pickupContact && (
@@ -231,6 +236,11 @@ export default async function LoadDetailPage({
             <div className="mt-1 font-medium">
               {formatDate(load.deliveryDate, true)}
             </div>
+            {(load as { deliveryWindow?: string | null }).deliveryWindow && (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                🕐 {(load as { deliveryWindow?: string | null }).deliveryWindow}
+              </div>
+            )}
             {(load.deliveryContact || load.deliveryPhone) && (
               <div className="mt-2 space-y-1 border-t pt-2">
                 {load.deliveryContact && (

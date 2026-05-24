@@ -22,6 +22,7 @@ export type LoadFormInitial = {
   pickupCity: string | null;
   pickupCountry: string | null;
   pickupDate: Date | string;
+  pickupWindow: string | null;
   pickupContact: string | null;
   pickupPhone: string | null;
   pickupNotes: string | null;
@@ -30,6 +31,7 @@ export type LoadFormInitial = {
   deliveryCity: string | null;
   deliveryCountry: string | null;
   deliveryDate: Date | string;
+  deliveryWindow: string | null;
   deliveryContact: string | null;
   deliveryPhone: string | null;
   deliveryNotes: string | null;
@@ -179,6 +181,14 @@ export function LoadForm({
             />
           </Field>
         </div>
+        <Field name="pickupWindow" label="Pickup Window" error={e.pickupWindow}>
+          <Input
+            id="pickupWindow"
+            name="pickupWindow"
+            placeholder="FCFS 08:00-15:00 / By Appt / ASAP"
+            defaultValue={initial?.pickupWindow ?? ""}
+          />
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             name="pickupContact"
@@ -290,6 +300,14 @@ export function LoadForm({
             />
           </Field>
         </div>
+        <Field name="deliveryWindow" label="Delivery Window" error={e.deliveryWindow}>
+          <Input
+            id="deliveryWindow"
+            name="deliveryWindow"
+            placeholder="FCFS 08:00-15:00 / By Appt / ASAP"
+            defaultValue={initial?.deliveryWindow ?? ""}
+          />
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field
             name="deliveryContact"
