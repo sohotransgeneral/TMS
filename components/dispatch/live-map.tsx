@@ -94,7 +94,11 @@ export function LiveMap({ token }: { token: string | null }) {
           // Auto-fly to first real position on initial fetch
           if (data.positions?.length > 0 && mapRef.current) {
             const first = data.positions[0];
-            mapRef.current.flyTo({ center: [first.lng, first.lat], zoom: 7, speed: 1.5 });
+            mapRef.current.flyTo({
+              center: [first.lng, first.lat],
+              zoom: 7,
+              speed: 1.5,
+            });
           }
         }
       } catch (e) {
