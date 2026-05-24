@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
@@ -172,5 +173,5 @@ export async function deleteInvoice(formData: FormData): Promise<ActionResult> {
     entityId: id,
   });
   revalidatePath("/accounting/invoices");
-  return success(null, "Factură ștearsă.");
+  redirect("/accounting/invoices");
 }

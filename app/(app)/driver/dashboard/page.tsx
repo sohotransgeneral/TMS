@@ -54,8 +54,8 @@ export default async function DriverDashboardPage() {
     );
   }
 
-  const [activeLoad, assigned, history] = await Promise.all([
-    prisma.load.findFirst({
+  const [activeLoads, assigned, history] = await Promise.all([
+    prisma.load.findMany({
       where: { driverId: driver.id, status: { in: ACTIVE_STATUSES as never } },
       orderBy: { pickupDate: "asc" },
       include: {
@@ -80,6 +80,7 @@ export default async function DriverDashboardPage() {
   ]);
 
   // Fetch permits for the truck currently assigned to the driver's active load
+  const activeLoad = activeLoads[0] ?? null;
   const activeTruckId = activeLoad?.truckId ?? null;
   const permits = activeTruckId
     ? await prisma.truckPermit.findMany({
@@ -102,7 +103,7 @@ export default async function DriverDashboardPage() {
       <div className="grid grid-cols-2 gap-3">
         <StatCard
           label="Active Load"
-          value={activeLoad ? 1 : 0}
+          value={activeLoads.length}
           icon={ClipboardList}
           tone="info"
         />
@@ -114,8 +115,10 @@ export default async function DriverDashboardPage() {
         />
       </div>
 
-      {activeLoad ? (
-        <Card>
+      {activeLoads.length > 0 ? (
+        <div className="space-y-4">
+          {activeLoads.map((activeLoad) => (
+          <Card key={activeLoad.id}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Active Load</CardTitle>
             <LoadStatusBadge status={activeLoad.status} />
@@ -188,6 +191,8 @@ export default async function DriverDashboardPage() {
             </div>
           </CardContent>
         </Card>
+          ))}
+        </div>
       ) : (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">

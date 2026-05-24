@@ -21,7 +21,7 @@ export function AcceptLoadButton({ loadId }: { loadId: string }) {
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className="w-full"
+      className="w-full cursor-pointer"
     >
       {pending ? "Se trimite…" : "✓ Acceptă cursa"}
     </Button>

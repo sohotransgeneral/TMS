@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -87,17 +86,13 @@ export function DeleteInvoiceButton({ invoiceId }: { invoiceId: string }) {
     ActionResult | null,
     FormData
   >(action, null);
-  const router = useRouter();
 
   useEffect(() => {
     if (!state) return;
-    if (state.ok) {
-      toast.success(state.message ?? "Șters.");
-      router.push("/accounting/invoices");
-    } else {
+    if (!state.ok) {
       toast.error(state.error);
     }
-  }, [state, router]);
+  }, [state]);
 
   return (
     <form
