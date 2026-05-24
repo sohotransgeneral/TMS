@@ -50,8 +50,8 @@ export async function requirePermission(permission: Permission) {
       select: { role: true, companyId: true },
     });
     if (dbUser) {
-      (user as Record<string, unknown>).role = dbUser.role;
-      (user as Record<string, unknown>).companyId = dbUser.companyId;
+      (user as unknown as Record<string, unknown>).role = dbUser.role;
+      (user as unknown as Record<string, unknown>).companyId = dbUser.companyId;
     }
   }
   assertPermission(user.role, permission);
