@@ -21,9 +21,7 @@ function R({
 }) {
   return (
     <tr className={bold ? "border-t-2 border-gray-400 font-bold" : ""}>
-      <td className="py-1 pr-4 text-sm text-gray-600">
-        {label}
-      </td>
+      <td className="py-1 pr-4 text-sm text-gray-600">{label}</td>
       <td
         className={`py-1 text-right font-mono text-sm ${neg ? "text-red-600" : "text-gray-900"}`}
       >
@@ -61,7 +59,10 @@ export default async function DriverReportPage({
   const fullName = `${driver.firstName} ${driver.lastName}`;
 
   return (
-    <div style={{ colorScheme: "light" }} className="mx-auto max-w-4xl space-y-8 px-6 py-8 print:px-0 print:py-0 bg-white text-gray-900 rounded-lg">
+    <div
+      style={{ colorScheme: "light" }}
+      className="mx-auto max-w-4xl space-y-8 px-6 py-8 print:px-0 print:py-0 bg-white text-gray-900 rounded-lg"
+    >
       {/* Toolbar — hidden on print */}
       <div className="flex items-center justify-between print:hidden">
         <Link
@@ -78,20 +79,14 @@ export default async function DriverReportPage({
       <div className="border-b-2 border-gray-900 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {fullName}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {driver.user.email}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+            <p className="text-sm text-gray-500">{driver.user.email}</p>
           </div>
           <div className="text-right">
             <div className="text-lg font-semibold text-gray-900">
               Raport Financiar
             </div>
-            <div className="text-sm text-gray-600">
-              {data.periodLabel}
-            </div>
+            <div className="text-sm text-gray-600">{data.periodLabel}</div>
             <div className="text-xs text-gray-500">
               Generat:{" "}
               {new Date().toLocaleDateString("ro-RO", {
@@ -115,23 +110,16 @@ export default async function DriverReportPage({
           },
           { label: "Salariu net", value: fmt(data.taxes.net) },
         ].map((k) => (
-          <div
-            key={k.label}
-            className="rounded border border-gray-300 p-3"
-          >
-            <div className="text-xs text-gray-500">
-              {k.label}
-            </div>
-            <div className="text-lg font-bold text-gray-900">
-              {k.value}
-            </div>
+          <div key={k.label} className="rounded border border-gray-300 p-3">
+            <div className="text-xs text-gray-500">{k.label}</div>
+            <div className="text-lg font-bold text-gray-900">{k.value}</div>
           </div>
         ))}
       </div>
 
       {/* Loads table */}
       <div>
-          <h2 className="mb-3 text-base font-bold text-gray-900">
+        <h2 className="mb-3 text-base font-bold text-gray-900">
           Curse Efectuate ({loads.length})
         </h2>
         <table className="w-full text-sm border-collapse">
@@ -142,8 +130,8 @@ export default async function DriverReportPage({
               <th className="pb-2 pr-3">Livrare</th>
               <th className="pb-2 pr-3">Client</th>
               <th className="pb-2 pr-3">Camion</th>
-              <th className="pb-2 pr-3 text-right">Km</th>
-              <th className="pb-2 text-right">Preț</th>
+              <th className="pb-2 pr-3 text-right w-16">Km</th>
+              <th className="pb-2 text-right w-28">Preț</th>
             </tr>
           </thead>
           <tbody>
@@ -184,12 +172,12 @@ export default async function DriverReportPage({
                 <td className="py-1.5 pr-3 font-mono text-xs">
                   {l.truck?.plateNumber ?? "—"}
                 </td>
-                <td className="py-1.5 pr-3 text-right tabular-nums">
+                <td className="py-1.5 pr-3 text-right tabular-nums whitespace-nowrap">
                   {Math.round(
                     l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0,
                   ).toLocaleString("ro-RO")}
                 </td>
-                <td className="py-1.5 text-right tabular-nums font-semibold">
+                <td className="py-1.5 text-right tabular-nums font-semibold whitespace-nowrap">
                   {fmt(l.price, l.currency)}
                 </td>
               </tr>
@@ -199,10 +187,10 @@ export default async function DriverReportPage({
                 <td colSpan={5} className="py-2 text-sm">
                   TOTAL
                 </td>
-                <td className="py-2 text-right tabular-nums">
+                <td className="py-2 text-right tabular-nums whitespace-nowrap">
                   {Math.round(data.totalKm).toLocaleString("ro-RO")}
                 </td>
-                <td className="py-2 text-right tabular-nums">
+                <td className="py-2 text-right tabular-nums whitespace-nowrap">
                   {fmt(data.revenue, data.currency)}
                 </td>
               </tr>
