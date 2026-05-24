@@ -121,7 +121,6 @@ export async function POST(req: Request) {
         { role: "user", content },
       ],
       max_completion_tokens: 1024,
-      temperature: 0,
     });
 
     const raw = response.choices[0]?.message?.content ?? "{}";
