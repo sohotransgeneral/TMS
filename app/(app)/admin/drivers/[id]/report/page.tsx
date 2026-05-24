@@ -122,7 +122,16 @@ export default async function DriverReportPage({
         <h2 className="mb-3 text-base font-bold text-gray-900">
           Curse Efectuate ({loads.length})
         </h2>
-        <table className="w-full text-sm border-collapse">
+        <table className="w-full text-sm border-collapse table-fixed">
+          <colgroup>
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "14%" }} />
+          </colgroup>
           <thead>
             <tr className="border-b-2 border-gray-400 text-left text-xs text-gray-600">
               <th className="pb-2 pr-3">Nr. Ref.</th>
@@ -130,8 +139,8 @@ export default async function DriverReportPage({
               <th className="pb-2 pr-3">Livrare</th>
               <th className="pb-2 pr-3">Client</th>
               <th className="pb-2 pr-3">Camion</th>
-              <th className="pb-2 pr-3 text-right w-16">Km</th>
-              <th className="pb-2 text-right w-28">Preț</th>
+              <th className="pb-2 pr-3 text-right">Km</th>
+              <th className="pb-2 text-right">Preț</th>
             </tr>
           </thead>
           <tbody>
