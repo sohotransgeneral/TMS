@@ -49,7 +49,10 @@ export default async function ExpensesPage({
   // Drivers only see their own expenses
   let driverProfileId: string | undefined;
   if (me.role === "DRIVER") {
-    const dp = await prisma.driverProfile.findFirst({ where: { userId: me.id }, select: { id: true } });
+    const dp = await prisma.driverProfile.findFirst({
+      where: { userId: me.id },
+      select: { id: true },
+    });
     driverProfileId = dp?.id;
   }
 
@@ -95,7 +98,10 @@ export default async function ExpensesPage({
   const opts = {
     loads: loads.map((l) => ({ id: l.id, label: l.referenceNumber })),
     trucks: trucks.map((t) => ({ id: t.id, label: t.plateNumber })),
-    drivers: drivers.map((d) => ({ id: d.id, label: `${d.firstName} ${d.lastName}` })),
+    drivers: drivers.map((d) => ({
+      id: d.id,
+      label: `${d.firstName} ${d.lastName}`,
+    })),
   };
 
   return (

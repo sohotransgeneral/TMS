@@ -39,9 +39,21 @@ export const requireUser = cache(async () => {
 /**
  * Like requireUser, but also enforces an RBAC permission.
  * Throws if missing — server actions can map to a UI error.
+ * Falls back to a DB lookup if the session token is missing role (old JWT).
  */
 export async function requirePermission(permission: Permission) {
   const user = await requireUser();
+  // If role is missing from JWT (old session), refresh from DB
+  if (!user.role) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true, companyId: true },
+    });
+    if (dbUser) {
+      (user as Record<string, unknown>).role = dbUser.role;
+      (user as Record<string, unknown>).companyId = dbUser.companyId;
+    }
+  }
   assertPermission(user.role, permission);
   return user;
 }
