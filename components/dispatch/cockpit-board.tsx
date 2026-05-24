@@ -8,6 +8,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
   closestCorners,
   type DragStartEvent,
   type DragEndEvent,
@@ -134,6 +135,8 @@ function Column({
   loads: CockpitLoad[];
   isOver: boolean;
 }) {
+  const { setNodeRef } = useDroppable({ id: col.key });
+
   return (
     <div
       className={`flex flex-col rounded-lg border transition-colors ${
@@ -155,7 +158,7 @@ function Column({
         items={loads.map((l) => l.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex-1 space-y-2 p-2 min-h-[80px]">
+        <div ref={setNodeRef} className="flex-1 space-y-2 p-2 min-h-[80px]">
           {loads.length === 0 ? (
             <p className="px-2 py-6 text-center text-xs text-muted-foreground">
               Empty — drop here

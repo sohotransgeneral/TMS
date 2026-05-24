@@ -146,7 +146,7 @@ export default async function DashboardPage() {
   }
 
   const data = await getOverview(user.companyId);
-  const currency = "RON";
+  const currency = "USD";
 
   return (
     <div className="space-y-6">
