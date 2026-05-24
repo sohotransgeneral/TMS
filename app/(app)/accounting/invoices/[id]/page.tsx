@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -20,7 +21,7 @@ import {
   DeleteInvoiceButton,
 } from "@/components/accounting/invoice-actions";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Download, Pencil } from "lucide-react";
+import { Building2, Download, Pencil } from "lucide-react";
 
 export const metadata = { title: "Invoice" };
 
@@ -42,6 +43,7 @@ export default async function InvoiceDetailPage({
   const invoice = await prisma.invoice.findFirst({
     where: { id, ...(me.companyId ? { companyId: me.companyId } : {}) },
     include: {
+      company: { select: { name: true, logoUrl: true } },
       customer: true,
       load: { select: { id: true, referenceNumber: true } },
       payments: { orderBy: { paidAt: "desc" } },
@@ -99,6 +101,24 @@ export default async function InvoiceDetailPage({
             <div className="flex items-center justify-between">
               <CardTitle>Invoice Details</CardTitle>
               <InvoiceStatusBadge status={invoice.status} />
+            </div>
+            {/* Company branding */}
+            <div className="flex items-center gap-3 pt-2">
+              <div className="h-10 w-10 rounded-md border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                {invoice.company?.logoUrl ? (
+                  <Image
+                    src={invoice.company.logoUrl}
+                    alt={invoice.company.name}
+                    width={40}
+                    height={40}
+                    className="object-contain h-full w-full"
+                    unoptimized
+                  />
+                ) : (
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                )}
+              </div>
+              <span className="font-semibold text-sm">{invoice.company?.name}</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

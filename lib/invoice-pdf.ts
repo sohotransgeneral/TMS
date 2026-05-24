@@ -16,6 +16,9 @@ type InvoiceForPdf = {
   notes: string | null;
   items: unknown;
   status: string;
+  /** Base64-encoded PNG/JPEG logo (optional) */
+  logoBase64?: string | null;
+  logoFormat?: "PNG" | "JPEG" | "WEBP" | null;
   company: {
     name: string;
     taxId: string | null;
@@ -226,21 +229,40 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   doc.setFillColor(...BRAND_LT);
   doc.rect(0, 0, W, 3, "F");
 
-  // Company name (truncated if absurdly long)
-  doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...WHITE);
-  const companyName = truncate(doc, sanitize(inv.company.name).toUpperCase(), W * 0.55);
-  doc.text(companyName, ML, 15);
+  // Logo or company name (top-left)
+  if (inv.logoBase64 && inv.logoFormat) {
+    try {
+      // Draw logo square (28×28 mm) with slight padding from top
+      doc.addImage(inv.logoBase64, inv.logoFormat, ML, 3.5, 27, 27);
+      // Company name next to logo
+      doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(...WHITE);
+      const nameX = ML + 31;
+      const companyName = truncate(doc, sanitize(inv.company.name).toUpperCase(), W * 0.45);
+      doc.text(companyName, nameX, 14);
+      doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(...INDIGO_2);
+      const contact = [inv.company.email, inv.company.phone].filter(Boolean).map((s) => sanitize(s as string)).join("   .   ");
+      if (contact) doc.text(truncate(doc, contact, W * 0.45), nameX, 22);
+    } catch {
+      // fallback to text only
+      doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...WHITE);
+      doc.text(truncate(doc, sanitize(inv.company.name).toUpperCase(), W * 0.55), ML, 15);
+    }
+  } else {
+    // Company name (truncated if absurdly long)
+    doc.setFont("helvetica", "bold").setFontSize(16).setTextColor(...WHITE);
+    const companyName = truncate(doc, sanitize(inv.company.name).toUpperCase(), W * 0.55);
+    doc.text(companyName, ML, 15);
+    // Contact line
+    doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(...INDIGO_2);
+    const contact = [inv.company.email, inv.company.phone].filter(Boolean).map((s) => sanitize(s as string)).join("   .   ");
+    if (contact) {
+      doc.text(truncate(doc, contact, W * 0.55), ML, 24);
+    }
+  }
 
   // INVOICE wordmark
   doc.setFontSize(26).setFont("helvetica", "bold").setTextColor(...WHITE);
   doc.text("INVOICE", W - MR, 17, { align: "right" });
-
-  // Contact line
-  doc.setFontSize(8).setFont("helvetica", "normal").setTextColor(...INDIGO_2);
-  const contact = [inv.company.email, inv.company.phone].filter(Boolean).map((s) => sanitize(s as string)).join("   .   ");
-  if (contact) {
-    doc.text(truncate(doc, contact, W * 0.55), ML, 24);
-  }
 
   // Invoice number (smaller, under wordmark)
   doc.setFontSize(9.5).setFont("helvetica", "bold").setTextColor(...INDIGO_2);
