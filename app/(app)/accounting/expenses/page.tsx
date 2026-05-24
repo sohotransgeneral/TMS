@@ -46,8 +46,16 @@ export default async function ExpensesPage({
   const canApprove = hasPermission(me.role, "expenses:approve");
   const canWrite = hasPermission(me.role, "expenses:write");
 
+  // Drivers only see their own expenses
+  let driverProfileId: string | undefined;
+  if (me.role === "DRIVER") {
+    const dp = await prisma.driverProfile.findFirst({ where: { userId: me.id }, select: { id: true } });
+    driverProfileId = dp?.id;
+  }
+
   const where = {
     companyId: me.companyId ?? undefined,
+    ...(driverProfileId ? { driverId: driverProfileId } : {}),
     ...(type ? { type: type as never } : {}),
     ...(status ? { status: status as never } : {}),
   };

@@ -83,6 +83,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "loads:update_status",
     "documents:write",
     "gps:write",
+    "expenses:read",
     "expenses:write",
   ],
 
