@@ -36,9 +36,32 @@ export default async function FuelPage({
   const truckId = typeof sp.truck === "string" ? sp.truck : undefined;
   const canWrite = hasPermission(me.role, "expenses:write");
 
+  // If driver, restrict to their assigned truck only
+  let driverTruckId: string | undefined;
+  let driverProfileId: string | undefined;
+  if (me.role === "DRIVER") {
+    const driverProfile = await prisma.driverProfile.findUnique({
+      where: { userId: me.id },
+      select: { id: true },
+    });
+    driverProfileId = driverProfile?.id;
+    if (driverProfileId) {
+      const activeLoad = await prisma.load.findFirst({
+        where: {
+          driverId: driverProfileId,
+          truckId: { not: null },
+          status: { notIn: ["CANCELLED", "PAID"] as never },
+        },
+        orderBy: { updatedAt: "desc" },
+        select: { truckId: true },
+      });
+      driverTruckId = activeLoad?.truckId ?? undefined;
+    }
+  }
+
   const where = {
     companyId: me.companyId ?? undefined,
-    ...(truckId ? { truckId } : {}),
+    ...(truckId ? { truckId } : driverTruckId ? { truckId: driverTruckId } : {}),
   };
 
   const [entries, total, agg, trucks, drivers, loads] = await Promise.all([
@@ -59,7 +82,9 @@ export default async function FuelPage({
       _sum: { totalAmount: true, liters: true },
     }),
     prisma.truck.findMany({
-      where: me.companyId ? { companyId: me.companyId } : {},
+      where: driverTruckId
+        ? { id: driverTruckId }
+        : me.companyId ? { companyId: me.companyId } : {},
       select: { id: true, plateNumber: true },
       orderBy: { plateNumber: "asc" },
     }),
@@ -121,7 +146,7 @@ export default async function FuelPage({
                 <TableHead className="text-right">Liters</TableHead>
                 <TableHead className="text-right">Price/L</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Km</TableHead>
+                <TableHead className="text-right">Mi</TableHead>
                 <TableHead>Station</TableHead>
                 <TableHead className="text-right"></TableHead>
               </TableRow>

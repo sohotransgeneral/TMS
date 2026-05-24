@@ -37,11 +37,11 @@ export function DriverRouteMap({
     const centerLat =
       pickupLat != null && deliveryLat != null
         ? (pickupLat + deliveryLat) / 2
-        : pickupLat ?? 47.0;
+        : (pickupLat ?? 47.0);
     const centerLng =
       pickupLng != null && deliveryLng != null
         ? (pickupLng + deliveryLng) / 2
-        : pickupLng ?? 28.8;
+        : (pickupLng ?? 28.8);
 
     mapRef.current = new mapboxgl.Map({
       container: containerRef.current,
@@ -139,18 +139,27 @@ export function DriverRouteMap({
 
         drawRoute(map, lat, lng);
       },
-      () => {/* ignore errors */},
+      () => {
+        /* ignore errors */
+      },
       { enableHighAccuracy: true },
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, [ready]);
 
-  function drawRoute(map: mapboxgl.Map, driverLat: number | null, driverLng: number | null) {
+  function drawRoute(
+    map: mapboxgl.Map,
+    driverLat: number | null,
+    driverLng: number | null,
+  ) {
     const coords: [number, number][] = [];
-    if (pickupLng != null && pickupLat != null) coords.push([pickupLng, pickupLat]);
-    if (driverLng != null && driverLat != null) coords.push([driverLng, driverLat]);
-    if (deliveryLng != null && deliveryLat != null) coords.push([deliveryLng, deliveryLat]);
+    if (pickupLng != null && pickupLat != null)
+      coords.push([pickupLng, pickupLat]);
+    if (driverLng != null && driverLat != null)
+      coords.push([driverLng, driverLat]);
+    if (deliveryLng != null && deliveryLat != null)
+      coords.push([deliveryLng, deliveryLat]);
     if (coords.length < 2) return;
 
     const geojson: GeoJSON.Feature<GeoJSON.LineString> = {
@@ -160,7 +169,9 @@ export function DriverRouteMap({
     };
 
     if (map.getSource("driver-route")) {
-      (map.getSource("driver-route") as mapboxgl.GeoJSONSource).setData(geojson);
+      (map.getSource("driver-route") as mapboxgl.GeoJSONSource).setData(
+        geojson,
+      );
     } else {
       map.addSource("driver-route", { type: "geojson", data: geojson });
       map.addLayer({
@@ -188,13 +199,16 @@ export function DriverRouteMap({
       />
       <div className="flex gap-3 px-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#7c3aed]" /> Pickup
+          <span className="inline-block h-3 w-3 rounded-full bg-[#7c3aed]" />{" "}
+          Pickup
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#2563eb]" /> You
+          <span className="inline-block h-3 w-3 rounded-full bg-[#2563eb]" />{" "}
+          You
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-full bg-[#111827]" /> Delivery
+          <span className="inline-block h-3 w-3 rounded-full bg-[#111827]" />{" "}
+          Delivery
         </span>
       </div>
     </div>
@@ -215,5 +229,11 @@ function makeMarker(color: string, letter: string) {
 }
 
 function esc(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]!);
+  return s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        c
+      ]!,
+  );
 }

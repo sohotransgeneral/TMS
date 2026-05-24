@@ -215,7 +215,7 @@ export function FuelFormDialog({
                 defaultValue={initial?.station ?? ""}
               />
             </Field>
-            <Field name="mileage" label="Mileage (km)">
+            <Field name="mileage" label="Mileage (mi)">
               <Input
                 id="mileage"
                 name="mileage"
