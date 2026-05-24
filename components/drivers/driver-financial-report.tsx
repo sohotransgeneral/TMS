@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import {
   TrendingUp,
   TrendingDown,
-  Fuel,
   Receipt,
   ShieldCheck,
   Wrench,
@@ -321,7 +320,6 @@ export async function DriverFinancialReport({
                 value={`-${fmt(fuelCost, currency)}`}
                 sub={`${fuelAgg._count} înregistrări`}
                 negative
-                icon={Fuel}
               />
             )}
             {tollCost > 0 && (

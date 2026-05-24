@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, daysUntil } from "@/lib/utils";
 import { DocumentSection } from "@/components/documents/document-section";
-import { DriverFinancialReport, getPeriodRange } from "@/components/drivers/driver-financial-report";
+import {
+  DriverFinancialReport,
+  getPeriodRange,
+} from "@/components/drivers/driver-financial-report";
 import { PeriodSelector } from "@/components/drivers/period-selector";
 import { FileDown, ExternalLink } from "lucide-react";
 
@@ -202,7 +205,10 @@ export default async function DriverDetailPage({
           <div className="flex items-center gap-2">
             <PeriodSelector />
             <Button asChild variant="outline" size="sm">
-              <Link href={`/admin/drivers/${driver.id}/report?period=${period}`} target="_blank">
+              <Link
+                href={`/admin/drivers/${driver.id}/report?period=${period}`}
+                target="_blank"
+              >
                 <FileDown className="mr-2 h-4 w-4" />
                 PDF
               </Link>
@@ -227,9 +233,13 @@ export default async function DriverDetailPage({
 
       {/* Loads in period */}
       <section className="rounded-lg border bg-card p-6">
-        <h3 className="mb-4 font-semibold">Curse în perioadă ({periodLoads.length})</h3>
+        <h3 className="mb-4 font-semibold">
+          Curse în perioadă ({periodLoads.length})
+        </h3>
         {periodLoads.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">Fără curse în această perioadă.</p>
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            Fără curse în această perioadă.
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -248,7 +258,10 @@ export default async function DriverDetailPage({
                 {periodLoads.map((l) => (
                   <tr key={l.id} className="hover:bg-muted/40">
                     <td className="py-2 pr-4">
-                      <Link href={`/dispatch/loads/${l.id}`} className="flex items-center gap-1 font-mono text-xs text-primary hover:underline">
+                      <Link
+                        href={`/dispatch/loads/${l.id}`}
+                        className="flex items-center gap-1 font-mono text-xs text-primary hover:underline"
+                      >
                         {l.referenceNumber}
                         <ExternalLink className="h-3 w-3" />
                       </Link>
@@ -256,20 +269,35 @@ export default async function DriverDetailPage({
                     <td className="py-2 pr-4">
                       <span className="font-medium">{l.pickupCity ?? "—"}</span>
                       <span className="mx-1 text-muted-foreground">→</span>
-                      <span className="font-medium">{l.deliveryCity ?? "—"}</span>
+                      <span className="font-medium">
+                        {l.deliveryCity ?? "—"}
+                      </span>
                     </td>
-                    <td className="py-2 pr-4 text-muted-foreground">{l.customer?.name ?? "—"}</td>
+                    <td className="py-2 pr-4 text-muted-foreground">
+                      {l.customer?.name ?? "—"}
+                    </td>
                     <td className="py-2 pr-4 text-muted-foreground tabular-nums">
-                      {new Date(l.pickupDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                      {new Date(l.pickupDate).toLocaleDateString("ro-RO", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums">
-                      {Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("ro-RO")}
+                      {Math.round(
+                        l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0,
+                      ).toLocaleString("ro-RO")}
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums font-semibold">
-                      {new Intl.NumberFormat("ro-RO", { style: "currency", currency: l.currency }).format(l.price)}
+                      {new Intl.NumberFormat("ro-RO", {
+                        style: "currency",
+                        currency: l.currency,
+                      }).format(l.price)}
                     </td>
                     <td className="py-2">
-                      <Badge variant="outline" className="text-xs">{l.status.replace(/_/g, " ")}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {l.status.replace(/_/g, " ")}
+                      </Badge>
                     </td>
                   </tr>
                 ))}

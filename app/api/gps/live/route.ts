@@ -28,7 +28,7 @@ export async function GET() {
     },
   });
 
-  const driverIds = active.map((l) => l.driverId!).filter(Boolean);
+  const driverIds = [...new Set(active.map((l) => l.driverId!).filter(Boolean))];
   if (driverIds.length === 0) return NextResponse.json({ ok: true, positions: [] });
 
   const positions = await Promise.all(
