@@ -9,9 +9,11 @@ import {
   useSensor,
   useSensors,
   useDroppable,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   type DragStartEvent,
   type DragEndEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -189,6 +191,16 @@ export function CockpitBoard({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
+  // Use pointer-within first (best for large empty columns), fall back to rect intersection
+  const collisionDetection: CollisionDetection = useCallback(
+    (args) => {
+      const pointer = pointerWithin(args);
+      if (pointer.length > 0) return pointer;
+      return rectIntersection(args);
+    },
+    [],
+  );
+
   /** Map each load id → which column it's in */
   const loadToColumn = useCallback(
     (id: string): CockpitColumn | undefined => {
@@ -266,7 +278,7 @@ export function CockpitBoard({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
