@@ -164,7 +164,7 @@ export function DocumentList({
     <div className="space-y-4">
       {/* Upload panel */}
       {canUpload && (
-        <div className="rounded-lg border-2 border-dashed border-border bg-card p-5">
+        <div className="rounded-lg border-2 border-dashed border-border bg-muted p-5">
           <div className="mb-3 flex items-center gap-2">
             <Upload className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-semibold text-foreground">Upload Document</span>
@@ -175,7 +175,7 @@ export function DocumentList({
                 Document Type
               </label>
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full bg-muted text-foreground border-border">
+                <SelectTrigger className="w-full bg-background text-foreground border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,7 +196,7 @@ export function DocumentList({
                 type="date"
                 value={expiresAt}
                 onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground [color-scheme:light] dark:[color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
