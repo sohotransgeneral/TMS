@@ -81,8 +81,8 @@ export function GpsTracker({ loadId }: { loadId?: string }) {
           Math.abs(pos.coords.latitude - prev.lat) > 0.00005 ||
           Math.abs(pos.coords.longitude - prev.lng) > 0.00005;
 
-        // Send every 10 s OR on meaningful movement
-        if (now - lastSentTimeRef.current > 10_000 || moved) {
+        // Send every 60 s OR on meaningful movement
+        if (now - lastSentTimeRef.current > 60_000 || moved) {
           lastPosRef.current = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
