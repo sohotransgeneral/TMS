@@ -20,6 +20,7 @@ import { AcceptLoadButton } from "@/components/driver/accept-load-button";
 import { GpsTracker } from "@/components/driver/gps-tracker";
 import { DriverZoneMap } from "@/components/driver/driver-zone-map";
 import { NavigateButton } from "@/components/driver/navigate-button";
+import { DriverRouteMap } from "@/components/driver/driver-route-map";
 import { PermitList } from "@/components/fleet/permit-list";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -129,6 +130,16 @@ export default async function DriverDashboardPage() {
                 </div>
               )}
             </div>
+
+            <DriverRouteMap
+              token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
+              pickupLat={activeLoad.pickupLat}
+              pickupLng={activeLoad.pickupLng}
+              pickupAddress={activeLoad.pickupAddress}
+              deliveryLat={activeLoad.deliveryLat}
+              deliveryLng={activeLoad.deliveryLng}
+              deliveryAddress={activeLoad.deliveryAddress}
+            />
 
             <div className="grid gap-3">
               <RouteRow
@@ -319,27 +330,8 @@ function RouteRow({
   lat: number | null;
   lng: number | null;
 }) {
-  // Build embedded Google Maps iframe src
-  const embedSrc =
-    lat != null && lng != null
-      ? `https://maps.google.com/maps?q=${lat},${lng}&z=13&output=embed`
-      : `https://maps.google.com/maps?q=${encodeURIComponent(`${address} ${city ?? ""} ${country ?? ""}`.trim())}&z=13&output=embed`;
-
   return (
     <div className="rounded-md border overflow-hidden">
-      {/* Map preview */}
-      <div className="relative w-full h-36 bg-muted">
-        <iframe
-          src={embedSrc}
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          className="absolute inset-0"
-        />
-      </div>
-      {/* Info row */}
       <div className="flex items-start gap-3 p-3">
         <MapPin className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} />
         <div className="flex-1 min-w-0">
