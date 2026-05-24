@@ -114,12 +114,12 @@ export default async function DriverReportPage({
         <table className="w-full text-sm border-collapse table-fixed">
           <colgroup>
             <col style={{ width: "10%" }} />
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "18%" }} />
-            <col style={{ width: "18%" }} />
+            <col style={{ width: "17%" }} />
+            <col style={{ width: "17%" }} />
+            <col style={{ width: "17%" }} />
+            <col style={{ width: "11%" }} />
             <col style={{ width: "12%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "14%" }} />
+            <col style={{ width: "16%" }} />
           </colgroup>
           <thead>
             <tr className="border-b-2 border-gray-400 text-left text-xs text-gray-600">
@@ -128,7 +128,7 @@ export default async function DriverReportPage({
               <th className="pb-2 pr-3">Livrare</th>
               <th className="pb-2 pr-3">Client</th>
               <th className="pb-2 pr-3">Camion</th>
-              <th className="pb-2 pr-3 text-right">Km</th>
+              <th className="pb-2 pr-6 text-right">Km</th>
               <th className="pb-2 text-right">Pret</th>
             </tr>
           </thead>
@@ -156,7 +156,7 @@ export default async function DriverReportPage({
                 </td>
                 <td className="py-1.5 pr-3 text-sm">{l.customer?.name ?? "-"}</td>
                 <td className="py-1.5 pr-3 font-mono text-xs">{l.truck?.plateNumber ?? "-"}</td>
-                <td className="py-1.5 pr-3 text-right tabular-nums whitespace-nowrap">
+                <td className="py-1.5 pr-6 text-right tabular-nums whitespace-nowrap">
                   {Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("ro-RO")}
                 </td>
                 <td className="py-1.5 text-right tabular-nums font-semibold whitespace-nowrap">
@@ -167,8 +167,7 @@ export default async function DriverReportPage({
             {loads.length > 0 && (
               <tr className="border-t-2 border-gray-400 font-bold">
                 <td colSpan={5} className="py-2 text-sm">TOTAL</td>
-                <td className="py-2 text-right tabular-nums whitespace-nowrap">
-                  {Math.round(data.totalKm).toLocaleString("ro-RO")}
+                <td className="py-2 pr-6 text-right tabular-nums whitespace-nowrap">
                 </td>
                 <td className="py-2 text-right tabular-nums whitespace-nowrap">
                   {fmt(data.revenue, data.currency)}
