@@ -65,9 +65,7 @@ export function LiveMap({ token }: { token: string | null }) {
     const isDark = document.documentElement.classList.contains("dark");
     mapRef.current = new mapboxgl.Map({
       container: containerRef.current,
-      style: isDark
-        ? "mapbox://styles/mapbox/dark-v11"
-        : "mapbox://styles/mapbox/streets-v12",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [28.8, 47.0],
       zoom: 5,
     });

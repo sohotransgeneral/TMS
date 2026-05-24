@@ -76,9 +76,7 @@ export function DriverZoneMap({
     mapboxgl.accessToken = token;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: document.documentElement.classList.contains("dark")
-        ? "mapbox://styles/mapbox/dark-v11"
-        : "mapbox://styles/mapbox/streets-v12",
+      style: "mapbox://styles/mapbox/streets-v12",
       center:
         pickupLng != null && pickupLat != null
           ? [pickupLng, pickupLat]
