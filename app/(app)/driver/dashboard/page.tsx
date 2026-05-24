@@ -118,79 +118,83 @@ export default async function DriverDashboardPage() {
       {activeLoads.length > 0 ? (
         <div className="space-y-4">
           {activeLoads.map((activeLoad) => (
-          <Card key={activeLoad.id}>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Active Load</CardTitle>
-            <LoadStatusBadge status={activeLoad.status} />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="font-semibold">{activeLoad.referenceNumber}</div>
-              {activeLoad.customer && (
-                <div className="text-sm text-muted-foreground">
-                  {activeLoad.customer.name}
-                </div>
-              )}
-            </div>
-
-            <div className="grid gap-3">
-              <RouteRow
-                label="Pickup"
-                color="text-emerald-600"
-                address={activeLoad.pickupAddress}
-                city={activeLoad.pickupCity}
-                country={activeLoad.pickupCountry}
-                when={activeLoad.pickupDate}
-                lat={activeLoad.pickupLat}
-                lng={activeLoad.pickupLng}
-              />
-              <RouteRow
-                label="Delivery"
-                color="text-rose-600"
-                address={activeLoad.deliveryAddress}
-                city={activeLoad.deliveryCity}
-                country={activeLoad.deliveryCountry}
-                when={activeLoad.deliveryDate}
-                lat={activeLoad.deliveryLat}
-                lng={activeLoad.deliveryLng}
-              />
-            </div>
-
-            {activeLoad.cargoDescription && (
-              <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm">
-                <Package className="mt-0.5 h-4 w-4 shrink-0" />
+            <Card key={activeLoad.id}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Active Load</CardTitle>
+                <LoadStatusBadge status={activeLoad.status} />
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <div>{activeLoad.cargoDescription}</div>
-                  {activeLoad.weightKg && (
-                    <div className="text-xs text-muted-foreground">
-                      {activeLoad.weightKg} kg
+                  <div className="font-semibold">
+                    {activeLoad.referenceNumber}
+                  </div>
+                  {activeLoad.customer && (
+                    <div className="text-sm text-muted-foreground">
+                      {activeLoad.customer.name}
                     </div>
                   )}
                 </div>
-              </div>
-            )}
 
-            {activeLoad.customer?.phone && (
-              <a
-                href={`tel:${activeLoad.customer.phone}`}
-                className="flex items-center gap-2 rounded-md border p-3 text-sm hover:bg-accent"
-              >
-                <Phone className="h-4 w-4" />
-                Call client: {activeLoad.customer.phone}
-              </a>
-            )}
+                <div className="grid gap-3">
+                  <RouteRow
+                    label="Pickup"
+                    color="text-emerald-600"
+                    address={activeLoad.pickupAddress}
+                    city={activeLoad.pickupCity}
+                    country={activeLoad.pickupCountry}
+                    when={activeLoad.pickupDate}
+                    lat={activeLoad.pickupLat}
+                    lng={activeLoad.pickupLng}
+                  />
+                  <RouteRow
+                    label="Delivery"
+                    color="text-rose-600"
+                    address={activeLoad.deliveryAddress}
+                    city={activeLoad.deliveryCity}
+                    country={activeLoad.deliveryCountry}
+                    when={activeLoad.deliveryDate}
+                    lat={activeLoad.deliveryLat}
+                    lng={activeLoad.deliveryLng}
+                  />
+                </div>
 
-            <div className="flex gap-2">
-              <LoadStatusButton
-                loadId={activeLoad.id}
-                current={activeLoad.status}
-              />
-              <Button asChild variant="outline">
-                <Link href={`/dispatch/loads/${activeLoad.id}`}>Details</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                {activeLoad.cargoDescription && (
+                  <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-sm">
+                    <Package className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <div>{activeLoad.cargoDescription}</div>
+                      {activeLoad.weightKg && (
+                        <div className="text-xs text-muted-foreground">
+                          {activeLoad.weightKg} kg
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeLoad.customer?.phone && (
+                  <a
+                    href={`tel:${activeLoad.customer.phone}`}
+                    className="flex items-center gap-2 rounded-md border p-3 text-sm hover:bg-accent"
+                  >
+                    <Phone className="h-4 w-4" />
+                    Call client: {activeLoad.customer.phone}
+                  </a>
+                )}
+
+                <div className="flex gap-2">
+                  <LoadStatusButton
+                    loadId={activeLoad.id}
+                    current={activeLoad.status}
+                  />
+                  <Button asChild variant="outline">
+                    <Link href={`/dispatch/loads/${activeLoad.id}`}>
+                      Details
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : (

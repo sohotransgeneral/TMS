@@ -15,10 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
       default: title,
       template: `%s · ${title}`,
     },
-    icons: {
-      icon: logoUrl ?? "/favicon.png",
-      apple: logoUrl ?? "/apple-touch-icon.png",
-    },
   };
 }
 
