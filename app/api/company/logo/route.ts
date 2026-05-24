@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/session";
 import { saveFile } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"]);
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     where: { id: targetCompanyId },
     data: { logoUrl: url },
   });
+
+  revalidatePath("/", "layout");
 
   return NextResponse.json({ ok: true, url });
 }

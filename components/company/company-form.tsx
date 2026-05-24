@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Upload, X, Loader2, Building2 } from "lucide-react";
@@ -39,6 +40,7 @@ function LogoUpload({
   companyId?: string;
   initial?: string | null;
 }) {
+  const router = useRouter();
   const [url, setUrl] = useState(initial ?? "");
   const [uploading, setUploading] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
@@ -59,6 +61,7 @@ function LogoUpload({
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload failed");
       setUrl(json.url);
       toast.success("Logo uploaded successfully");
+      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload error");
     } finally {

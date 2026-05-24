@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { deleteFile } from "@/lib/storage";
+import { deletePrivate } from "@/lib/r2";
 
 export async function DELETE(
   _req: NextRequest,
@@ -20,7 +20,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await deleteFile(doc.url);
+  await deletePrivate(doc.url);
   await prisma.document.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });

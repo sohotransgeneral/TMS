@@ -76,6 +76,41 @@ interface DocumentListProps {
   canDelete?: boolean;
 }
 
+// ── OpenButton — fetches a short-lived signed URL then opens in new tab ───────
+function OpenButton({ docId }: { docId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleOpen() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/documents/${docId}/url`);
+      if (!res.ok) throw new Error("Failed to get download URL");
+      const { url } = await res.json();
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error("Could not open document. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleOpen}
+      disabled={loading}
+      className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+      title="Open"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <ExternalLink className="h-4 w-4" />
+      )}
+    </button>
+  );
+}
+
 export function DocumentList({
   documents,
   entityLink,
@@ -287,15 +322,7 @@ export function DocumentList({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    title="Open"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                  <OpenButton docId={doc.id} />
                   {canDelete && (
                     <button
                       type="button"

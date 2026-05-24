@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { saveFile } from "@/lib/storage";
+import { uploadPrivate } from "@/lib/r2";
 import { DocumentType } from "@prisma/client";
 
 // Max 20 MB per file
@@ -74,14 +74,14 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const { url, sizeBytes } = await saveFile(buffer, file.name);
+  const { key, sizeBytes } = await uploadPrivate(buffer, file.name);
 
   const doc = await prisma.document.create({
     data: {
       companyId,
       type: docType,
       name,
-      url,
+      url: key,
       mimeType: file.type,
       sizeBytes,
       expiresAt,
