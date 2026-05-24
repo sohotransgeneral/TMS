@@ -100,7 +100,7 @@ export default async function LoadsPage({
               customers={customers.map((c) => ({ id: c.id, label: c.name }))}
               drivers={drivers.map((d) => ({
                 id: d.id,
-                label: d.user.name ?? "Driver",
+                label: d.user?.name ?? "Driver",
               }))}
               trucks={trucks.map((t) => ({
                 id: t.id,

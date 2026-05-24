@@ -108,7 +108,7 @@ export default async function LoadDetailPage({
               }}
               drivers={drivers.map((d) => ({
                 id: d.id,
-                label: d.user.name ?? "Driver",
+                label: d.user?.name ?? "Driver",
               }))}
               trucks={trucks.map((t) => ({ id: t.id, label: t.plateNumber }))}
               trailers={trailers.map((t) => ({
@@ -240,8 +240,8 @@ export default async function LoadDetailPage({
             <div>
               <dt className="text-muted-foreground">Driver</dt>
               <dd>
-                {load.driver?.user.name ?? "—"}
-                {load.driver?.user.phone && (
+                {load.driver?.user?.name ?? "—"}
+                {load.driver?.user?.phone && (
                   <div className="text-xs text-muted-foreground">
                     {load.driver.user.phone}
                   </div>

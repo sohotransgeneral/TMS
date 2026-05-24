@@ -48,7 +48,7 @@ export default async function EditLoadPage({
         customers={customers.map((c) => ({ id: c.id, label: c.name }))}
         drivers={drivers.map((d) => ({
           id: d.id,
-          label: d.user.name ?? "Șofer",
+          label: d.user?.name ?? "Șofer",
         }))}
         trucks={trucks.map((t) => ({
           id: t.id,
