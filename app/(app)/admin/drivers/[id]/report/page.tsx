@@ -20,12 +20,12 @@ function R({
   bold?: boolean;
 }) {
   return (
-    <tr className={bold ? "border-t-2 border-border font-bold" : ""}>
-      <td className="py-1 pr-4 text-sm text-muted-foreground">
+    <tr className={bold ? "border-t-2 border-gray-400 font-bold" : ""}>
+      <td className="py-1 pr-4 text-sm text-gray-600">
         {label}
       </td>
       <td
-        className={`py-1 text-right font-mono text-sm ${neg ? "text-red-500 dark:text-red-400" : bold ? "text-foreground" : "text-foreground"}`}
+        className={`py-1 text-right font-mono text-sm ${neg ? "text-red-600" : "text-gray-900"}`}
       >
         {value}
       </td>
@@ -61,12 +61,12 @@ export default async function DriverReportPage({
   const fullName = `${driver.firstName} ${driver.lastName}`;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-6 py-8 print:px-0 print:py-0">
+    <div className="mx-auto max-w-4xl space-y-8 px-6 py-8 print:px-0 print:py-0 bg-white text-gray-900 rounded-lg">
       {/* Toolbar — hidden on print */}
       <div className="flex items-center justify-between print:hidden">
         <Link
           href={`/admin/drivers/${id}?period=${period}`}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
           Înapoi la profil
@@ -75,24 +75,24 @@ export default async function DriverReportPage({
       </div>
 
       {/* Header */}
-      <div className="border-b-2 border-border pb-4">
+      <div className="border-b-2 border-gray-900 pb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground print:text-black">
+            <h1 className="text-2xl font-bold text-gray-900">
               {fullName}
             </h1>
-            <p className="text-sm text-muted-foreground print:text-gray-600">
+            <p className="text-sm text-gray-500">
               {driver.user.email}
             </p>
           </div>
           <div className="text-right">
-            <div className="text-lg font-semibold text-foreground print:text-black">
+            <div className="text-lg font-semibold text-gray-900">
               Raport Financiar
             </div>
-            <div className="text-sm text-muted-foreground print:text-gray-600">
+            <div className="text-sm text-gray-600">
               {data.periodLabel}
             </div>
-            <div className="text-xs text-muted-foreground print:text-gray-500">
+            <div className="text-xs text-gray-500">
               Generat:{" "}
               {new Date().toLocaleDateString("ro-RO", {
                 day: "2-digit",
@@ -117,12 +117,12 @@ export default async function DriverReportPage({
         ].map((k) => (
           <div
             key={k.label}
-            className="rounded border border-border p-3"
+            className="rounded border border-gray-300 p-3"
           >
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-gray-500">
               {k.label}
             </div>
-            <div className="text-lg font-bold text-foreground">
+            <div className="text-lg font-bold text-gray-900">
               {k.value}
             </div>
           </div>
@@ -131,12 +131,12 @@ export default async function DriverReportPage({
 
       {/* Loads table */}
       <div>
-        <h2 className="mb-3 text-base font-bold text-foreground print:text-black">
+          <h2 className="mb-3 text-base font-bold text-gray-900">
           Curse Efectuate ({loads.length})
         </h2>
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="border-b-2 border-border text-left text-xs text-muted-foreground">
+            <tr className="border-b-2 border-gray-400 text-left text-xs text-gray-600">
               <th className="pb-2 pr-3">Nr. Ref.</th>
               <th className="pb-2 pr-3">Pickup</th>
               <th className="pb-2 pr-3">Livrare</th>
@@ -149,7 +149,7 @@ export default async function DriverReportPage({
           <tbody>
             {loads.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-4 text-center text-muted-foreground">
+                <td colSpan={7} className="py-4 text-center text-gray-500">
                   Fără curse în această perioadă
                 </td>
               </tr>
@@ -157,7 +157,7 @@ export default async function DriverReportPage({
             {loads.map((l, i) => (
               <tr
                 key={l.id}
-                className={`border-b border-border ${i % 2 === 0 ? "" : "bg-muted/40"}`}
+                className={`border-b border-gray-200 ${i % 2 === 0 ? "" : "bg-gray-50"}`}
               >
                 <td className="py-1.5 pr-3 font-mono text-xs">
                   {l.referenceNumber}
@@ -166,7 +166,7 @@ export default async function DriverReportPage({
                   <div className="font-medium">
                     {l.pickupCity ?? l.pickupAddress.slice(0, 25)}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-gray-500">
                     {fmtDate(l.pickupDate)}
                   </div>
                 </td>
@@ -174,7 +174,7 @@ export default async function DriverReportPage({
                   <div className="font-medium">
                     {l.deliveryCity ?? l.deliveryAddress.slice(0, 25)}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-gray-500">
                     {fmtDate(l.deliveryDate)}
                   </div>
                 </td>
@@ -195,7 +195,7 @@ export default async function DriverReportPage({
               </tr>
             ))}
             {loads.length > 0 && (
-              <tr className="border-t-2 border-border font-bold">
+              <tr className="border-t-2 border-gray-400 font-bold">
                 <td colSpan={5} className="py-2 text-sm">
                   TOTAL
                 </td>
@@ -215,7 +215,7 @@ export default async function DriverReportPage({
       <div className="grid grid-cols-2 gap-8">
         {/* Deductions */}
         <div>
-          <h2 className="mb-3 text-base font-bold text-foreground print:text-black">
+          <h2 className="mb-3 text-base font-bold text-gray-900">
             Cheltuieli & Deduceri
           </h2>
           <table className="w-full border-collapse">
@@ -225,7 +225,7 @@ export default async function DriverReportPage({
                 value={fmt(data.revenue, data.currency)}
               />
               <tr>
-                <td colSpan={2} className="py-1 border-b border-border" />
+                <td colSpan={2} className="py-1 border-b border-gray-300" />
               </tr>
               {data.fuelCost > 0 && (
                 <R
@@ -299,7 +299,7 @@ export default async function DriverReportPage({
 
         {/* Salary & taxes */}
         <div>
-          <h2 className="mb-3 text-base font-bold text-foreground print:text-black">
+          <h2 className="mb-3 text-base font-bold text-gray-900">
             Calcul Salariu & Taxe
           </h2>
           <table className="w-full border-collapse">
@@ -321,7 +321,7 @@ export default async function DriverReportPage({
               )}
               <R label="Salariu BRUT" value={fmt(data.brutSalary)} bold />
               <tr>
-                <td colSpan={2} className="py-1 border-b border-border" />
+                <td colSpan={2} className="py-1 border-b border-gray-300" />
               </tr>
               <R
                 label="CAS angajat (25%)"
@@ -358,7 +358,7 @@ export default async function DriverReportPage({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border pt-4 text-xs text-muted-foreground">
+      <div className="border-t border-gray-300 pt-4 text-xs text-gray-500">
         <p>
           Raport generat automat de TMS · {fullName} · {data.periodLabel}
         </p>
