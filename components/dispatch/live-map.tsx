@@ -58,8 +58,8 @@ export function LiveMap({ token }: { token: string | null }) {
     mapRef.current = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [-98.5795, 39.8283],
-      zoom: 3.5,
+      center: [28.8, 47.0],
+      zoom: 5,
     });
     mapRef.current.addControl(new mapboxgl.NavigationControl(), "top-right");
     return () => {
@@ -89,7 +89,14 @@ export function LiveMap({ token }: { token: string | null }) {
         const res = await fetch("/api/gps/live", { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to load positions");
         const data = await res.json();
-        if (!cancelled) setPositions(data.positions ?? []);
+        if (!cancelled) {
+          setPositions(data.positions ?? []);
+          // Auto-fly to first real position on initial fetch
+          if (data.positions?.length > 0 && mapRef.current) {
+            const first = data.positions[0];
+            mapRef.current.flyTo({ center: [first.lng, first.lat], zoom: 7, speed: 1.5 });
+          }
+        }
       } catch (e) {
         if (!cancelled) setError((e as Error).message);
       }
@@ -118,13 +125,14 @@ export function LiveMap({ token }: { token: string | null }) {
     for (const p of positions) {
       seen.add(p.driverId);
       let marker = drMarkersRef.current.get(p.driverId);
+      const speedMph = p.speed != null ? Math.round(p.speed * 0.621371) : null;
       const popupHtml = `
-        <div style="font-size:12px;line-height:1.5">
-          <strong>${escapeHtml(p.driverName)}</strong><br/>
-          ${p.truckPlate ? `🚚 ${escapeHtml(p.truckPlate)}<br/>` : ""}
-          ${p.loadRef ? `📦 <a href="/dispatch/loads/${p.loadId}" style="color:#2563eb">${escapeHtml(p.loadRef)}</a> <span style="color:#6b7280">(${escapeHtml(p.loadStatus ?? "")})</span><br/>` : `<span style="color:#d97706">⚠️ No active load</span><br/>`}
-          ${p.speed != null ? `🚀 ${Math.round(p.speed)} km/h<br/>` : ""}
-          <em style="color:#9ca3af">${new Date(p.recordedAt).toLocaleTimeString()}</em>
+        <div style="font-size:12px;line-height:1.6;min-width:140px;color:#111827;background:#fff;padding:2px">
+          <div style="font-weight:700;color:#111827;margin-bottom:2px">${escapeHtml(p.driverName)}</div>
+          ${p.truckPlate ? `<div>🚚 <span style="color:#374151">${escapeHtml(p.truckPlate)}</span></div>` : ""}
+          ${p.loadRef ? `<div>📦 <a href="/dispatch/loads/${p.loadId}" style="color:#2563eb">${escapeHtml(p.loadRef)}</a> <span style="color:#6b7280">(${escapeHtml(p.loadStatus ?? "")})</span></div>` : `<div style="color:#d97706">⚠️ No active load</div>`}
+          ${speedMph != null ? `<div style="color:#374151">🚀 ${speedMph} mph</div>` : ""}
+          <div style="color:#9ca3af;margin-top:2px">${new Date(p.recordedAt).toLocaleTimeString()}</div>
         </div>`;
       if (!marker) {
         const el = document.createElement("div");
