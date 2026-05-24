@@ -24,6 +24,7 @@ export default async function CompanyDetailPage({
         description="Informații fiscale, bancare și setări de facturare."
       />
       <CompanyForm
+        companyId={company.id}
         initial={{
           name: company.name,
           taxId: company.taxId,

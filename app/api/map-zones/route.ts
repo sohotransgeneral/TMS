@@ -4,11 +4,9 @@ import { requireUser } from "@/lib/session";
 
 export async function GET() {
   const user = await requireUser();
-  if (!user.companyId)
-    return NextResponse.json({ ok: false, error: "No company" }, { status: 403 });
 
   const pins = await prisma.mapZonePin.findMany({
-    where: { companyId: user.companyId },
+    where: user.companyId ? { companyId: user.companyId } : {},
     include: {
       driver: { select: { firstName: true, lastName: true } },
     },
@@ -20,12 +18,13 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const user = await requireUser();
+
+  // Only drivers can place pins (super admin cannot — no driver profile)
+  if (user.role !== "DRIVER")
+    return NextResponse.json({ ok: false, error: "Only drivers can place zone pins" }, { status: 403 });
+
   if (!user.companyId)
     return NextResponse.json({ ok: false, error: "No company" }, { status: 403 });
-
-  // Only drivers can place pins
-  if (user.role !== "DRIVER" && user.role !== "SUPER_ADMIN")
-    return NextResponse.json({ ok: false, error: "Only drivers can place zone pins" }, { status: 403 });
 
   const driver = await prisma.driverProfile.findUnique({ where: { userId: user.id } });
   if (!driver)

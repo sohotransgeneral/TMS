@@ -65,26 +65,36 @@ export async function createCompany(formData: FormData): Promise<ActionResult> {
 
 export async function updateMyCompany(formData: FormData): Promise<ActionResult> {
   const user = await requirePermission("company:write");
-  if (!user.companyId) return failure("Nu ești asociat unei companii.");
 
-  const parsed = companySchema.safeParse(Object.fromEntries(formData));
+  const raw = Object.fromEntries(formData);
+  // Super admin passes an explicit id; company admin uses their own companyId
+  const targetId = (typeof raw.id === "string" && raw.id) ? raw.id : user.companyId;
+  if (!targetId) return failure("Nu ești asociat unei companii.");
+
+  // Non-super-admin can only edit their own company
+  if (user.role !== "SUPER_ADMIN" && targetId !== user.companyId) {
+    return failure("Acces interzis.");
+  }
+
+  const parsed = companySchema.safeParse(raw);
   if (!parsed.success) {
     return failure("Date invalide", parsed.error.flatten().fieldErrors);
   }
 
   await prisma.company.update({
-    where: { id: user.companyId },
+    where: { id: targetId },
     data: parsed.data,
   });
 
   await logAudit({
     action: "company.update",
     userId: user.id,
-    companyId: user.companyId,
+    companyId: targetId,
     entityType: "Company",
-    entityId: user.companyId,
+    entityId: targetId,
   });
 
   revalidatePath("/admin/company");
+  revalidatePath(`/admin/company/${targetId}`);
   return success(undefined, "Modificările au fost salvate.");
 }

@@ -29,7 +29,7 @@ export type CompanyData = {
   locale: string | null;
 };
 
-export function CompanyForm({ initial }: { initial: CompanyData }) {
+export function CompanyForm({ initial, companyId }: { initial: CompanyData; companyId?: string }) {
   const action = toActionState(updateMyCompany);
   const [state, formAction, pending] = useActionState<
     ActionResult | null,
@@ -46,6 +46,7 @@ export function CompanyForm({ initial }: { initial: CompanyData }) {
 
   return (
     <form action={formAction} className="grid gap-6">
+      {companyId && <input type="hidden" name="id" value={companyId} />}
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Date generale</h3>
         <Field name="name" label="Denumire companie" required error={e.name}>
