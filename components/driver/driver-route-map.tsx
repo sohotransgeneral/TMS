@@ -45,7 +45,9 @@ export function DriverRouteMap({
 
     mapRef.current = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: document.documentElement.classList.contains("dark")
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/streets-v12",
       center: [centerLng, centerLat],
       zoom: 5,
     });
@@ -62,7 +64,7 @@ export function DriverRouteMap({
           .setLngLat([pickupLng, pickupLat])
           .setPopup(
             new mapboxgl.Popup({ offset: 14 }).setHTML(
-              `<div style="font-size:12px;color:#111827"><b>📍 Pickup</b><br/>${esc(pickupAddress)}</div>`,
+              `<div style="font-size:12px"><b>📍 Pickup</b><br/>${esc(pickupAddress)}</div>`,
             ),
           )
           .addTo(map);
@@ -75,7 +77,7 @@ export function DriverRouteMap({
           .setLngLat([deliveryLng, deliveryLat])
           .setPopup(
             new mapboxgl.Popup({ offset: 14 }).setHTML(
-              `<div style="font-size:12px;color:#111827"><b>🏁 Delivery</b><br/>${esc(deliveryAddress)}</div>`,
+              `<div style="font-size:12px"><b>🏁 Delivery</b><br/>${esc(deliveryAddress)}</div>`,
             ),
           )
           .addTo(map);
@@ -129,7 +131,7 @@ export function DriverRouteMap({
             .setLngLat([lng, lat])
             .setPopup(
               new mapboxgl.Popup({ offset: 14 }).setHTML(
-                `<div style="font-size:12px;color:#111827"><b>📍 You are here</b></div>`,
+                `<div style="font-size:12px"><b>📍 You are here</b></div>`,
               ),
             )
             .addTo(map);

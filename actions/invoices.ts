@@ -90,6 +90,7 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
     body: `Total ${total} ${d.currency}`,
     link: `/accounting/invoices/${invoice.id}`,
     roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
+    userIds: [me.id],
   });
 
   revalidatePath("/accounting/invoices");

@@ -127,7 +127,16 @@ export async function notifyEvent(args: {
   telegramText?: string;
   meta?: Record<string, unknown>;
 }): Promise<void> {
+  // Collect user ids that already get notified via roles (to avoid duplicates)
+  let coveredByRoles = new Set<string>();
   if (args.roles?.length) {
+    try {
+      const roleUsers = await prisma.user.findMany({
+        where: { companyId: args.companyId, role: { in: args.roles }, active: true },
+        select: { id: true },
+      });
+      coveredByRoles = new Set(roleUsers.map((u) => u.id));
+    } catch { /* ignore */ }
     await notifyRoles({
       companyId: args.companyId,
       roles: args.roles,
@@ -140,8 +149,9 @@ export async function notifyEvent(args: {
     });
   }
   if (args.userIds?.length) {
+    const extra = args.userIds.filter((id) => !coveredByRoles.has(id));
     await Promise.all(
-      args.userIds.map((userId) =>
+      extra.map((userId) =>
         notify({
           userId,
           type: args.type,

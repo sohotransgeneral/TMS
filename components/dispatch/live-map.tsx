@@ -62,9 +62,12 @@ export function LiveMap({ token }: { token: string | null }) {
   useEffect(() => {
     if (!token || !containerRef.current || mapRef.current) return;
     mapboxgl.accessToken = token;
+    const isDark = document.documentElement.classList.contains("dark");
     mapRef.current = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: isDark
+        ? "mapbox://styles/mapbox/dark-v11"
+        : "mapbox://styles/mapbox/streets-v12",
       center: [28.8, 47.0],
       zoom: 5,
     });
@@ -138,12 +141,12 @@ export function LiveMap({ token }: { token: string | null }) {
       let marker = drMarkersRef.current.get(p.driverId);
       const speedMph = p.speed != null ? Math.round(p.speed * 0.621371) : null;
       const popupHtml = `
-        <div style="font-size:12px;line-height:1.6;min-width:140px;color:#111827;background:#fff;padding:2px">
-          <div style="font-weight:700;color:#111827;margin-bottom:2px">${escapeHtml(p.driverName)}</div>
-          ${p.truckPlate ? `<div>🚚 <span style="color:#374151">${escapeHtml(p.truckPlate)}</span></div>` : ""}
-          ${p.loadRef ? `<div>📦 <a href="/dispatch/loads/${p.loadId}" style="color:#2563eb">${escapeHtml(p.loadRef)}</a> <span style="color:#6b7280">(${escapeHtml(p.loadStatus ?? "")})</span></div>` : `<div style="color:#d97706">⚠️ No active load</div>`}
-          ${speedMph != null ? `<div style="color:#374151">🚀 ${speedMph} mph</div>` : ""}
-          <div style="color:#9ca3af;margin-top:2px">${new Date(p.recordedAt).toLocaleTimeString()}</div>
+        <div style="font-size:12px;line-height:1.6;min-width:140px;padding:2px">
+          <div style="font-weight:700;margin-bottom:2px">${escapeHtml(p.driverName)}</div>
+          ${p.truckPlate ? `<div>🚚 ${escapeHtml(p.truckPlate)}</div>` : ""}
+          ${p.loadRef ? `<div>📦 <a href="/dispatch/loads/${p.loadId}" style="color:#2563eb">${escapeHtml(p.loadRef)}</a> <span style="opacity:0.7">(${escapeHtml(p.loadStatus ?? "")})</span></div>` : `<div style="color:#d97706">⚠️ No active load</div>`}
+          ${speedMph != null ? `<div>🚀 ${speedMph} mph</div>` : ""}
+          <div style="opacity:0.6;margin-top:2px">${new Date(p.recordedAt).toLocaleTimeString()}</div>
         </div>`;
       if (!marker) {
         const el = document.createElement("div");
@@ -243,7 +246,7 @@ export function LiveMap({ token }: { token: string | null }) {
               .setLngLat([p.pickupLng!, p.pickupLat!])
               .setPopup(
                 new mapboxgl.Popup({ offset: 14 }).setHTML(
-                  `<div style="font-size:12px;color:#111827"><b>📍 Pickup</b><br/>${escapeHtml(p.pickupAddress ?? "")}</div>`,
+                  `<div style="font-size:12px"><b>📍 Pickup</b><br/>${escapeHtml(p.pickupAddress ?? "")}</div>`,
                 ),
               )
               .addTo(map);
@@ -252,7 +255,7 @@ export function LiveMap({ token }: { token: string | null }) {
               .setLngLat([p.deliveryLng!, p.deliveryLat!])
               .setPopup(
                 new mapboxgl.Popup({ offset: 14 }).setHTML(
-                  `<div style="font-size:12px;color:#111827"><b>🏁 Delivery</b><br/>${escapeHtml(p.deliveryAddress ?? "")}</div>`,
+                  `<div style="font-size:12px"><b>🏁 Delivery</b><br/>${escapeHtml(p.deliveryAddress ?? "")}</div>`,
                 ),
               )
               .addTo(map);

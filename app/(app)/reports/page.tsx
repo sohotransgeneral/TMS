@@ -59,14 +59,39 @@ export default async function ReportsPage({
   const last30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const last12Start = startOfMonth(now.getFullYear(), now.getMonth() - 11);
 
+  // If filtering by driver or truck, pre-fetch load IDs so we can filter
+  // invoices and payments (which don't have a direct driverId/truckId field).
+  let filterLoadIds: string[] | undefined;
+  if (driverId || truckId) {
+    const filterLoads = await prisma.load.findMany({
+      where: {
+        companyId,
+        ...(driverId ? { driverId } : {}),
+        ...(truckId ? { truckId } : {}),
+      },
+      select: { id: true },
+    });
+    filterLoadIds = filterLoads.map((l) => l.id);
+  }
+
   const [invoices, payments, loads, expenses, fuel, fleet, drivers, allTrucks] =
     await Promise.all([
       prisma.invoice.findMany({
-        where: { companyId, issueDate: { gte: last12Start } },
-        select: { issueDate: true, total: true },
+        where: {
+          companyId,
+          issueDate: { gte: last12Start },
+          ...(filterLoadIds ? { loadId: { in: filterLoadIds } } : {}),
+        },
+        select: { id: true, issueDate: true, total: true },
       }),
       prisma.payment.findMany({
-        where: { companyId, paidAt: { gte: last12Start } },
+        where: {
+          companyId,
+          paidAt: { gte: last12Start },
+          ...(filterLoadIds
+            ? { invoice: { loadId: { in: filterLoadIds } } }
+            : {}),
+        },
         select: { paidAt: true, amount: true },
       }),
       prisma.load.findMany({
