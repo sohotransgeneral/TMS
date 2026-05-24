@@ -25,15 +25,29 @@ function loadNotifyBody(args: {
   driverName?: string | null;
   truckPlate?: string | null;
   poNumber?: string | null;
+  customerName?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  loadType?: string | null;
   note?: string | null;
 }): string {
   const lines: string[] = [
-    `${args.pickupCity ?? args.pickupAddress ?? "Pickup"} → ${args.deliveryCity ?? args.deliveryAddress ?? "Delivery"}`,
+    `📦 ${args.pickupCity ?? args.pickupAddress ?? "Pickup"} → ${args.deliveryCity ?? args.deliveryAddress ?? "Delivery"}`,
   ];
+  if (args.customerName) lines.push(`Customer: ${args.customerName}`);
   const details: string[] = [];
   if (args.driverName) details.push(`Driver: ${args.driverName}`);
   if (args.truckPlate) details.push(`Truck: ${args.truckPlate}`);
   if (details.length) lines.push(details.join(" | "));
+  const extras: string[] = [];
+  if (args.loadType) extras.push(args.loadType);
+  if (args.price != null)
+    extras.push(
+      `${args.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${
+        args.currency ?? "USD"
+      }`,
+    );
+  if (extras.length) lines.push(extras.join(" | "));
   if (args.poNumber) lines.push(`PO: ${args.poNumber}`);
   if (args.note) lines.push(`Note: ${args.note}`);
   return lines.join("\n");
@@ -135,13 +149,16 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   });
 
   // Notifications: dispatchers/admins always; assigned driver if any
-  // Fetch driver + truck for rich notification body
-  const [assignedDriver, assignedTruck] = await Promise.all([
+  // Fetch driver + truck + customer for rich notification body
+  const [assignedDriver, assignedTruck, assignedCustomer] = await Promise.all([
     load.driverId
       ? prisma.driverProfile.findUnique({ where: { id: load.driverId }, select: { userId: true, firstName: true, lastName: true } })
       : null,
     load.truckId
       ? prisma.truck.findUnique({ where: { id: load.truckId }, select: { plateNumber: true } })
+      : null,
+    load.customerId
+      ? prisma.customer.findUnique({ where: { id: load.customerId }, select: { name: true } })
       : null,
   ]);
   await notifyEvent({
@@ -157,6 +174,10 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       deliveryCity: d.deliveryCity, deliveryAddress: d.deliveryAddress,
       driverName: assignedDriver ? `${assignedDriver.firstName} ${assignedDriver.lastName}` : null,
       truckPlate: assignedTruck?.plateNumber,
+      customerName: assignedCustomer?.name,
+      price: d.price,
+      currency: d.currency,
+      loadType: d.loadType,
       poNumber: d.poNumber,
     }),
     link: `/dispatch/loads/${load.id}`,
@@ -264,9 +285,10 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   });
 
   if (driverId && shouldFlip) {
-    const [assignDriver, assignTruck] = await Promise.all([
+    const [assignDriver, assignTruck, assignCustomer] = await Promise.all([
       prisma.driverProfile.findUnique({ where: { id: driverId }, select: { userId: true, firstName: true, lastName: true } }),
       truckId ? prisma.truck.findUnique({ where: { id: truckId }, select: { plateNumber: true } }) : null,
+      target.customerId ? prisma.customer.findUnique({ where: { id: target.customerId }, select: { name: true } }) : null,
     ]);
     await notifyEvent({
       companyId: me.companyId,
@@ -278,6 +300,10 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
         deliveryCity: target.deliveryCity, deliveryAddress: target.deliveryAddress,
         driverName: assignDriver ? `${assignDriver.firstName} ${assignDriver.lastName}` : null,
         truckPlate: assignTruck?.plateNumber,
+        customerName: assignCustomer?.name,
+        price: target.price,
+        currency: target.currency,
+        loadType: target.loadType,
         poNumber: target.poNumber,
       }),
       link: `/dispatch/loads/${id}`,
@@ -306,6 +332,7 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
     include: {
       driver: true,
       truck: { select: { plateNumber: true } },
+      customer: { select: { name: true } },
     },
   });
   if (!target || target.companyId !== me.companyId) return failure("Load not found.");
@@ -353,11 +380,16 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
       deliveryCity: target.deliveryCity, deliveryAddress: target.deliveryAddress,
       driverName: target.driver ? `${target.driver.firstName} ${target.driver.lastName}` : null,
       truckPlate: target.truck?.plateNumber,
+      customerName: target.customer?.name,
+      price: target.price,
+      currency: target.currency,
+      loadType: target.loadType,
       poNumber: target.poNumber,
       note,
     }),
     link: `/dispatch/loads/${id}`,
     roles: ["COMPANY_ADMIN", "DISPATCHER"],
+    userIds: target.driver?.userId ? [target.driver.userId] : undefined,
   });
 
   revalidatePath("/dispatch/loads");
@@ -394,6 +426,7 @@ export async function acceptLoad(id: string): Promise<ActionResult> {
     include: {
       driver: true,
       truck: { select: { plateNumber: true } },
+      customer: { select: { name: true } },
     },
   });
   if (!load || load.companyId !== me.companyId) return failure("Load not found.");
@@ -421,6 +454,10 @@ export async function acceptLoad(id: string): Promise<ActionResult> {
         deliveryCity: load.deliveryCity, deliveryAddress: load.deliveryAddress,
         driverName: load.driver ? `${load.driver.firstName} ${load.driver.lastName}` : null,
         truckPlate: load.truck?.plateNumber,
+        customerName: load.customer?.name,
+        price: load.price,
+        currency: load.currency,
+        loadType: load.loadType,
         poNumber: load.poNumber,
       }),
       link: `/dispatch/loads/${id}`,

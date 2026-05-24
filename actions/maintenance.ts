@@ -47,12 +47,35 @@ export async function createMaintenance(formData: FormData): Promise<ActionResul
     meta: { title: d.title },
   });
 
+  // Fetch truck / trailer for rich notification
+  const [mntTruck, mntTrailer] = await Promise.all([
+    d.truckId
+      ? prisma.truck.findUnique({ where: { id: d.truckId }, select: { plateNumber: true } })
+      : null,
+    d.trailerId
+      ? prisma.trailer.findUnique({ where: { id: d.trailerId }, select: { plateNumber: true } })
+      : null,
+  ]);
+
+  const mntBodyLines: string[] = [];
+  if (mntTruck) mntBodyLines.push(`Truck: ${mntTruck.plateNumber}`);
+  if (mntTrailer) mntBodyLines.push(`Trailer: ${mntTrailer.plateNumber}`);
+  if (d.scheduledAt)
+    mntBodyLines.push(
+      `Scheduled: ${d.scheduledAt.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}`,
+    );
+  if (d.cost != null)
+    mntBodyLines.push(
+      `Cost: ${d.cost.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${d.currency ?? "USD"}`,
+    );
+  if (d.description) mntBodyLines.push(`Note: ${d.description}`);
+
   await notifyEvent({
     companyId: me.companyId,
     topic: "maintenance",
     type: "MAINTENANCE",
-    title: `Maintenance scheduled: ${d.title}`,
-    body: d.scheduledAt ? `Scheduled for ${d.scheduledAt.toString()}` : undefined,
+    title: `🔧 Maintenance scheduled: ${d.title}`,
+    body: mntBodyLines.join("\n"),
     link: `/fleet/maintenance`,
     roles: ["COMPANY_ADMIN", "FLEET_MANAGER"],
   });

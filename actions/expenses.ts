@@ -53,12 +53,44 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
     meta: { amount: d.amount, type: d.type },
   });
 
+  // Fetch driver / truck / load context for rich body
+  const [expDriver, expTruck, expLoad] = await Promise.all([
+    driverId
+      ? prisma.driverProfile.findUnique({
+          where: { id: driverId },
+          select: { firstName: true, lastName: true },
+        })
+      : null,
+    d.truckId
+      ? prisma.truck.findUnique({ where: { id: d.truckId }, select: { plateNumber: true } })
+      : null,
+    d.loadId
+      ? prisma.load.findUnique({
+          where: { id: d.loadId },
+          select: { referenceNumber: true },
+        })
+      : null,
+  ]);
+
+  const expBodyLines: string[] = [
+    `Type: ${d.type} | Amount: ${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${d.currency}`,
+  ];
+  if (expDriver)
+    expBodyLines.push(
+      `Driver: ${expDriver.firstName} ${expDriver.lastName}${
+        expTruck ? ` | Truck: ${expTruck.plateNumber}` : ""
+      }`,
+    );
+  else if (expTruck) expBodyLines.push(`Truck: ${expTruck.plateNumber}`);
+  if (expLoad) expBodyLines.push(`Load: ${expLoad.referenceNumber}`);
+  if (d.description) expBodyLines.push(`Note: ${d.description}`);
+
   await notifyEvent({
     companyId: me.companyId,
     topic: "expenses",
     type: "EXPENSE_SUBMITTED",
-    title: `Expense submitted: ${d.type}`,
-    body: `${d.amount} ${d.currency} — ${d.description ?? ""}`.trim(),
+    title: `🧾 Expense submitted: ${d.type}`,
+    body: expBodyLines.join("\n"),
     link: `/accounting/expenses`,
     roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
   });
@@ -126,12 +158,45 @@ export async function decideExpense(formData: FormData): Promise<ActionResult> {
     meta: { decision },
   });
 
+  // Fetch driver / truck / load for rich decision body
+  const [decDriver, decTruck, decLoad] = await Promise.all([
+    target.driverId
+      ? prisma.driverProfile.findUnique({
+          where: { id: target.driverId },
+          select: { firstName: true, lastName: true },
+        })
+      : null,
+    target.truckId
+      ? prisma.truck.findUnique({ where: { id: target.truckId }, select: { plateNumber: true } })
+      : null,
+    target.loadId
+      ? prisma.load.findUnique({
+          where: { id: target.loadId },
+          select: { referenceNumber: true },
+        })
+      : null,
+  ]);
+
+  const decBodyLines: string[] = [
+    `Type: ${target.type} | Amount: ${target.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${target.currency}`,
+  ];
+  if (decDriver)
+    decBodyLines.push(
+      `Driver: ${decDriver.firstName} ${decDriver.lastName}${
+        decTruck ? ` | Truck: ${decTruck.plateNumber}` : ""
+      }`,
+    );
+  else if (decTruck) decBodyLines.push(`Truck: ${decTruck.plateNumber}`);
+  if (decLoad) decBodyLines.push(`Load: ${decLoad.referenceNumber}`);
+
   await notifyEvent({
     companyId: me.companyId,
     topic: "expenses",
     type: "EXPENSE_DECISION",
-    title: `Expense ${decision === "APPROVED" ? "approved" : "rejected"}`,
-    body: `${target.amount} ${target.currency} — ${target.type}`,
+    title: `${
+      decision === "APPROVED" ? "✅ Expense approved" : "❌ Expense rejected"
+    }: ${target.type}`,
+    body: decBodyLines.join("\n"),
     link: `/accounting/expenses`,
     roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
     userIds: target.reportedById ? [target.reportedById] : [],

@@ -51,15 +51,50 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
     meta: { amount: d.amount, newPaid },
   });
 
+  // Fetch customer + load context
+  const [payCustomer, payLoad] = await Promise.all([
+    prisma.customer.findUnique({ where: { id: invoice.customerId }, select: { name: true } }),
+    invoice.loadId
+      ? prisma.load.findUnique({
+          where: { id: invoice.loadId },
+          select: {
+            referenceNumber: true,
+            driver: { select: { firstName: true, lastName: true } },
+            truck: { select: { plateNumber: true } },
+          },
+        })
+      : null,
+  ]);
+
+  const payBodyLines: string[] = [
+    `Customer: ${payCustomer?.name ?? invoice.customerId}`,
+  ];
+  if (payLoad) {
+    payBodyLines.push(`Load: ${payLoad.referenceNumber}`);
+    if (payLoad.driver)
+      payBodyLines.push(
+        `Driver: ${payLoad.driver.firstName} ${payLoad.driver.lastName}${
+          payLoad.truck ? ` | Truck: ${payLoad.truck.plateNumber}` : ""
+        }`,
+      );
+  }
+  payBodyLines.push(
+    `Paid: ${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${d.currency} via ${d.method}`,
+  );
+  payBodyLines.push(
+    `Total collected: ${newPaid.toLocaleString("en-US", { minimumFractionDigits: 2 })} / ${invoice.total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${invoice.currency}`,
+  );
+  if (d.reference) payBodyLines.push(`Ref: ${d.reference}`);
+
   await notifyEvent({
     companyId: me.companyId,
     topic: "invoices",
     type: status === "PAID" ? "INVOICE_PAID" : "INFO",
     title:
       status === "PAID"
-        ? `Invoice ${invoice.number} PAID`
-        : `Payment recorded on invoice ${invoice.number}`,
-    body: `${d.amount} ${d.currency} via ${d.method}`,
+        ? `✅ Invoice ${invoice.number} PAID`
+        : `💰 Payment recorded — Invoice ${invoice.number}`,
+    body: payBodyLines.join("\n"),
     link: `/accounting/invoices/${d.invoiceId}`,
     roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
   });

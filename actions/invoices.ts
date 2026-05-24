@@ -82,12 +82,47 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
     meta: { number, total },
   });
 
+  // Fetch customer + optional load context for rich notification
+  const [invCustomer, invLoad] = await Promise.all([
+    prisma.customer.findUnique({ where: { id: d.customerId }, select: { name: true } }),
+    d.loadId
+      ? prisma.load.findUnique({
+          where: { id: d.loadId },
+          select: {
+            referenceNumber: true,
+            poNumber: true,
+            driver: { select: { firstName: true, lastName: true } },
+            truck: { select: { plateNumber: true } },
+          },
+        })
+      : null,
+  ]);
+
+  const invBodyLines: string[] = [
+    `Customer: ${invCustomer?.name ?? d.customerId}`,
+  ];
+  if (invLoad) {
+    invBodyLines.push(
+      `Load: ${invLoad.referenceNumber}${
+        invLoad.poNumber ? ` (PO: ${invLoad.poNumber})` : ""
+      }`,
+    );
+    if (invLoad.driver)
+      invBodyLines.push(
+        `Driver: ${invLoad.driver.firstName} ${invLoad.driver.lastName}${
+          invLoad.truck ? ` | Truck: ${invLoad.truck.plateNumber}` : ""
+        }`,
+      );
+  }
+  invBodyLines.push(`Total: ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${d.currency}`);
+  invBodyLines.push(`Due: ${d.dueDate instanceof Date ? d.dueDate.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : String(d.dueDate)}`);
+
   await notifyEvent({
     companyId: me.companyId,
     topic: "invoices",
     type: "INVOICE_CREATED",
-    title: `Invoice ${number} created`,
-    body: `Total ${total} ${d.currency}`,
+    title: `🧾 Invoice ${number} created`,
+    body: invBodyLines.join("\n"),
     link: `/accounting/invoices/${invoice.id}`,
     roles: ["COMPANY_ADMIN", "ACCOUNTANT"],
     userIds: [me.id],
