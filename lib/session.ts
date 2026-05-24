@@ -3,7 +3,8 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { assertPermission, type Permission } from "@/lib/permissions";
+import { hasPermission, defaultDashboardFor, type Permission } from "@/lib/permissions";
+import type { UserRole } from "@prisma/client";
 
 /**
  * Returns the current session or null. Cached per-request.
@@ -54,7 +55,10 @@ export async function requirePermission(permission: Permission) {
       (user as unknown as Record<string, unknown>).companyId = dbUser.companyId;
     }
   }
-  assertPermission(user.role, permission);
+  if (!hasPermission(user.role as UserRole, permission)) {
+    // Redirect to the user's home instead of crashing with a 500
+    redirect(defaultDashboardFor(user.role as UserRole) ?? "/dashboard");
+  }
   return user;
 }
 

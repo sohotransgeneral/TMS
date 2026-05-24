@@ -1,10 +1,8 @@
 // Next.js 16 renamed `middleware.ts` to `proxy.ts`.
-// Lightweight edge auth gate — full RBAC is enforced in server actions / pages
-// via lib/session.ts and lib/permissions.ts.
-
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
+import type { UserRole } from "@prisma/client";
 
 const PUBLIC_PATHS = [
   "/",
@@ -17,22 +15,61 @@ const PUBLIC_PATHS = [
 const isPublic = (path: string) =>
   PUBLIC_PATHS.includes(path) || path.startsWith("/api/auth");
 
+/**
+ * Path prefixes each role is allowed to access.
+ * SUPER_ADMIN and COMPANY_ADMIN have no restrictions (handled below).
+ */
+const ROLE_ALLOWED_PREFIXES: Partial<Record<UserRole, string[]>> = {
+  DRIVER: ["/driver", "/api"],
+  CUSTOMER: ["/customer", "/accounting/invoices", "/api"],
+  DISPATCHER: ["/dashboard", "/dispatch", "/fleet", "/customers", "/admin/drivers", "/api"],
+  FLEET_MANAGER: ["/dashboard", "/fleet", "/admin/drivers", "/api"],
+  ACCOUNTANT: ["/dashboard", "/accounting", "/customers", "/dispatch/loads", "/api"],
+};
+
+/** Default landing page per role */
+const ROLE_DEFAULT: Partial<Record<UserRole, string>> = {
+  DRIVER: "/driver/dashboard",
+  CUSTOMER: "/customer/invoices",
+  DISPATCHER: "/dispatch/loads",
+  FLEET_MANAGER: "/fleet/trucks",
+  ACCOUNTANT: "/accounting/dashboard",
+  COMPANY_ADMIN: "/dashboard",
+  SUPER_ADMIN: "/dashboard",
+};
+
+function isAllowed(role: UserRole, pathname: string): boolean {
+  if (role === "SUPER_ADMIN" || role === "COMPANY_ADMIN") return true;
+  const allowed = ROLE_ALLOWED_PREFIXES[role];
+  if (!allowed) return false;
+  return allowed.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
+  );
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Return immediately for public paths — do NOT call auth() here,
-  // as that consumes the request body and breaks POST form submissions.
   if (isPublic(pathname)) {
     return NextResponse.next();
   }
 
   const session = await auth();
-  const isAuthed = !!session?.user;
+  const user = session?.user;
 
-  if (!isAuthed) {
+  if (!user) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  const role = user.role as UserRole | undefined;
+  if (role && !isAllowed(role, pathname)) {
+    const dest = ROLE_DEFAULT[role] ?? "/dashboard";
+    const url = req.nextUrl.clone();
+    url.pathname = dest;
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
@@ -41,7 +78,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Run on everything except static assets and image optimizer
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp)$).*)",
   ],
 };

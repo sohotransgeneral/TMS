@@ -266,10 +266,7 @@ export function DriverFormDialog({
                 ))}
               </Select>
             </Field>
-            <Field
-              name="salaryType"
-              label="Salary Type"
-            >
+            <Field name="salaryType" label="Salary Type">
               <Select
                 id="salaryType"
                 name="salaryType"

@@ -85,7 +85,9 @@ export default async function DriverReportPage({
             <div className="text-lg font-semibold text-foreground">
               Financial Report
             </div>
-            <div className="text-sm text-muted-foreground">{data.periodLabel}</div>
+            <div className="text-sm text-muted-foreground">
+              {data.periodLabel}
+            </div>
             <div className="text-xs text-muted-foreground">
               Generated:{" "}
               {new Date().toLocaleDateString("en-US", {
@@ -145,7 +147,10 @@ export default async function DriverReportPage({
           <tbody>
             {loads.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-4 text-center text-muted-foreground">
+                <td
+                  colSpan={7}
+                  className="py-4 text-center text-muted-foreground"
+                >
                   No loads in this period
                 </td>
               </tr>

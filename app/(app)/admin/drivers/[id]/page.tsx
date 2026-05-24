@@ -149,15 +149,17 @@ export default async function DriverDetailPage({
                 driver.salaryType === "PERCENT_GROSS"
                   ? `${driver.grossPercent ?? 0}% din Gross`
                   : driver.salaryType === "FIXED"
-                  ? `Fix: ${driver.salaryFixedAmount ?? 0} €`
-                  : driver.salaryPerKm
-                  ? `${driver.salaryPerKm} €/km`
-                  : null,
+                    ? `Fix: ${driver.salaryFixedAmount ?? 0} €`
+                    : driver.salaryPerKm
+                      ? `${driver.salaryPerKm} €/km`
+                      : null,
               ],
               [
                 "Commission",
                 !driver.salaryType || driver.salaryType === "PER_MI"
-                  ? driver.commissionRate ? `${driver.commissionRate}%` : null
+                  ? driver.commissionRate
+                    ? `${driver.commissionRate}%`
+                    : null
                   : null,
               ],
               ["Rating", driver.rating ? `${driver.rating}/5` : null],

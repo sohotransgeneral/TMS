@@ -291,7 +291,8 @@ export async function DriverFinancialReport({
   } else {
     baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
   }
-  const commission = type === "PER_MI" && commissionRate ? revenue * (commissionRate / 100) : 0;
+  const commission =
+    type === "PER_MI" && commissionRate ? revenue * (commissionRate / 100) : 0;
   const brutSalary = baseSalary + commission + adjustmentsTotal;
   const taxes = calcTaxes(Math.max(0, brutSalary));
 
@@ -461,13 +462,15 @@ export async function DriverFinancialReport({
               <Row label="Salariu fix" value={fmt(baseSalary)} />
             )}
             <Row label="Salariu bază" value={fmt(baseSalary)} />
-            {type === "PER_MI" && commissionRate != null && commissionRate > 0 && (
-              <Row
-                label={`Comision (${commissionRate}%)`}
-                value={fmt(commission)}
-                sub={`din ${fmt(revenue, currency)}`}
-              />
-            )}
+            {type === "PER_MI" &&
+              commissionRate != null &&
+              commissionRate > 0 && (
+                <Row
+                  label={`Comision (${commissionRate}%)`}
+                  value={fmt(commission)}
+                  sub={`din ${fmt(revenue, currency)}`}
+                />
+              )}
             {adjustments
               .filter((a) => a.amount > 0)
               .map((a) => (

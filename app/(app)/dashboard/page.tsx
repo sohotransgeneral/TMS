@@ -128,8 +128,9 @@ const STATUS_VARIANT: Record<
 export default async function DashboardPage() {
   const user = await requireUser();
 
-  // Drivers get their own dashboard
+  // Drivers and customers get their own dashboards
   if (user.role === "DRIVER") redirect(defaultDashboardFor("DRIVER"));
+  if (user.role === "CUSTOMER") redirect("/customer/invoices");
 
   if (!user.companyId) {
     return (

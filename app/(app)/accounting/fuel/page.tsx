@@ -158,7 +158,11 @@ export default async function FuelPage({
         description={`${total} fill-ups · ${sumLiters.toFixed(0)} L · ${formatCurrency(sumAmount)} · avg ${avgPpl.toFixed(3)}/L`}
         action={canWrite ? <FuelFormDialog {...opts} /> : null}
       />
-      <Suspense fallback={<div className="h-16 rounded-lg border bg-card animate-pulse" />}>
+      <Suspense
+        fallback={
+          <div className="h-16 rounded-lg border bg-card animate-pulse" />
+        }
+      >
         <FuelFilters
           trucks={trucks.map((t) => ({ value: t.id, label: t.plateNumber }))}
           drivers={driverFilterOpts}
