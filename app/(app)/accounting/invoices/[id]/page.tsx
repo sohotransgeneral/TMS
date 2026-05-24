@@ -118,7 +118,9 @@ export default async function InvoiceDetailPage({
                   <Building2 className="h-5 w-5 text-muted-foreground" />
                 )}
               </div>
-              <span className="font-semibold text-sm">{invoice.company?.name}</span>
+              <span className="font-semibold text-sm">
+                {invoice.company?.name}
+              </span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

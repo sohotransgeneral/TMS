@@ -34,7 +34,7 @@ export function Sidebar({
   const pathname = usePathname();
 
   const content = (
-    <nav className="flex flex-col gap-1 p-3 overflow-y-auto h-full">
+    <nav className="flex flex-col gap-1 p-3 w-full">
       <div className="flex items-center justify-between px-2 py-3">
         <Link
           href="/dashboard"
@@ -111,7 +111,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground h-full">
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground h-full overflow-y-auto">
         {content}
       </aside>
 
@@ -123,7 +123,7 @@ export function Sidebar({
             onClick={onClose}
             aria-hidden
           />
-          <div className="relative w-72 max-w-[85vw] bg-sidebar text-sidebar-foreground shadow-xl">
+          <div className="relative w-72 max-w-[85vw] bg-sidebar text-sidebar-foreground shadow-xl h-full overflow-y-auto">
             {content}
           </div>
         </div>
