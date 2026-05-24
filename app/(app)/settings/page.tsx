@@ -107,6 +107,7 @@ export default async function SettingsPage() {
                 vatRate: company.vatRate,
                 timezone: company.timezone,
                 locale: company.locale,
+                logoUrl: company.logoUrl,
               }}
             />
           </CardContent>

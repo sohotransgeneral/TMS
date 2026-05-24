@@ -91,6 +91,7 @@ export default async function CompanyPage() {
           vatRate: company.vatRate,
           timezone: company.timezone,
           locale: company.locale,
+          logoUrl: company.logoUrl,
         }}
       />
     </div>

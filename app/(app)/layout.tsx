@@ -16,6 +16,7 @@ export default async function DashboardLayout({
       name={user.name}
       email={user.email}
       companyName={user.company?.name}
+      companyLogoUrl={user.company?.logoUrl}
     >
       {children}
     </DashboardShell>

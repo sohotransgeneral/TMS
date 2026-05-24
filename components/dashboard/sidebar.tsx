@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Truck, X } from "lucide-react";
 import type { UserRole } from "@prisma/client";
@@ -12,6 +13,8 @@ interface SidebarProps {
   role: UserRole;
   open?: boolean;
   onClose?: () => void;
+  companyName?: string | null;
+  companyLogoUrl?: string | null;
 }
 
 function isVisible(item: NavItem, role: UserRole) {
@@ -21,7 +24,7 @@ function isVisible(item: NavItem, role: UserRole) {
   return true;
 }
 
-export function Sidebar({ role, open = false, onClose }: SidebarProps) {
+export function Sidebar({ role, open = false, onClose, companyName, companyLogoUrl }: SidebarProps) {
   const pathname = usePathname();
 
   const content = (
@@ -29,17 +32,30 @@ export function Sidebar({ role, open = false, onClose }: SidebarProps) {
       <div className="flex items-center justify-between px-2 py-3">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 font-semibold"
+          className="flex items-center gap-2 font-semibold min-w-0"
         >
-          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary grid place-items-center">
-            <Truck className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0 overflow-hidden">
+            {companyLogoUrl ? (
+              <Image
+                src={companyLogoUrl}
+                alt={companyName ?? "Logo"}
+                width={32}
+                height={32}
+                className="object-contain h-full w-full"
+                unoptimized
+              />
+            ) : (
+              <Truck className="h-4 w-4" />
+            )}
           </div>
-          <span>TMS</span>
+          <span className="truncate text-sm leading-tight">
+            {companyName ?? "TMS"}
+          </span>
         </Link>
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden p-1 rounded hover:bg-accent"
+            className="lg:hidden p-1 rounded hover:bg-accent shrink-0"
             aria-label="Close menu"
           >
             <X className="h-4 w-4" />
@@ -109,3 +125,4 @@ export function Sidebar({ role, open = false, onClose }: SidebarProps) {
     </>
   );
 }
+

@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import Image from "next/image";
+import { Upload, X, Loader2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +29,93 @@ export type CompanyData = {
   vatRate: number | null;
   timezone: string | null;
   locale: string | null;
+  logoUrl?: string | null;
 };
+
+function LogoUpload({
+  companyId,
+  initial,
+}: {
+  companyId?: string;
+  initial?: string | null;
+}) {
+  const [url, setUrl] = useState(initial ?? "");
+  const [uploading, setUploading] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      if (companyId) fd.append("companyId", companyId);
+      const res = await fetch("/api/company/logo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload failed");
+      setUrl(json.url);
+      toast.success("Logo uploaded successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload error");
+    } finally {
+      setUploading(false);
+      if (ref.current) ref.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      {/* Preview */}
+      <div className="h-20 w-20 rounded-lg border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+        {url ? (
+          <Image src={url} alt="Company logo" width={80} height={80} className="object-contain h-full w-full" unoptimized />
+        ) : (
+          <Building2 className="h-8 w-8 text-muted-foreground" />
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uploading}
+            onClick={() => ref.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
+            {url ? "Change Logo" : "Upload Logo"}
+          </Button>
+          {url && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={() => setUrl("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">PNG, JPEG, WEBP, SVG — max 5 MB</p>
+      </div>
+
+      <input
+        ref={ref}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
 
 export function CompanyForm({
   initial,
@@ -53,6 +141,12 @@ export function CompanyForm({
   return (
     <form action={formAction} className="grid gap-6">
       {companyId && <input type="hidden" name="id" value={companyId} />}
+
+      <section className="grid gap-4 rounded-lg border bg-card p-6">
+        <h3 className="font-semibold">Logo companie</h3>
+        <LogoUpload companyId={companyId} initial={initial.logoUrl} />
+      </section>
+
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Date generale</h3>
         <Field name="name" label="Denumire companie" required error={e.name}>

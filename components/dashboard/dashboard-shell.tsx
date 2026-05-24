@@ -10,6 +10,7 @@ interface Props {
   name?: string | null;
   email?: string | null;
   companyName?: string | null;
+  companyLogoUrl?: string | null;
   children: React.ReactNode;
 }
 
@@ -18,13 +19,20 @@ export function DashboardShell({
   name,
   email,
   companyName,
+  companyLogoUrl,
   children,
 }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex h-svh overflow-hidden">
       <div className="print:hidden">
-        <Sidebar role={role} open={open} onClose={() => setOpen(false)} />
+        <Sidebar
+          role={role}
+          open={open}
+          onClose={() => setOpen(false)}
+          companyName={companyName}
+          companyLogoUrl={companyLogoUrl}
+        />
       </div>
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <div className="print:hidden">
