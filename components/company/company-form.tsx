@@ -51,7 +51,10 @@ function LogoUpload({
       const fd = new FormData();
       fd.append("file", f);
       if (companyId) fd.append("companyId", companyId);
-      const res = await fetch("/api/company/logo", { method: "POST", body: fd });
+      const res = await fetch("/api/company/logo", {
+        method: "POST",
+        body: fd,
+      });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload failed");
       setUrl(json.url);
@@ -69,7 +72,14 @@ function LogoUpload({
       {/* Preview */}
       <div className="h-20 w-20 rounded-lg border bg-muted flex items-center justify-center shrink-0 overflow-hidden">
         {url ? (
-          <Image src={url} alt="Company logo" width={80} height={80} className="object-contain h-full w-full" unoptimized />
+          <Image
+            src={url}
+            alt="Company logo"
+            width={80}
+            height={80}
+            className="object-contain h-full w-full"
+            unoptimized
+          />
         ) : (
           <Building2 className="h-8 w-8 text-muted-foreground" />
         )}
@@ -103,7 +113,9 @@ function LogoUpload({
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">PNG, JPEG, WEBP, SVG — max 5 MB</p>
+        <p className="text-xs text-muted-foreground">
+          PNG, JPEG, WEBP, SVG — max 5 MB
+        </p>
       </div>
 
       <input

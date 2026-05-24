@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/session";
-import { uploadToR2 } from "@/lib/r2";
+import { saveFile } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -35,9 +35,8 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const url = await uploadToR2(buffer, file.name, "logos");
+  const { url } = await saveFile(buffer, file.name, "logos");
 
-  // Save logoUrl to company record
   await prisma.company.update({
     where: { id: targetCompanyId },
     data: { logoUrl: url },

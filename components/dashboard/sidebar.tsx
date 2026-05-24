@@ -24,7 +24,13 @@ function isVisible(item: NavItem, role: UserRole) {
   return true;
 }
 
-export function Sidebar({ role, open = false, onClose, companyName, companyLogoUrl }: SidebarProps) {
+export function Sidebar({
+  role,
+  open = false,
+  onClose,
+  companyName,
+  companyLogoUrl,
+}: SidebarProps) {
   const pathname = usePathname();
 
   const content = (
@@ -125,4 +131,3 @@ export function Sidebar({ role, open = false, onClose, companyName, companyLogoU
     </>
   );
 }
-
