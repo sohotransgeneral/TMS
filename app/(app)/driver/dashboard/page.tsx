@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Truck, MapPin, ClipboardList, Phone, Package } from "lucide-react";
+import { Truck, MapPin, ClipboardList, Phone, Package, ShieldCheck } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { LoadStatusButton } from "@/components/loads/load-status-button";
 import { AcceptLoadButton } from "@/components/driver/accept-load-button";
 import { GpsTracker } from "@/components/driver/gps-tracker";
 import { DriverZoneMap } from "@/components/driver/driver-zone-map";
+import { PermitList } from "@/components/fleet/permit-list";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const metadata = { title: "My Loads" };
@@ -69,6 +70,15 @@ export default async function DriverDashboardPage() {
       take: 5,
     }),
   ]);
+
+  // Fetch permits for the truck currently assigned to the driver's active load
+  const activeTruckId = activeLoad?.truckId ?? null;
+  const permits = activeTruckId
+    ? await prisma.truckPermit.findMany({
+        where: { truckId: activeTruckId },
+        orderBy: { validTo: "asc" },
+      })
+    : [];
 
   return (
     <div className="space-y-6">
@@ -237,6 +247,24 @@ export default async function DriverDashboardPage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Permits for active truck */}
+      {permits.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-amber-500" />
+              Active Truck Permits
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Special permits for this truck. Show these to authorities when requested.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <PermitList permits={permits} truckId={activeTruckId!} canEdit={false} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Zone availability map */}
       <Card>

@@ -19,6 +19,7 @@ import {
   Container,
   ScrollText,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 
@@ -98,6 +99,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Drivers",
         icon: UserCircle2,
         permissions: ["drivers:read"],
+      },
+      {
+        href: "/fleet/permits",
+        label: "Permits",
+        icon: ShieldCheck,
+        permissions: ["trucks:read"],
       },
     ],
   },

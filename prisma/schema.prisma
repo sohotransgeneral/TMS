@@ -188,6 +188,7 @@ model Company {
   fuelEntries        FuelEntry[]
   mapZonePins        MapZonePin[]
   aiUsageLogs        AiUsageLog[]
+  truckPermits       TruckPermit[]
 
   @@index([active])
 }
@@ -347,6 +348,7 @@ model Truck {
   expenses        Expense[]
   fuelEntries     FuelEntry[]
   gpsLocations    GPSLocation[]
+  permits         TruckPermit[]
 
   @@unique([companyId, plateNumber])
   @@index([companyId, status])
@@ -817,4 +819,38 @@ model AiUsageLog {
   createdAt    DateTime @default(now())
 
   @@index([companyId, createdAt])
+}
+
+model TruckPermit {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String   @db.ObjectId
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  truckId      String   @db.ObjectId
+  truck        Truck    @relation(fields: [truckId], references: [id], onDelete: Cascade)
+
+  // Permit details
+  type         String   // OVERSIZE | OVERWEIGHT | WIDE_LOAD | EXTRA_LONG | HAZMAT | SUPERLOAD | OTHER
+  permitNumber String?  // official permit number / reference
+  jurisdiction String?  // state, country, corridor that issued it
+  description  String?  // what is allowed (e.g. 14ft wide, 100ft long)
+
+  // Validity
+  validFrom    DateTime?
+  validTo      DateTime?
+
+  // Cost — what the company paid for the permit
+  cost         Float?
+  currency     String    @default("USD")
+
+  // Documents (stored in Vercel Blob / local)
+  permitImageUrl String?  // photo / scan of the permit document
+  invoiceUrl     String?  // invoice / receipt for the permit fee
+
+  notes        String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId, truckId])
+  @@index([companyId, validTo])
 }

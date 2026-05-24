@@ -12,7 +12,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Sparkles, FileText, ImageIcon, DollarSign, TrendingUp } from "lucide-react";
+import {
+  Sparkles,
+  FileText,
+  ImageIcon,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export const metadata = { title: "AI Usage & Billing" };
@@ -131,19 +137,33 @@ export default async function AiUsagePage() {
                   <TableRow>
                     <TableHead>Company</TableHead>
                     <TableHead className="text-right">Extractions</TableHead>
-                    <TableHead className="text-right text-orange-600">Real Cost</TableHead>
-                    <TableHead className="text-right text-green-600">Billed</TableHead>
-                    <TableHead className="text-right text-violet-600">Margin</TableHead>
+                    <TableHead className="text-right text-orange-600">
+                      Real Cost
+                    </TableHead>
+                    <TableHead className="text-right text-green-600">
+                      Billed
+                    </TableHead>
+                    <TableHead className="text-right text-violet-600">
+                      Margin
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {companyRows.map((r) => (
                     <TableRow key={r.companyName}>
-                      <TableCell className="font-medium">{r.companyName}</TableCell>
+                      <TableCell className="font-medium">
+                        {r.companyName}
+                      </TableCell>
                       <TableCell className="text-right">{r.count}</TableCell>
-                      <TableCell className="text-right text-orange-600">{fmtUsd(r.realCost)}</TableCell>
-                      <TableCell className="text-right text-green-600">{fmtUsd(r.billed)}</TableCell>
-                      <TableCell className="text-right text-violet-600">{fmtUsd(r.profit)}</TableCell>
+                      <TableCell className="text-right text-orange-600">
+                        {fmtUsd(r.realCost)}
+                      </TableCell>
+                      <TableCell className="text-right text-green-600">
+                        {fmtUsd(r.billed)}
+                      </TableCell>
+                      <TableCell className="text-right text-violet-600">
+                        {fmtUsd(r.profit)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -155,7 +175,9 @@ export default async function AiUsagePage() {
         {/* Recent logs */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent Extractions (last 500)</CardTitle>
+            <CardTitle className="text-base">
+              Recent Extractions (last 500)
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {logs.length === 0 ? null : (
@@ -168,8 +190,12 @@ export default async function AiUsagePage() {
                     <TableHead>Type</TableHead>
                     <TableHead>Model</TableHead>
                     <TableHead className="text-right">Tokens</TableHead>
-                    <TableHead className="text-right text-orange-600">Real Cost</TableHead>
-                    <TableHead className="text-right text-green-600">Billed</TableHead>
+                    <TableHead className="text-right text-orange-600">
+                      Real Cost
+                    </TableHead>
+                    <TableHead className="text-right text-green-600">
+                      Billed
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -179,7 +205,9 @@ export default async function AiUsagePage() {
                         {formatDate(log.createdAt)}
                       </TableCell>
                       <TableCell>{log.company?.name ?? "—"}</TableCell>
-                      <TableCell className="text-sm">{log.user?.name ?? log.user?.email ?? "—"}</TableCell>
+                      <TableCell className="text-sm">
+                        {log.user?.name ?? log.user?.email ?? "—"}
+                      </TableCell>
                       <TableCell>
                         {log.fileType === "image" ? (
                           <Badge variant="secondary" className="gap-1 text-xs">
@@ -191,7 +219,9 @@ export default async function AiUsagePage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs font-mono">{log.model}</TableCell>
+                      <TableCell className="text-xs font-mono">
+                        {log.model}
+                      </TableCell>
                       <TableCell className="text-right text-xs">
                         {log.inputTokens + log.outputTokens}
                       </TableCell>

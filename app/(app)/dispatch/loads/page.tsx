@@ -53,24 +53,41 @@ export default async function LoadsPage({
 
   const companyWhere = { companyId: me.companyId ?? undefined };
 
-  const [loads, total, customers, drivers, trucks, trailers] = await Promise.all([
-    prisma.load.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: pageSize,
-      include: {
-        customer: { select: { name: true } },
-        driver: { include: { user: { select: { name: true } } } },
-        truck: { select: { plateNumber: true } },
-      },
-    }),
-    prisma.load.count({ where }),
-    prisma.customer.findMany({ where: companyWhere, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.driverProfile.findMany({ where: companyWhere, include: { user: { select: { name: true } } }, orderBy: { createdAt: "desc" } }),
-    prisma.truck.findMany({ where: companyWhere, orderBy: { plateNumber: "asc" }, select: { id: true, plateNumber: true, make: true, model: true } }),
-    prisma.trailer.findMany({ where: companyWhere, orderBy: { plateNumber: "asc" }, select: { id: true, plateNumber: true } }),
-  ]);
+  const [loads, total, customers, drivers, trucks, trailers] =
+    await Promise.all([
+      prisma.load.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        include: {
+          customer: { select: { name: true } },
+          driver: { include: { user: { select: { name: true } } } },
+          truck: { select: { plateNumber: true } },
+        },
+      }),
+      prisma.load.count({ where }),
+      prisma.customer.findMany({
+        where: companyWhere,
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.driverProfile.findMany({
+        where: companyWhere,
+        include: { user: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.truck.findMany({
+        where: companyWhere,
+        orderBy: { plateNumber: "asc" },
+        select: { id: true, plateNumber: true, make: true, model: true },
+      }),
+      prisma.trailer.findMany({
+        where: companyWhere,
+        orderBy: { plateNumber: "asc" },
+        select: { id: true, plateNumber: true },
+      }),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -81,9 +98,18 @@ export default async function LoadsPage({
           <div className="flex items-center gap-2">
             <LoadImportDialog
               customers={customers.map((c) => ({ id: c.id, label: c.name }))}
-              drivers={drivers.map((d) => ({ id: d.id, label: d.user.name ?? "Driver" }))}
-              trucks={trucks.map((t) => ({ id: t.id, label: `${t.plateNumber}${t.make ? " · " + t.make : ""}${t.model ? " " + t.model : ""}` }))}
-              trailers={trailers.map((t) => ({ id: t.id, label: t.plateNumber }))}
+              drivers={drivers.map((d) => ({
+                id: d.id,
+                label: d.user.name ?? "Driver",
+              }))}
+              trucks={trucks.map((t) => ({
+                id: t.id,
+                label: `${t.plateNumber}${t.make ? " · " + t.make : ""}${t.model ? " " + t.model : ""}`,
+              }))}
+              trailers={trailers.map((t) => ({
+                id: t.id,
+                label: t.plateNumber,
+              }))}
             />
             <Button asChild>
               <Link href="/dispatch/loads/new">
