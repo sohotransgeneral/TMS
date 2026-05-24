@@ -4,56 +4,50 @@ import { requirePermission } from "@/lib/session";
 
 /**
  * GET /api/gps/live
- * Returns the most recent GPS position per driver currently on an active load.
- * Used by the dispatcher map.
+ * Returns the most recent GPS position for every driver who has sent a ping
+ * in the last 30 minutes — regardless of whether they have an active load.
+ * Used by the dispatcher / admin map.
  */
 export async function GET() {
   const me = await requirePermission("gps:read");
   if (!me.companyId) return NextResponse.json({ ok: true, positions: [] });
 
-  // For each driver with an active load, pick the latest GPS row.
-  const active = await prisma.load.findMany({
-    where: {
-      companyId: me.companyId,
-      status: { in: ["DRIVER_ACCEPTED", "ON_WAY_TO_PICKUP", "AT_PICKUP", "LOADED", "IN_TRANSIT", "AT_DELIVERY"] },
-      driverId: { not: null },
-    },
-    select: {
-      id: true,
-      referenceNumber: true,
-      status: true,
-      driverId: true,
-      driver: { select: { firstName: true, lastName: true } },
+  const since = new Date(Date.now() - 30 * 60 * 1000); // last 30 min
+
+  // Get the latest ping per driver who was active recently
+  const recentPings = await prisma.gPSLocation.findMany({
+    where: { companyId: me.companyId, recordedAt: { gte: since } },
+    orderBy: { recordedAt: "desc" },
+    include: {
+      driver: { select: { id: true, firstName: true, lastName: true } },
       truck: { select: { plateNumber: true } },
+      load: { select: { id: true, referenceNumber: true, status: true } },
     },
   });
 
-  const driverIds = [...new Set(active.map((l) => l.driverId!).filter(Boolean))];
-  if (driverIds.length === 0) return NextResponse.json({ ok: true, positions: [] });
+  // Deduplicate: keep only the latest ping per driverId
+  const seen = new Set<string>();
+  const latest = recentPings.filter((p) => {
+    if (!p.driverId || seen.has(p.driverId)) return false;
+    seen.add(p.driverId);
+    return true;
+  });
 
-  const positions = await Promise.all(
-    driverIds.map(async (driverId) => {
-      const last = await prisma.gPSLocation.findFirst({
-        where: { companyId: me.companyId!, driverId },
-        orderBy: { recordedAt: "desc" },
-      });
-      if (!last) return null;
-      const load = active.find((l) => l.driverId === driverId)!;
-      return {
-        driverId,
-        driverName: `${load.driver?.firstName ?? ""} ${load.driver?.lastName ?? ""}`.trim(),
-        truckPlate: load.truck?.plateNumber ?? null,
-        loadRef: load.referenceNumber,
-        loadId: load.id,
-        loadStatus: load.status,
-        lat: last.lat,
-        lng: last.lng,
-        speed: last.speed,
-        heading: last.heading,
-        recordedAt: last.recordedAt,
-      };
-    }),
-  );
+  const positions = latest.map((p) => ({
+    driverId: p.driverId!,
+    driverName: p.driver
+      ? `${p.driver.firstName} ${p.driver.lastName}`.trim()
+      : "Unknown",
+    truckPlate: p.truck?.plateNumber ?? null,
+    loadRef: p.load?.referenceNumber ?? null,
+    loadId: p.load?.id ?? null,
+    loadStatus: p.load?.status ?? null,
+    lat: p.lat,
+    lng: p.lng,
+    speed: p.speed,
+    heading: p.heading,
+    recordedAt: p.recordedAt,
+  }));
 
-  return NextResponse.json({ ok: true, positions: positions.filter(Boolean) });
+  return NextResponse.json({ ok: true, positions });
 }

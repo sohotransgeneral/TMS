@@ -122,8 +122,8 @@ export function LiveMap({ token }: { token: string | null }) {
         <div style="font-size:12px;line-height:1.5">
           <strong>${escapeHtml(p.driverName)}</strong><br/>
           ${p.truckPlate ? `🚚 ${escapeHtml(p.truckPlate)}<br/>` : ""}
-          ${p.loadRef ? `📦 <a href="/dispatch/loads/${p.loadId}" style="color:#2563eb">${escapeHtml(p.loadRef)}</a><br/>` : ""}
-          ${p.speed != null ? `${Math.round(p.speed)} km/h<br/>` : ""}
+          ${p.loadRef ? `📦 <a href="/dispatch/loads/${p.loadId}" style="color:#2563eb">${escapeHtml(p.loadRef)}</a> <span style="color:#6b7280">(${escapeHtml(p.loadStatus ?? "")})</span><br/>` : `<span style="color:#d97706">⚠️ No active load</span><br/>`}
+          ${p.speed != null ? `🚀 ${Math.round(p.speed)} km/h<br/>` : ""}
           <em style="color:#9ca3af">${new Date(p.recordedAt).toLocaleTimeString()}</em>
         </div>`;
       if (!marker) {
