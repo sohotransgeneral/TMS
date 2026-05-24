@@ -15,7 +15,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { toActionState } from "@/lib/to-action-state";
-import { createPermit, updatePermit } from "@/actions/permits";
+import { createPermit, updatePermit, recordPermitExpense } from "@/actions/permits";
 import { PERMIT_TYPES } from "@/lib/permit-types";
 import type { ActionResult } from "@/lib/action-helpers";
 import {
@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Plus,
   Pencil,
+  DollarSign,
 } from "lucide-react";
 
 type Permit = {
@@ -342,5 +343,35 @@ export function EditPermitButton({
         </Button>
       }
     />
+  );
+}
+
+export function LogPermitExpenseButton({ permitId, cost, currency }: { permitId: string; cost: number | null; currency: string }) {
+  const [pending, setPending] = useState(false);
+
+  if (!cost || cost <= 0) return null;
+
+  async function handleClick() {
+    setPending(true);
+    try {
+      const result = await recordPermitExpense(permitId);
+      if (result.ok) toast.success(result.message ?? "Expense recorded.");
+      else toast.error(result.error);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="h-7 w-7"
+      title={`Log ${cost} ${currency} as expense`}
+      onClick={handleClick}
+      disabled={pending}
+    >
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5 text-green-600" />}
+    </Button>
   );
 }

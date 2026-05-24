@@ -15,7 +15,12 @@ type UserRow = {
   role: string;
   active: boolean;
   linkedCustomer?: { id: string; name: string } | null;
-  customers?: Array<{ id: string; name: string; email: string | null; userId?: string | null }>;
+  customers?: Array<{
+    id: string;
+    name: string;
+    email: string | null;
+    userId?: string | null;
+  }>;
 };
 
 export function UserRowActions({

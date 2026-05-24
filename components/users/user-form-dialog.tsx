@@ -33,7 +33,12 @@ type UserRow = {
 };
 
 type CompanyOpt = { id: string; name: string };
-type CustomerOpt = { id: string; name: string; email: string | null; userId?: string | null };
+type CustomerOpt = {
+  id: string;
+  name: string;
+  email: string | null;
+  userId?: string | null;
+};
 
 const ROLE_OPTIONS = (
   Object.keys(ROLE_LABELS) as Array<keyof typeof ROLE_LABELS>
@@ -178,10 +183,11 @@ export function UserFormDialog({
                 name="customerId"
                 defaultValue={initial?.linkedCustomer?.id ?? ""}
               >
-                <option value="">{editing ? "— Unlink customer —" : "— Select customer —"}</option>
+                <option value="">
+                  {editing ? "— Unlink customer —" : "— Select customer —"}
+                </option>
                 {allCustomers.map((c) => {
-                  const isLinkedToOther =
-                    c.userId && c.userId !== initial?.id;
+                  const isLinkedToOther = c.userId && c.userId !== initial?.id;
                   return (
                     <option
                       key={c.id}
@@ -197,7 +203,10 @@ export function UserFormDialog({
               </Select>
               {initial?.linkedCustomer && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Currently linked: <span className="font-medium">{initial.linkedCustomer.name}</span>
+                  Currently linked:{" "}
+                  <span className="font-medium">
+                    {initial.linkedCustomer.name}
+                  </span>
                 </p>
               )}
             </Field>

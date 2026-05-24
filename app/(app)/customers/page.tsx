@@ -44,7 +44,10 @@ export default async function CustomersPage({
       orderBy: { name: "asc" },
       skip,
       take: pageSize,
-      include: { _count: { select: { loads: true, invoices: true } } },
+      include: {
+        _count: { select: { loads: true, invoices: true } },
+        user: { select: { email: true } },
+      },
     }),
     prisma.customer.count({ where }),
   ]);
@@ -113,7 +116,7 @@ export default async function CustomersPage({
                     {c._count.loads} / {c._count.invoices}
                   </TableCell>
                   <TableCell>
-                    <CustomerRowActions customer={c} />
+                    <CustomerRowActions customer={{ ...c, user: c.user ?? null }} />
                   </TableCell>
                 </TableRow>
               ))}

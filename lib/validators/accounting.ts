@@ -55,10 +55,10 @@ export const paymentCreateSchema = z.object({
 });
 
 // ---- Expenses ----
-export const EXPENSE_TYPES = ["FUEL", "TOLL", "PARKING", "REPAIR", "SALARY", "COMMISSION", "INSURANCE", "OTHER"] as const;
+export const EXPENSE_TYPES = ["FUEL", "TOLL", "PARKING", "REPAIR", "SALARY", "COMMISSION", "INSURANCE", "PERMIT", "OTHER"] as const;
 export const EXPENSE_TYPE_LABELS: Record<string, string> = {
   FUEL: "Fuel", TOLL: "Toll", PARKING: "Parking", REPAIR: "Repair",
-  SALARY: "Salary", COMMISSION: "Commission", INSURANCE: "Insurance", OTHER: "Other",
+  SALARY: "Salary", COMMISSION: "Commission", INSURANCE: "Insurance", PERMIT: "Permit", OTHER: "Other",
 };
 export const EXPENSE_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
 export const EXPENSE_STATUS_LABELS: Record<string, string> = {

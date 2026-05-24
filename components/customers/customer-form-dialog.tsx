@@ -2,7 +2,7 @@
 
 import { useState, useActionState, useEffect } from "react";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { KeyRound, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  setCustomerPortalPassword,
 } from "@/actions/customers";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
@@ -38,6 +39,8 @@ export type CustomerRow = {
   paymentTermsDays: number | null;
   creditLimit: number | null;
   notes: string | null;
+  userId: string | null;
+  user: { email: string } | null;
 };
 
 export function CustomerFormDialog({
@@ -227,6 +230,7 @@ export function NewCustomerButton() {
 export function CustomerRowActions({ customer }: { customer: CustomerRow }) {
   return (
     <div className="flex items-center justify-end gap-1">
+      <CustomerPortalDialog customer={customer} />
       <CustomerFormDialog
         initial={customer}
         trigger={
@@ -247,5 +251,86 @@ export function CustomerRowActions({ customer }: { customer: CustomerRow }) {
         action={async () => deleteCustomer(customer.id)}
       />
     </div>
+  );
+}
+
+function CustomerPortalDialog({ customer }: { customer: CustomerRow }) {
+  const [open, setOpen] = useState(false);
+  const action = toActionState(setCustomerPortalPassword);
+  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(action, null);
+
+  useEffect(() => {
+    if (!state) return;
+    if (state.ok) {
+      toast.success(state.message ?? "Portal access set.");
+      setOpen(false);
+    } else toast.error(state.error);
+  }, [state]);
+
+  const hasPortal = Boolean(customer.userId);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Portal access"
+        title={hasPortal ? "Reset portal password" : "Set portal password"}
+        onClick={() => setOpen(true)}
+      >
+        <KeyRound className={`h-4 w-4 ${hasPortal ? "text-green-600" : "text-muted-foreground"}`} />
+      </Button>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>
+            {hasPortal ? "Reset Portal Password" : "Enable Customer Portal"}
+          </DialogTitle>
+          <DialogDescription>
+            {hasPortal
+              ? `Current login: ${customer.user?.email ?? customer.email}`
+              : customer.email
+              ? `Will create a login for ${customer.email}`
+              : "Add an email to the customer first."}
+          </DialogDescription>
+        </DialogHeader>
+        {(!hasPortal && !customer.email) ? (
+          <p className="text-sm text-destructive">
+            This customer has no email address. Edit the customer and add one first.
+          </p>
+        ) : (
+          <form action={formAction} className="grid gap-4">
+            <input type="hidden" name="customerId" value={customer.id} />
+            <Field name="password" label="New Password" required>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                minLength={8}
+                required
+                placeholder="At least 8 characters"
+              />
+            </Field>
+            <Field name="confirmPassword" label="Confirm Password" required>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                minLength={8}
+                required
+                placeholder="Repeat password"
+              />
+            </Field>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={pending}>
+                {pending ? "Saving…" : hasPortal ? "Reset Password" : "Enable Portal"}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

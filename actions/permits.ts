@@ -123,3 +123,54 @@ export async function deletePermit(id: string): Promise<ActionResult> {
   revalidatePath("/fleet/permits");
   return success(undefined, "Permit deleted.");
 }
+
+/** Create an Expense record from a permit's cost. Safe to call multiple times —
+ *  each call creates a new expense (admin can delete duplicates). */
+export async function recordPermitExpense(permitId: string): Promise<ActionResult> {
+  const me = await requirePermission("trucks:write");
+  if (!me.companyId) return failure("You are not assigned to a company.");
+
+  const permit = await prisma.truckPermit.findFirst({
+    where: { id: permitId, companyId: me.companyId },
+    include: { truck: { select: { id: true } } },
+  });
+  if (!permit) return failure("Permit not found.");
+  if (!permit.cost || permit.cost <= 0) return failure("Permit has no cost to record.");
+
+  const desc = [
+    `Permit: ${permit.type}`,
+    permit.jurisdiction ? `(${permit.jurisdiction})` : null,
+    permit.permitNumber ? `#${permit.permitNumber}` : null,
+  ].filter(Boolean).join(" ");
+
+  await prisma.expense.create({
+    data: {
+      companyId: me.companyId,
+      type: "PERMIT",
+      amount: permit.cost,
+      currency: permit.currency,
+      description: desc,
+      occurredAt: permit.validFrom ?? permit.createdAt,
+      truckId: permit.truckId,
+      receiptUrl: permit.invoiceUrl ?? permit.permitImageUrl ?? null,
+      status: "APPROVED",
+      approvedById: me.id,
+      approvedAt: new Date(),
+      reportedById: me.id,
+    },
+  });
+
+  await logAudit({
+    action: "permit.expense_recorded",
+    userId: me.id,
+    companyId: me.companyId,
+    entityType: "TruckPermit",
+    entityId: permitId,
+    meta: { amount: permit.cost, currency: permit.currency },
+  });
+
+  revalidatePath(`/fleet/trucks/${permit.truckId}`);
+  revalidatePath("/fleet/permits");
+  revalidatePath("/admin/expenses");
+  return success(undefined, `Expense of ${permit.cost} ${permit.currency} recorded for permit.`);
+}

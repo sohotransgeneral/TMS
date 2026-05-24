@@ -112,14 +112,21 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   });
 
   // Notifications: dispatchers/admins always; assigned driver if any
-  const driverUserId = load.driverId
-    ? (
-        await prisma.driverProfile.findUnique({
-          where: { id: load.driverId },
-          select: { userId: true },
-        })
-      )?.userId
-    : undefined;
+  // Fetch driver + truck for rich notification body
+  const [assignedDriver, assignedTruck] = await Promise.all([
+    load.driverId
+      ? prisma.driverProfile.findUnique({ where: { id: load.driverId }, select: { userId: true, firstName: true, lastName: true } })
+      : null,
+    load.truckId
+      ? prisma.truck.findUnique({ where: { id: load.truckId }, select: { plateNumber: true } })
+      : null,
+  ]);
+  const notifyBodyParts = [
+    `${d.pickupCity ?? d.pickupAddress ?? "Pickup"} → ${d.deliveryCity ?? d.deliveryAddress ?? "Delivery"}`,
+    assignedDriver ? `Driver: ${assignedDriver.firstName} ${assignedDriver.lastName}` : null,
+    assignedTruck ? `Truck: ${assignedTruck.plateNumber}` : null,
+    d.poNumber ? `PO: ${d.poNumber}` : null,
+  ].filter(Boolean).join(" | ");
 
   await notifyEvent({
     companyId: me.companyId,
@@ -129,12 +136,10 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       status === "ASSIGNED"
         ? `Load ${referenceNumber} assigned`
         : `Load ${referenceNumber} created`,
-    body: `${d.pickupCity ?? d.pickupAddress ?? "Pickup"} → ${
-      d.deliveryCity ?? d.deliveryAddress ?? "Delivery"
-    }`,
+    body: notifyBodyParts,
     link: `/dispatch/loads/${load.id}`,
     roles: ["COMPANY_ADMIN", "DISPATCHER"],
-    userIds: driverUserId ? [driverUserId] : undefined,
+    userIds: assignedDriver?.userId ? [assignedDriver.userId] : undefined,
   });
 
   revalidatePath("/dispatch/loads");
@@ -237,21 +242,26 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   });
 
   if (driverId && shouldFlip) {
-    const driverUserId = (
-      await prisma.driverProfile.findUnique({
-        where: { id: driverId },
-        select: { userId: true },
-      })
-    )?.userId;
+    const [assignDriver, assignTruck] = await Promise.all([
+      prisma.driverProfile.findUnique({ where: { id: driverId }, select: { userId: true, firstName: true, lastName: true } }),
+      truckId ? prisma.truck.findUnique({ where: { id: truckId }, select: { plateNumber: true } }) : null,
+    ]);
+    const assignParts = [
+      `${target.pickupCity ?? target.pickupAddress ?? "Pickup"} → ${target.deliveryCity ?? target.deliveryAddress ?? "Delivery"}`,
+      assignDriver ? `Driver: ${assignDriver.firstName} ${assignDriver.lastName}` : null,
+      assignTruck ? `Truck: ${assignTruck.plateNumber}` : null,
+      target.poNumber ? `PO: ${target.poNumber}` : null,
+    ].filter(Boolean).join(" | ");
+
     await notifyEvent({
       companyId: me.companyId,
       topic: "loads",
       type: "LOAD_ASSIGNED",
       title: `Load ${target.referenceNumber} assigned`,
-      body: "You have a new load assigned.",
+      body: assignParts,
       link: `/dispatch/loads/${id}`,
       roles: ["COMPANY_ADMIN", "DISPATCHER"],
-      userIds: driverUserId ? [driverUserId] : undefined,
+      userIds: assignDriver?.userId ? [assignDriver.userId] : undefined,
     });
   }
 
@@ -272,7 +282,10 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
 
   const target = await prisma.load.findUnique({
     where: { id },
-    include: { driver: true },
+    include: {
+      driver: true,
+      truck: { select: { plateNumber: true } },
+    },
   });
   if (!target || target.companyId !== me.companyId) return failure("Load not found.");
 
@@ -309,12 +322,20 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
     meta: { status, note },
   });
 
+  const statusBodyParts = [
+    `${target.pickupCity ?? target.pickupAddress ?? "Pickup"} → ${target.deliveryCity ?? target.deliveryAddress ?? "Delivery"}`,
+    target.driver ? `Driver: ${target.driver.firstName} ${target.driver.lastName}` : null,
+    target.truck ? `Truck: ${target.truck.plateNumber}` : null,
+    target.poNumber ? `PO: ${target.poNumber}` : null,
+    note ?? null,
+  ].filter(Boolean).join(" | ");
+
   await notifyEvent({
     companyId: me.companyId,
     topic: "loads",
     type: "LOAD_STATUS",
     title: `Load ${target.referenceNumber}: ${status}`,
-    body: note ?? undefined,
+    body: statusBodyParts,
     link: `/dispatch/loads/${id}`,
     roles: ["COMPANY_ADMIN", "DISPATCHER"],
   });
@@ -348,7 +369,13 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
 /** Driver acknowledges receiving the load. */
 export async function acceptLoad(id: string): Promise<ActionResult> {
   const me = await requirePermission("loads:update_status");
-  const load = await prisma.load.findUnique({ where: { id }, include: { driver: true } });
+  const load = await prisma.load.findUnique({
+    where: { id },
+    include: {
+      driver: true,
+      truck: { select: { plateNumber: true } },
+    },
+  });
   if (!load || load.companyId !== me.companyId) return failure("Load not found.");
   if (load.driver?.userId !== me.id) return failure("You do not have access to this load.");
   if (load.status !== "ASSIGNED") return failure("Load can no longer be accepted.");
@@ -364,12 +391,18 @@ export async function acceptLoad(id: string): Promise<ActionResult> {
   });
 
   if (load.companyId) {
+    const acceptParts = [
+      `${load.pickupCity ?? load.pickupAddress ?? "Pickup"} → ${load.deliveryCity ?? load.deliveryAddress ?? "Delivery"}`,
+      load.driver ? `Driver: ${load.driver.firstName} ${load.driver.lastName}` : null,
+      load.truck ? `Truck: ${load.truck.plateNumber}` : null,
+      load.poNumber ? `PO: ${load.poNumber}` : null,
+    ].filter(Boolean).join(" | ");
     await notifyEvent({
       companyId: load.companyId,
       topic: "loads",
       type: "LOAD_ACCEPTED",
       title: `Load ${load.referenceNumber} accepted by driver`,
-      body: me.name ?? me.email ?? undefined,
+      body: acceptParts,
       link: `/dispatch/loads/${id}`,
       roles: ["COMPANY_ADMIN", "DISPATCHER"],
     });

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { deletePermit } from "@/actions/permits";
 import { PERMIT_TYPES } from "@/lib/permit-types";
-import { EditPermitButton } from "./permit-form-dialog";
+import { EditPermitButton, LogPermitExpenseButton } from "./permit-form-dialog";
 import {
   ShieldCheck,
   FileText,
@@ -104,6 +104,7 @@ export function PermitList({
               {statusBadge(p.validTo)}
               {canEdit && (
                 <>
+                  <LogPermitExpenseButton permitId={p.id} cost={p.cost} currency={p.currency} />
                   <EditPermitButton permit={p} truckId={truckId} />
                   <Button
                     size="icon"

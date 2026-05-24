@@ -86,6 +86,7 @@ enum ExpenseType {
   SALARY
   COMMISSION
   INSURANCE
+  PERMIT
   OTHER
 }
 
