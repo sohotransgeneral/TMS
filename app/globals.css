@@ -76,5 +76,37 @@
   body {
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* ── Minimalist scrollbars ───────────────────────────── */
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(214.3 31.8% 80%) transparent;
+  }
+  .dark * {
+    scrollbar-color: hsl(217.2 32.6% 28%) transparent;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(214.3 31.8% 78%);
+    border-radius: 99px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: hsl(217.2 32.6% 30%);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(214.3 31.8% 60%);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(217.2 32.6% 45%);
+  }
 }
 
