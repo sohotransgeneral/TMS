@@ -49,7 +49,13 @@ export function Topbar({
         <p className="text-sm font-medium truncate">{ROLE_LABELS[role]}</p>
       </div>
 
-      <Button asChild variant="ghost" size="icon" aria-label="Notifications" className="relative">
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        aria-label="Notifications"
+        className="relative"
+      >
         <Link href="/admin/notifications">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (

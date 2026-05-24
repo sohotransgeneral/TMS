@@ -101,9 +101,7 @@ export default async function TruckDetailPage({
               ["Combustibil", truck.fuelType],
               [
                 "Consum mediu",
-                truck.avgConsumption
-                  ? `${truck.avgConsumption} mpg`
-                  : null,
+                truck.avgConsumption ? `${truck.avgConsumption} mpg` : null,
               ],
               [
                 "Kilometraj",

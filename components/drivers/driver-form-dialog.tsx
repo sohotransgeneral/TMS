@@ -41,12 +41,7 @@ export type DriverRow = {
   user: { id: string; email: string; phone: string | null };
 };
 
-const STATUSES = [
-  "AVAILABLE",
-  "ON_TRIP",
-  "OFF_DUTY",
-  "UNAVAILABLE",
-] as const;
+const STATUSES = ["AVAILABLE", "ON_TRIP", "OFF_DUTY", "UNAVAILABLE"] as const;
 const STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
   ON_TRIP: "On Trip",

@@ -3,7 +3,9 @@
 import { requirePermission } from "@/lib/session";
 import {
   createForumTopic,
+  getTelegramChatInfo,
   sendTelegramMessage,
+  verifyThreadId,
   TELEGRAM_TOPIC_NAMES,
   type TelegramTopic,
 } from "@/lib/telegram";
@@ -38,6 +40,26 @@ export type TopicSetupRow = {
   error?: string;
 };
 
+export type ChatDiagnostic = {
+  title?: string;
+  type?: string;
+  isForum?: boolean;
+  error?: string;
+};
+
+export async function getTelegramDiagnostic(): Promise<
+  ActionResult<ChatDiagnostic>
+> {
+  await requirePermission("users:write");
+  const info = await getTelegramChatInfo();
+  if (!info.ok) return failure(info.error ?? "getChat failed");
+  return success({
+    title: info.title,
+    type: info.type,
+    isForum: info.isForum,
+  });
+}
+
 export async function createTelegramTopics(): Promise<
   ActionResult<{ rows: TopicSetupRow[] }>
 > {
@@ -64,15 +86,14 @@ export async function createTelegramTopics(): Promise<
       continue;
     }
     const res = await createForumTopic(TELEGRAM_TOPIC_NAMES[topic]);
-    if (!res) {
+    if ("error" in res) {
       rows.push({
         topic,
         name: TELEGRAM_TOPIC_NAMES[topic],
         envKey,
         existingThreadId: null,
         createdThreadId: null,
-        error:
-          "Failed. Make sure your group is a forum supergroup and the bot is an admin with 'Manage Topics' permission.",
+        error: res.error,
       });
       continue;
     }
@@ -101,4 +122,15 @@ export async function testTelegramTopic(
   });
   if (!msgId) return failure("Send failed. Check token, chat id, thread id.");
   return success(undefined, `Sent (message id ${msgId}).`);
+}
+
+export async function testManualThread(
+  formData: FormData,
+): Promise<ActionResult> {
+  await requirePermission("users:write");
+  const threadId = Number(formData.get("threadId") ?? "");
+  if (!threadId || !Number.isFinite(threadId)) return failure("Invalid thread id.");
+  const err = await verifyThreadId(threadId);
+  if (err) return failure(err);
+  return success(undefined, `Thread ${threadId} verified — message sent.`);
 }

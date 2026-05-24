@@ -79,9 +79,7 @@ export function TruckFormDialog({
       <div onClick={() => setOpen(true)}>{trigger}</div>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {editing ? "Edit Truck" : "New Truck"}
-          </DialogTitle>
+          <DialogTitle>{editing ? "Edit Truck" : "New Truck"}</DialogTitle>
           <DialogDescription>
             Technical details and document expiry dates.
           </DialogDescription>

@@ -312,10 +312,15 @@ export default async function DriverReportPage({
               <R
                 label={`Rate ${data.currency}/Mi`}
                 value={
-                  driver.salaryPerKm ? `${driver.salaryPerKm} ${data.currency}/Mi` : "-"
+                  driver.salaryPerKm
+                    ? `${driver.salaryPerKm} ${data.currency}/Mi`
+                    : "-"
                 }
               />
-              <R label="Base salary" value={fmt(data.baseSalary, data.currency)} />
+              <R
+                label="Base salary"
+                value={fmt(data.baseSalary, data.currency)}
+              />
               {driver.commissionRate && driver.commissionRate > 0 && (
                 <R
                   label={`Commission (${driver.commissionRate}%)`}

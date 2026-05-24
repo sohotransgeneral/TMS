@@ -257,7 +257,8 @@ export default async function DriverDetailPage({
           <div>
             <h3 className="font-semibold">Salary Adjustments</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Manual deductions or bonuses with proof — included in gross calculation
+              Manual deductions or bonuses with proof — included in gross
+              calculation
             </p>
           </div>
         </div>

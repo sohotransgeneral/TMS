@@ -134,15 +134,16 @@ export async function sendTelegramMessage(
  * Create a new forum topic in the configured supergroup.
  * Bot must be an administrator with "Manage Topics" permission.
  *
- * Returns the new topic's `message_thread_id` so it can be saved to env.
+ * Returns the new topic's `message_thread_id` or an error string.
  */
 export async function createForumTopic(
   name: string,
   iconColor?: number,
-): Promise<{ threadId: number; name: string } | null> {
+): Promise<{ threadId: number; name: string } | { error: string }> {
   const t = token();
   const chatId = defaultChat();
-  if (!t || !chatId) return null;
+  if (!t) return { error: "TELEGRAM_BOT_TOKEN not set" };
+  if (!chatId) return { error: "TELEGRAM_CHAT_ID not set" };
 
   try {
     const res = await fetch(
@@ -162,16 +163,72 @@ export async function createForumTopic(
       ok: boolean;
       result?: { message_thread_id: number; name: string };
       description?: string;
+      error_code?: number;
     };
     if (!data.ok || !data.result) {
-      console.error("[telegram] createForumTopic failed:", data.description);
-      return null;
+      const desc = data.description ?? `Error ${data.error_code ?? res.status}`;
+      console.error("[telegram] createForumTopic failed:", desc);
+      return { error: desc };
     }
     return { threadId: data.result.message_thread_id, name: data.result.name };
   } catch (err) {
-    console.error("[telegram] createForumTopic error:", err);
-    return null;
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[telegram] createForumTopic error:", msg);
+    return { error: msg };
   }
+}
+
+/**
+ * Fetch basic info about the configured chat so we can check if it's a forum.
+ */
+export async function getTelegramChatInfo(): Promise<{
+  ok: boolean;
+  title?: string;
+  type?: string;
+  isForum?: boolean;
+  error?: string;
+}> {
+  const t = token();
+  const chatId = defaultChat();
+  if (!t) return { ok: false, error: "TELEGRAM_BOT_TOKEN not set" };
+  if (!chatId) return { ok: false, error: "TELEGRAM_CHAT_ID not set" };
+
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${t}/getChat?chat_id=${encodeURIComponent(chatId)}`,
+      { cache: "no-store" },
+    );
+    const data = (await res.json()) as {
+      ok: boolean;
+      result?: { title?: string; type?: string; is_forum?: boolean };
+      description?: string;
+    };
+    if (!data.ok || !data.result) {
+      return { ok: false, error: data.description ?? "getChat failed" };
+    }
+    return {
+      ok: true,
+      title: data.result.title,
+      type: data.result.type,
+      isForum: data.result.is_forum ?? false,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Send a test message to a specific thread id to verify it exists.
+ * Returns null on success or an error string.
+ */
+export async function verifyThreadId(
+  threadId: number,
+): Promise<string | null> {
+  const msgId = await sendTelegramMessage({
+    threadId,
+    text: `✅ <b>TMS</b> — thread <code>${threadId}</code> verified.`,
+  });
+  return msgId ? null : "Send failed — check thread id and bot permissions";
 }
 
 /**

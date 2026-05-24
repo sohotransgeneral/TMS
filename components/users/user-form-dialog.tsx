@@ -78,9 +78,7 @@ export function UserFormDialog({
       <div onClick={() => setOpen(true)}>{trigger}</div>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {editing ? "Edit User" : "New User"}
-          </DialogTitle>
+          <DialogTitle>{editing ? "Edit User" : "New User"}</DialogTitle>
           <DialogDescription>
             {editing
               ? "Update the user's details."
@@ -195,7 +193,9 @@ export function UserFormDialog({
               minLength={8}
               required={!editing}
               placeholder={
-                editing ? "Leave blank to keep current" : "At least 8 characters"
+                editing
+                  ? "Leave blank to keep current"
+                  : "At least 8 characters"
               }
             />
           </Field>
