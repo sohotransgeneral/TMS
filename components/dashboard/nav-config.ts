@@ -41,7 +41,12 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Main",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      {
+        href: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        roles: ["COMPANY_ADMIN", "DISPATCHER", "ACCOUNTANT", "SUPER_ADMIN"],
+      },
       {
         href: "/driver/dashboard",
         label: "My Loads",
