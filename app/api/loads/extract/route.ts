@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4.5-preview",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content },
