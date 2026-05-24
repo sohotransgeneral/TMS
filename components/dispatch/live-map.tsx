@@ -175,7 +175,7 @@ export function LiveMap({ token }: { token: string | null }) {
     const map = mapRef.current;
     if (!map) return;
 
-    function setupRoutes() {
+    function setupRoutes(map: mapboxgl.Map) {
       const seen = new Set<string>();
 
       for (const p of positions) {
@@ -204,8 +204,11 @@ export function LiveMap({ token }: { token: string | null }) {
           };
 
           if (map.getSource(sourceId)) {
-            (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(geojson);
-            if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "visible");
+            (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(
+              geojson,
+            );
+            if (map.getLayer(layerId))
+              map.setLayoutProperty(layerId, "visibility", "visible");
           } else {
             map.addSource(sourceId, { type: "geojson", data: geojson });
             map.addLayer({
@@ -235,7 +238,7 @@ export function LiveMap({ token }: { token: string | null }) {
             existing[1].setLngLat([p.deliveryLng!, p.deliveryLat!]);
             existing.forEach((m) => (m.getElement().style.display = ""));
           } else {
-            const mkPickup = makeEndpointMarker("#16a34a", "P");
+            const mkPickup = makeEndpointMarker("#7c3aed", "P");
             mkPickup
               .setLngLat([p.pickupLng!, p.pickupLat!])
               .setPopup(
@@ -244,7 +247,7 @@ export function LiveMap({ token }: { token: string | null }) {
                 ),
               )
               .addTo(map);
-            const mkDelivery = makeEndpointMarker("#dc2626", "D");
+            const mkDelivery = makeEndpointMarker("#111827", "D");
             mkDelivery
               .setLngLat([p.deliveryLng!, p.deliveryLat!])
               .setPopup(
@@ -257,7 +260,8 @@ export function LiveMap({ token }: { token: string | null }) {
           }
         } else {
           // Hide route if driver not visible or no coords
-          if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "none");
+          if (map.getLayer(layerId))
+            map.setLayoutProperty(layerId, "visibility", "none");
           routeMarkersRef.current.get(p.driverId)?.forEach((m) => {
             m.getElement().style.display = "none";
           });
@@ -278,9 +282,9 @@ export function LiveMap({ token }: { token: string | null }) {
     }
 
     if (map.isStyleLoaded()) {
-      setupRoutes();
+      setupRoutes(map);
     } else {
-      map.once("load", setupRoutes);
+      map.once("load", () => setupRoutes(map!));
     }
   }, [positions, filterDriver]);
 
