@@ -58,7 +58,10 @@ export function TelegramSetupClient() {
   function runDiag() {
     startDiag(async () => {
       const res = await getTelegramDiagnostic();
-      if (!res.ok) { toast.error(res.error); return; }
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
       setChat(res.data ?? null);
     });
   }
@@ -66,7 +69,10 @@ export function TelegramSetupClient() {
   function runCreate() {
     startCreate(async () => {
       const res = await createTelegramTopics();
-      if (!res.ok) { toast.error(res.error); return; }
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
       setRows(res.data?.rows ?? []);
       toast.success(res.message ?? "Done");
     });
@@ -84,7 +90,10 @@ export function TelegramSetupClient() {
 
   function testThread(threadId: string) {
     const id = Number(threadId);
-    if (!id) { toast.error("Enter a numeric thread id first."); return; }
+    if (!id) {
+      toast.error("Enter a numeric thread id first.");
+      return;
+    }
     startManualTest(async () => {
       const fd = new FormData();
       fd.set("threadId", String(id));
@@ -110,29 +119,40 @@ export function TelegramSetupClient() {
       {/* Step 1 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 1 — Check bot &amp; group</CardTitle>
+          <CardTitle className="text-base">
+            Step 1 — Check bot &amp; group
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button onClick={runDiag} disabled={diagPending} variant="outline" size="sm">
+          <Button
+            onClick={runDiag}
+            disabled={diagPending}
+            variant="outline"
+            size="sm"
+          >
             {diagPending ? "Checking…" : "Check bot connection"}
           </Button>
           {chat && (
             <div className="text-sm space-y-1">
               <p>
-                <span className="font-medium">Chat:</span> {chat.title ?? "—"} ({chat.type ?? "?"})
+                <span className="font-medium">Chat:</span> {chat.title ?? "—"} (
+                {chat.type ?? "?"})
               </p>
               <p className="flex items-center gap-2">
                 <span className="font-medium">Forum topics enabled:</span>
                 {chat.isForum ? (
                   <Badge className="bg-green-600">Yes ✓</Badge>
                 ) : (
-                  <Badge variant="destructive">No — enable Topics in Telegram group settings</Badge>
+                  <Badge variant="destructive">
+                    No — enable Topics in Telegram group settings
+                  </Badge>
                 )}
               </p>
               {!chat.isForum && (
                 <p className="text-xs text-muted-foreground">
-                  In Telegram: open group → Edit → toggle <em>Topics</em> → Save.
-                  The group must be a supergroup for topics to be available.
+                  In Telegram: open group → Edit → toggle <em>Topics</em> →
+                  Save. The group must be a supergroup for topics to be
+                  available.
                 </p>
               )}
             </div>
@@ -143,11 +163,14 @@ export function TelegramSetupClient() {
       {/* Step 2a */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 2a — Auto-create topics (bot must be admin)</CardTitle>
+          <CardTitle className="text-base">
+            Step 2a — Auto-create topics (bot must be admin)
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Make the bot a group admin with <em>Manage Topics</em> permission, then click below.
+            Make the bot a group admin with <em>Manage Topics</em> permission,
+            then click below.
           </p>
           <Button onClick={runCreate} disabled={createPending}>
             {createPending ? "Creating…" : "Create topics"}
@@ -156,23 +179,37 @@ export function TelegramSetupClient() {
           {rows.length > 0 && (
             <ul className="space-y-2 mt-2">
               {rows.map((r) => (
-                <li key={r.topic} className="flex flex-wrap items-center justify-between gap-2 border-b pb-2 last:border-0 text-sm">
+                <li
+                  key={r.topic}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b pb-2 last:border-0 text-sm"
+                >
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{r.name}</span>
                       {r.existingThreadId && (
-                        <Badge variant="secondary">already set: {r.existingThreadId}</Badge>
+                        <Badge variant="secondary">
+                          already set: {r.existingThreadId}
+                        </Badge>
                       )}
                       {r.createdThreadId && (
-                        <Badge className="bg-green-600">created: {r.createdThreadId}</Badge>
+                        <Badge className="bg-green-600">
+                          created: {r.createdThreadId}
+                        </Badge>
                       )}
                     </div>
                     {r.error && (
-                      <span className="text-xs text-red-600 break-all">⚠ {r.error}</span>
+                      <span className="text-xs text-red-600 break-all">
+                        ⚠ {r.error}
+                      </span>
                     )}
                   </div>
                   {(r.existingThreadId || r.createdThreadId) && (
-                    <Button size="sm" variant="outline" disabled={testPending} onClick={() => testTopic(r.topic)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={testPending}
+                      onClick={() => testTopic(r.topic)}
+                    >
                       Send test
                     </Button>
                   )}
@@ -186,7 +223,9 @@ export function TelegramSetupClient() {
       {/* Step 2b */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Step 2b — Enter thread IDs manually</CardTitle>
+          <CardTitle className="text-base">
+            Step 2b — Enter thread IDs manually
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
@@ -202,20 +241,30 @@ export function TelegramSetupClient() {
                 api.telegram.org/bot&lt;TOKEN&gt;/getUpdates
               </a>{" "}
               and copy the{" "}
-              <code className="text-xs bg-muted px-1 rounded">message_thread_id</code>.
+              <code className="text-xs bg-muted px-1 rounded">
+                message_thread_id
+              </code>
+              .
             </li>
-            <li>Paste below, click <strong>Verify</strong> (sends a test message), then copy the env block.</li>
+            <li>
+              Paste below, click <strong>Verify</strong> (sends a test message),
+              then copy the env block.
+            </li>
           </ol>
 
           <div className="grid gap-3">
             {TOPIC_ORDER.map((topic) => (
               <div key={topic} className="flex items-center gap-2 flex-wrap">
-                <span className="w-36 text-sm shrink-0">{TOPIC_LABELS[topic]}</span>
+                <span className="w-36 text-sm shrink-0">
+                  {TOPIC_LABELS[topic]}
+                </span>
                 <Input
                   placeholder="e.g. 2"
                   className="max-w-[140px]"
                   value={manual[topic] ?? ""}
-                  onChange={(e) => setManual((prev) => ({ ...prev, [topic]: e.target.value }))}
+                  onChange={(e) =>
+                    setManual((prev) => ({ ...prev, [topic]: e.target.value }))
+                  }
                 />
                 <Button
                   size="sm"
@@ -225,7 +274,9 @@ export function TelegramSetupClient() {
                 >
                   Verify
                 </Button>
-                <code className="text-xs text-muted-foreground">{ENV_KEYS[topic]}</code>
+                <code className="text-xs text-muted-foreground">
+                  {ENV_KEYS[topic]}
+                </code>
               </div>
             ))}
           </div>
@@ -242,11 +293,11 @@ export function TelegramSetupClient() {
             {envLines}
           </pre>
           <p className="mt-2 text-xs text-muted-foreground">
-            Paste into <code>.env.local</code> and into Vercel → Project → Settings → Environment Variables, then redeploy.
+            Paste into <code>.env.local</code> and into Vercel → Project →
+            Settings → Environment Variables, then redeploy.
           </p>
         </CardContent>
       </Card>
     </div>
   );
 }
-

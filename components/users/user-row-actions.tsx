@@ -11,8 +11,11 @@ type UserRow = {
   name: string | null;
   email: string;
   phone: string | null;
+  telegramChatId?: string | null;
   role: string;
   active: boolean;
+  linkedCustomer?: { id: string; name: string } | null;
+  customers?: Array<{ id: string; name: string; email: string | null; userId?: string | null }>;
 };
 
 export function UserRowActions({

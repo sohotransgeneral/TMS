@@ -107,6 +107,31 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
 
   await prisma.user.update({ where: { id }, data });
 
+  // Re-link / unlink customer profile when role is CUSTOMER
+  const rawCustomerId =
+    typeof formData.get("customerId") === "string"
+      ? (formData.get("customerId") as string).trim()
+      : "";
+
+  if (parsed.data.role === "CUSTOMER") {
+    // Unlink any customer currently linked to this user
+    await prisma.customer.updateMany({
+      where: { userId: id },
+      data: { userId: null },
+    });
+    // Link new customer if selected (must belong to same company)
+    if (rawCustomerId) {
+      await prisma.customer.updateMany({
+        where: {
+          id: rawCustomerId,
+          companyId: target.companyId ?? undefined,
+          userId: { equals: null },
+        },
+        data: { userId: id },
+      });
+    }
+  }
+
   await logAudit({
     action: "user.update",
     userId: me.id,

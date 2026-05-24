@@ -28,10 +28,12 @@ type UserRow = {
   telegramChatId?: string | null;
   role: string;
   active: boolean;
+  linkedCustomer?: { id: string; name: string } | null;
+  customers?: CustomerOpt[];
 };
 
 type CompanyOpt = { id: string; name: string };
-type CustomerOpt = { id: string; name: string; email: string | null };
+type CustomerOpt = { id: string; name: string; email: string | null; userId?: string | null };
 
 const ROLE_OPTIONS = (
   Object.keys(ROLE_LABELS) as Array<keyof typeof ROLE_LABELS>
@@ -54,6 +56,8 @@ export function UserFormDialog({
   const [selectedRole, setSelectedRole] = useState(
     initial?.role ?? "DISPATCHER",
   );
+  // Merge prop customers with initial's own customer list (for editing)
+  const allCustomers: CustomerOpt[] = initial?.customers ?? customers;
   const editing = Boolean(initial);
   const action = toActionState(editing ? updateUser : createUser);
   const [state, formAction, pending] = useActionState<
@@ -163,21 +167,39 @@ export function UserFormDialog({
               </Select>
             </Field>
           </div>
-          {!editing && selectedRole === "CUSTOMER" && customers.length > 0 && (
+          {selectedRole === "CUSTOMER" && (
             <Field
               name="customerId"
-              label="Link existing customer"
+              label="Customer profile"
               error={errors.customerId}
             >
-              <Select id="customerId" name="customerId" defaultValue="">
-                <option value="">— Select customer —</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                    {c.email ? ` (${c.email})` : ""}
-                  </option>
-                ))}
+              <Select
+                id="customerId"
+                name="customerId"
+                defaultValue={initial?.linkedCustomer?.id ?? ""}
+              >
+                <option value="">{editing ? "— Unlink customer —" : "— Select customer —"}</option>
+                {allCustomers.map((c) => {
+                  const isLinkedToOther =
+                    c.userId && c.userId !== initial?.id;
+                  return (
+                    <option
+                      key={c.id}
+                      value={c.id}
+                      disabled={isLinkedToOther === true}
+                    >
+                      {c.name}
+                      {c.email ? ` (${c.email})` : ""}
+                      {isLinkedToOther ? " — linked to another user" : ""}
+                    </option>
+                  );
+                })}
               </Select>
+              {initial?.linkedCustomer && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Currently linked: <span className="font-medium">{initial.linkedCustomer.name}</span>
+                </p>
+              )}
             </Field>
           )}
           <Field

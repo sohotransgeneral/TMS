@@ -63,6 +63,7 @@ export default async function UsersPage({
         active: true,
         createdAt: true,
         company: { select: { name: true } },
+        customerProfiles: { select: { id: true, name: true }, take: 1 },
       },
     }),
     prisma.user.count({ where }),
@@ -74,8 +75,8 @@ export default async function UsersPage({
       : Promise.resolve([]),
     me.companyId
       ? prisma.customer.findMany({
-          where: { companyId: me.companyId, userId: null },
-          select: { id: true, name: true, email: true },
+          where: { companyId: me.companyId },
+          select: { id: true, name: true, email: true, userId: true },
           orderBy: { name: "asc" },
         })
       : Promise.resolve([]),
@@ -135,7 +136,14 @@ export default async function UsersPage({
               {users.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.name ?? "—"}</TableCell>
-                  <TableCell>{u.email}</TableCell>
+                  <TableCell>
+                    <div>{u.email}</div>
+                    {u.role === "CUSTOMER" && u.customerProfiles[0] && (
+                      <div className="text-xs text-muted-foreground">
+                        📦 {u.customerProfiles[0].name}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>{u.phone ?? "—"}</TableCell>
                   {isSuperAdmin && (
                     <TableCell className="text-muted-foreground text-sm">
@@ -156,7 +164,14 @@ export default async function UsersPage({
                     )}
                   </TableCell>
                   <TableCell>
-                    <UserRowActions user={u} isSelf={u.id === me.id} />
+                    <UserRowActions
+                      user={{
+                        ...u,
+                        linkedCustomer: u.customerProfiles[0] ?? null,
+                        customers,
+                      }}
+                      isSelf={u.id === me.id}
+                    />
                   </TableCell>
                 </TableRow>
               ))}
