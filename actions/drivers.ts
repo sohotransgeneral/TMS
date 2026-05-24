@@ -27,53 +27,58 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
 
   const hashed = await bcrypt.hash(d.password, 10);
 
-  const newUser = await prisma.user.create({
-    data: {
-      email,
-      name: `${d.firstName} ${d.lastName}`,
-      phone: d.phone,
-      role: "DRIVER" as const,
-      active: true,
-      password: hashed,
+  try {
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        name: `${d.firstName} ${d.lastName}`,
+        phone: d.phone,
+        role: "DRIVER" as const,
+        active: true,
+        password: hashed,
+        companyId: me.companyId,
+      },
+    });
+
+    const driver = await prisma.driverProfile.create({
+      data: {
+        companyId: me.companyId,
+        userId: newUser.id,
+        firstName: d.firstName,
+        lastName: d.lastName,
+        cnp: d.cnp ?? null,
+        dateOfBirth: d.dateOfBirth ?? null,
+        licenseNumber: d.licenseNumber ?? null,
+        licenseCategories: d.licenseCategories ?? [],
+        licenseIssuedAt: d.licenseIssuedAt ?? null,
+        licenseExpiresAt: d.licenseExpiresAt ?? null,
+        tachoCardNumber: d.tachoCardNumber ?? null,
+        tachoCardExpiresAt: d.tachoCardExpiresAt ?? null,
+        employedSince: d.employedSince ?? null,
+        salaryType: d.salaryType ?? "PER_MI",
+        salaryPerKm: d.salaryPerKm ?? null,
+        salaryFixedAmount: d.salaryFixedAmount ?? null,
+        grossPercent: d.grossPercent ?? null,
+        commissionRate: d.commissionRate ?? null,
+        status: d.status ?? "AVAILABLE",
+        internalNotes: d.internalNotes ?? null,
+      },
+    });
+
+    await logAudit({
+      action: "driver.create",
+      userId: me.id,
       companyId: me.companyId,
-    },
-  });
+      entityType: "DriverProfile",
+      entityId: driver.id,
+    });
 
-  const driver = await prisma.driverProfile.create({
-    data: {
-      companyId: me.companyId,
-      userId: newUser.id,
-      firstName: d.firstName,
-      lastName: d.lastName,
-      cnp: d.cnp,
-      dateOfBirth: d.dateOfBirth,
-      licenseNumber: d.licenseNumber,
-      licenseCategories: d.licenseCategories ?? [],
-      licenseIssuedAt: d.licenseIssuedAt,
-      licenseExpiresAt: d.licenseExpiresAt,
-      tachoCardNumber: d.tachoCardNumber,
-      tachoCardExpiresAt: d.tachoCardExpiresAt,
-      employedSince: d.employedSince,
-      salaryType: d.salaryType,
-      salaryPerKm: d.salaryPerKm,
-      salaryFixedAmount: d.salaryFixedAmount,
-      grossPercent: d.grossPercent,
-      commissionRate: d.commissionRate,
-      status: d.status,
-      internalNotes: d.internalNotes,
-    },
-  });
-
-  await logAudit({
-    action: "driver.create",
-    userId: me.id,
-    companyId: me.companyId,
-    entityType: "DriverProfile",
-    entityId: driver.id,
-  });
-
-  revalidatePath("/admin/drivers");
-  return success({ id: driver.id }, "Driver created.");
+    revalidatePath("/admin/drivers");
+    return success({ id: driver.id }, "Driver created.");
+  } catch (err) {
+    console.error("[createDriver] error:", err);
+    return failure("Failed to create driver. Please try again.");
+  }
 }
 
 export async function updateDriver(formData: FormData): Promise<ActionResult> {
@@ -82,46 +87,71 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
 
   const parsed = driverUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
+    console.error("[updateDriver] Zod errors:", parsed.error.flatten());
     return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
-  const { id, password, email, phone, firstName, lastName, ...rest } = parsed.data;
+  const d = parsed.data;
 
   const target = await prisma.driverProfile.findUnique({
-    where: { id },
+    where: { id: d.id },
     include: { user: true },
   });
   if (!target || target.companyId !== me.companyId) {
     return failure("Driver not found.");
   }
 
-  await prisma.driverProfile.update({
-    where: { id },
-    data: {
-      firstName: firstName ?? target.firstName,
-      lastName: lastName ?? target.lastName,
-      ...rest,
-    },
-  });
+  try {
+    await prisma.driverProfile.update({
+      where: { id: d.id },
+      data: {
+        firstName: d.firstName ?? target.firstName,
+        lastName: d.lastName ?? target.lastName,
+        cnp: d.cnp ?? null,
+        dateOfBirth: d.dateOfBirth ?? null,
+        licenseNumber: d.licenseNumber ?? null,
+        licenseCategories: d.licenseCategories ?? target.licenseCategories,
+        licenseIssuedAt: d.licenseIssuedAt ?? null,
+        licenseExpiresAt: d.licenseExpiresAt ?? null,
+        tachoCardNumber: d.tachoCardNumber ?? null,
+        tachoCardExpiresAt: d.tachoCardExpiresAt ?? null,
+        employedSince: d.employedSince ?? null,
+        status: d.status ?? target.status,
+        salaryType: d.salaryType ?? target.salaryType,
+        salaryPerKm: d.salaryPerKm ?? null,
+        salaryFixedAmount: d.salaryFixedAmount ?? null,
+        grossPercent: d.grossPercent ?? null,
+        commissionRate: d.commissionRate ?? null,
+        internalNotes: d.internalNotes ?? null,
+      },
+    });
+  } catch (err) {
+    console.error("[updateDriver] Prisma error:", err);
+    return failure("Failed to save driver. Please try again.");
+  }
 
   // Sync user
   const userUpdate: Record<string, unknown> = {
-    name: `${firstName ?? target.firstName} ${lastName ?? target.lastName}`,
+    name: `${d.firstName ?? target.firstName} ${d.lastName ?? target.lastName}`,
   };
-  if (phone !== undefined) userUpdate.phone = phone;
-  if (email && email.toLowerCase() !== target.user.email) {
-    userUpdate.email = email.toLowerCase();
+  if (d.phone !== undefined) userUpdate.phone = d.phone ?? null;
+  if (d.email && d.email.toLowerCase() !== target.user.email) {
+    userUpdate.email = d.email.toLowerCase();
   }
-  if (password) {
-    userUpdate.password = await bcrypt.hash(password, 10);
+  if (d.password) {
+    userUpdate.password = await bcrypt.hash(d.password, 10);
   }
-  await prisma.user.update({ where: { id: target.userId }, data: userUpdate });
+  try {
+    await prisma.user.update({ where: { id: target.userId }, data: userUpdate });
+  } catch (err) {
+    console.error("[updateDriver] User sync error:", err);
+  }
 
   await logAudit({
     action: "driver.update",
     userId: me.id,
     companyId: me.companyId,
     entityType: "DriverProfile",
-    entityId: id,
+    entityId: d.id,
   });
 
   revalidatePath("/admin/drivers");

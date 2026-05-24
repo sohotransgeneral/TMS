@@ -75,7 +75,15 @@ export function DriverFormDialog({
     if (state.ok) {
       toast.success(state.message ?? "Saved.");
       setOpen(false);
-    } else toast.error(state.error);
+    } else {
+      const fieldSummary =
+        state.fieldErrors && Object.keys(state.fieldErrors).length > 0
+          ? ` (${Object.entries(state.fieldErrors)
+              .map(([f, errs]) => `${f}: ${(errs as string[]).join(", ")}`)
+              .join(" | ")})`
+          : "";
+      toast.error(state.error + fieldSummary);
+    }
   }, [state]);
 
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
