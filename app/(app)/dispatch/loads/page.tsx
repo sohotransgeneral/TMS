@@ -190,7 +190,7 @@ export default async function LoadsPage({
                     {formatDate(l.pickupDate, true)}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {l.driver?.user.name ?? "—"}
+                    {l.driver?.user?.name ?? "—"}
                     {l.truck && (
                       <span className="text-muted-foreground">
                         {" "}
