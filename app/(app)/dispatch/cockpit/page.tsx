@@ -109,10 +109,7 @@ export default async function CockpitPage({
   }));
   const driverOpts = drivers.map((d) => ({
     value: d.id,
-    label:
-      d.user?.name ??
-      `${d.firstName} ${d.lastName}`.trim() ??
-      "(no name)",
+    label: d.user?.name ?? `${d.firstName} ${d.lastName}`.trim() ?? "(no name)",
   }));
 
   // Key that remounts the board when filters change so its internal state resets

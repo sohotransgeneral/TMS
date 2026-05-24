@@ -31,6 +31,7 @@ function getClient() {
   return new S3Client({
     region,
     endpoint: endpointUrl,
+    forcePathStyle: true, // required for Cloudflare R2 — avoids virtual-hosted-style subdomain
     credentials: { accessKeyId, secretAccessKey },
   });
 }

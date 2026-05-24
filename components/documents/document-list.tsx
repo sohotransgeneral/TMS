@@ -77,13 +77,22 @@ interface DocumentListProps {
 }
 
 // ── OpenButton — fetches a short-lived signed URL then opens in new tab ───────
+const EXPIRY_OPTIONS = [
+  { label: "15 min", value: "15m" },
+  { label: "1 hour", value: "1h" },
+  { label: "6 hours", value: "6h" },
+  { label: "24 hours", value: "24h" },
+  { label: "7 days", value: "7d" },
+];
+
 function OpenButton({ docId }: { docId: string }) {
   const [loading, setLoading] = useState(false);
+  const [expires, setExpires] = useState("1h");
 
   async function handleOpen() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/documents/${docId}/url`);
+      const res = await fetch(`/api/documents/${docId}/url?expires=${expires}`);
       if (!res.ok) throw new Error("Failed to get download URL");
       const { url } = await res.json();
       window.open(url, "_blank", "noopener,noreferrer");
@@ -95,19 +104,33 @@ function OpenButton({ docId }: { docId: string }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleOpen}
-      disabled={loading}
-      className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-      title="Open"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <ExternalLink className="h-4 w-4" />
-      )}
-    </button>
+    <div className="flex items-center gap-1">
+      <select
+        value={expires}
+        onChange={(e) => setExpires(e.target.value)}
+        className="h-7 rounded border border-input bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+        title="Link validity"
+      >
+        {EXPIRY_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={handleOpen}
+        disabled={loading}
+        className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+        title="Open"
+      >
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <ExternalLink className="h-4 w-4" />
+        )}
+      </button>
+    </div>
   );
 }
 
