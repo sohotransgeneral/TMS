@@ -33,7 +33,23 @@ const STATUS_NEXT: Record<string, string> = {
   RED: "DELETE",
 };
 
-export function DriverZoneMap({ token }: { token: string | null }) {
+export function DriverZoneMap({
+  token,
+  pickupLat,
+  pickupLng,
+  pickupAddress,
+  deliveryLat,
+  deliveryLng,
+  deliveryAddress,
+}: {
+  token: string | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
+  pickupAddress?: string | null;
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
+  deliveryAddress?: string | null;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -60,10 +76,47 @@ export function DriverZoneMap({ token }: { token: string | null }) {
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [-98.5795, 39.8283],
-      zoom: 3.5,
+      center:
+        pickupLng != null && pickupLat != null
+          ? [pickupLng, pickupLat]
+          : [-98.5795, 39.8283],
+      zoom: pickupLat != null ? 6 : 3.5,
     });
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
+
+    map.on("load", () => {
+      // Pickup marker — violet P
+      if (pickupLat != null && pickupLng != null) {
+        const el = makeEndpointEl("#7c3aed", "P");
+        new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat([pickupLng, pickupLat])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 14 }).setHTML(
+              `<div style="font-size:12px;color:#111827"><b>📍 Pickup</b>${pickupAddress ? `<br/>${escapeHtml(pickupAddress)}` : ""}</div>`,
+            ),
+          )
+          .addTo(map);
+      }
+      // Delivery marker — black D
+      if (deliveryLat != null && deliveryLng != null) {
+        const el = makeEndpointEl("#111827", "D");
+        new mapboxgl.Marker({ element: el, anchor: "center" })
+          .setLngLat([deliveryLng, deliveryLat])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 14 }).setHTML(
+              `<div style="font-size:12px;color:#111827"><b>🏁 Delivery</b>${deliveryAddress ? `<br/>${escapeHtml(deliveryAddress)}` : ""}</div>`,
+            ),
+          )
+          .addTo(map);
+      }
+      // Fit to show both if available
+      if (pickupLat != null && pickupLng != null && deliveryLat != null && deliveryLng != null) {
+        map.fitBounds(
+          new mapboxgl.LngLatBounds([pickupLng, pickupLat], [deliveryLng, deliveryLat]),
+          { padding: 60, maxZoom: 8, duration: 800 },
+        );
+      }
+    });
 
     // Click on empty area → create GREEN pin
     map.on("click", async (e) => {
@@ -254,6 +307,19 @@ function buildPopupHtml(pin: ZonePin): string {
       </div>
       <div style="color:#9ca3af;font-size:10px;margin-top:2px">Click to cycle • 3rd click removes</div>
     </div>`;
+}
+
+function makeEndpointEl(color: string, letter: string) {
+  const el = document.createElement("div");
+  el.style.cssText = `
+    width:22px;height:22px;border-radius:50%;
+    background:${color};border:2.5px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:#fff;cursor:pointer;
+  `;
+  el.textContent = letter;
+  return el;
 }
 
 function escapeHtml(s: string) {

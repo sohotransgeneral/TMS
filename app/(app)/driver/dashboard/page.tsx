@@ -293,7 +293,15 @@ export default async function DriverDashboardPage() {
           </p>
         </CardHeader>
         <CardContent>
-          <DriverZoneMap token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null} />
+          <DriverZoneMap
+            token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
+            pickupLat={activeLoad?.pickupLat}
+            pickupLng={activeLoad?.pickupLng}
+            pickupAddress={activeLoad?.pickupAddress}
+            deliveryLat={activeLoad?.deliveryLat}
+            deliveryLng={activeLoad?.deliveryLng}
+            deliveryAddress={activeLoad?.deliveryAddress}
+          />
         </CardContent>
       </Card>
     </div>
