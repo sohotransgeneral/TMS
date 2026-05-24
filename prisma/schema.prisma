@@ -438,21 +438,27 @@ model Load {
   customer        Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   // Pickup
+  pickupCompanyName String?  // shipper company
   pickupAddress   String
   pickupCity      String?
   pickupCountry   String?
   pickupLat       Float?
   pickupLng       Float?
   pickupDate      DateTime
+  pickupContact   String?   // contact person
+  pickupPhone     String?
   pickupNotes     String?
 
   // Delivery
+  deliveryCompanyName String? // receiver company
   deliveryAddress String
   deliveryCity    String?
   deliveryCountry String?
   deliveryLat     Float?
   deliveryLng     Float?
   deliveryDate    DateTime
+  deliveryContact String?
+  deliveryPhone   String?
   deliveryNotes   String?
 
   // Cargo
@@ -463,11 +469,29 @@ model Load {
   isHazardous      Boolean?  @default(false)
   temperature      String?   // e.g. "+2 / +6"
 
+  // Load details
+  loadType         String?   // FTL, LTL, PTL
+  equipment        String?   // 53' Dry Van, Reefer, etc.
+
   // Pricing
   price            Float
   currency         String    @default("EUR")
+  lineHaulRate     Float?    // line haul component
+  fuelSurcharge    Float?    // fuel surcharge component
   estimatedDistanceKm Float?
   actualDistanceKm    Float?
+
+  // References
+  poNumber         String?   // PO#
+  soNumber         String?   // SO#
+
+  // Broker
+  brokerName       String?
+  brokerPhone      String?
+  brokerEmail      String?
+
+  // Special instructions (from load confirmation)
+  specialInstructions String?
 
   status           LoadStatus @default(DRAFT)
 

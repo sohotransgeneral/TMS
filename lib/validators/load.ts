@@ -54,21 +54,31 @@ export const LOAD_NEXT_STATUSES: Record<string, readonly string[]> = {
 
 export const loadCreateSchema = z.object({
   customerId: optionalString,
+
+  pickupCompanyName: optionalString,
   pickupAddress: z.string().min(3, "Address required"),
   pickupCity: optionalString,
   pickupCountry: optionalString,
   pickupLat: optionalNumber,
   pickupLng: optionalNumber,
   pickupDate: z.coerce.date({ message: "Pickup date is required" }),
+  pickupContact: optionalString,
+  pickupPhone: optionalString,
   pickupNotes: optionalString,
 
+  deliveryCompanyName: optionalString,
   deliveryAddress: z.string().min(3, "Address required"),
   deliveryCity: optionalString,
   deliveryCountry: optionalString,
   deliveryLat: optionalNumber,
   deliveryLng: optionalNumber,
   deliveryDate: z.coerce.date({ message: "Delivery date is required" }),
+  deliveryContact: optionalString,
+  deliveryPhone: optionalString,
   deliveryNotes: optionalString,
+
+  loadType: optionalString,
+  equipment: optionalString,
 
   cargoDescription: optionalString,
   weightKg: optionalNumber,
@@ -79,7 +89,18 @@ export const loadCreateSchema = z.object({
 
   price: z.coerce.number().min(0, "Invalid price"),
   currency: z.string().default("USD"),
+  lineHaulRate: optionalNumber,
+  fuelSurcharge: optionalNumber,
   estimatedDistanceKm: optionalNumber,
+
+  poNumber: optionalString,
+  soNumber: optionalString,
+
+  brokerName: optionalString,
+  brokerPhone: optionalString,
+  brokerEmail: optionalString,
+
+  specialInstructions: optionalString,
 
   driverId: optionalString,
   truckId: optionalString,
