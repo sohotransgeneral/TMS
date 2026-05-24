@@ -61,7 +61,11 @@ export default async function FuelPage({
 
   const where = {
     companyId: me.companyId ?? undefined,
-    ...(truckId ? { truckId } : driverTruckId ? { truckId: driverTruckId } : {}),
+    ...(truckId
+      ? { truckId }
+      : driverTruckId
+        ? { truckId: driverTruckId }
+        : {}),
   };
 
   const [entries, total, agg, trucks, drivers, loads] = await Promise.all([
@@ -84,7 +88,9 @@ export default async function FuelPage({
     prisma.truck.findMany({
       where: driverTruckId
         ? { id: driverTruckId }
-        : me.companyId ? { companyId: me.companyId } : {},
+        : me.companyId
+          ? { companyId: me.companyId }
+          : {},
       select: { id: true, plateNumber: true },
       orderBy: { plateNumber: "asc" },
     }),
