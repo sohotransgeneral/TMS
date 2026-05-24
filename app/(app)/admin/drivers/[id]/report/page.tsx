@@ -20,12 +20,12 @@ function R({
   bold?: boolean;
 }) {
   return (
-    <tr className={bold ? "border-t-2 border-black font-bold" : ""}>
-      <td className="py-1 pr-4 text-sm text-gray-600 print:text-gray-700">
+    <tr className={bold ? "border-t-2 border-border font-bold" : ""}>
+      <td className="py-1 pr-4 text-sm text-muted-foreground">
         {label}
       </td>
       <td
-        className={`py-1 text-right font-mono text-sm ${neg ? "text-red-600" : bold ? "text-black" : "text-gray-900"}`}
+        className={`py-1 text-right font-mono text-sm ${neg ? "text-red-500 dark:text-red-400" : bold ? "text-foreground" : "text-foreground"}`}
       >
         {value}
       </td>
@@ -75,7 +75,7 @@ export default async function DriverReportPage({
       </div>
 
       {/* Header */}
-      <div className="border-b-2 border-black pb-4">
+      <div className="border-b-2 border-border pb-4">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground print:text-black">
@@ -117,12 +117,12 @@ export default async function DriverReportPage({
         ].map((k) => (
           <div
             key={k.label}
-            className="rounded border border-gray-300 p-3 print:border-gray-400"
+            className="rounded border border-border p-3"
           >
-            <div className="text-xs text-gray-500 print:text-gray-600">
+            <div className="text-xs text-muted-foreground">
               {k.label}
             </div>
-            <div className="text-lg font-bold text-foreground print:text-black">
+            <div className="text-lg font-bold text-foreground">
               {k.value}
             </div>
           </div>
@@ -136,7 +136,7 @@ export default async function DriverReportPage({
         </h2>
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="border-b-2 border-gray-400 text-left text-xs text-gray-600 print:text-gray-700">
+            <tr className="border-b-2 border-border text-left text-xs text-muted-foreground">
               <th className="pb-2 pr-3">Nr. Ref.</th>
               <th className="pb-2 pr-3">Pickup</th>
               <th className="pb-2 pr-3">Livrare</th>
@@ -149,7 +149,7 @@ export default async function DriverReportPage({
           <tbody>
             {loads.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-4 text-center text-gray-500">
+                <td colSpan={7} className="py-4 text-center text-muted-foreground">
                   Fără curse în această perioadă
                 </td>
               </tr>
@@ -157,7 +157,7 @@ export default async function DriverReportPage({
             {loads.map((l, i) => (
               <tr
                 key={l.id}
-                className={`border-b border-gray-200 ${i % 2 === 0 ? "" : "bg-gray-50 print:bg-gray-100"}`}
+                className={`border-b border-border ${i % 2 === 0 ? "" : "bg-muted/40"}`}
               >
                 <td className="py-1.5 pr-3 font-mono text-xs">
                   {l.referenceNumber}
@@ -166,7 +166,7 @@ export default async function DriverReportPage({
                   <div className="font-medium">
                     {l.pickupCity ?? l.pickupAddress.slice(0, 25)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {fmtDate(l.pickupDate)}
                   </div>
                 </td>
@@ -174,7 +174,7 @@ export default async function DriverReportPage({
                   <div className="font-medium">
                     {l.deliveryCity ?? l.deliveryAddress.slice(0, 25)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     {fmtDate(l.deliveryDate)}
                   </div>
                 </td>
@@ -195,7 +195,7 @@ export default async function DriverReportPage({
               </tr>
             ))}
             {loads.length > 0 && (
-              <tr className="border-t-2 border-gray-400 font-bold">
+              <tr className="border-t-2 border-border font-bold">
                 <td colSpan={5} className="py-2 text-sm">
                   TOTAL
                 </td>
@@ -225,7 +225,7 @@ export default async function DriverReportPage({
                 value={fmt(data.revenue, data.currency)}
               />
               <tr>
-                <td colSpan={2} className="py-1 border-b border-gray-300" />
+                <td colSpan={2} className="py-1 border-b border-border" />
               </tr>
               {data.fuelCost > 0 && (
                 <R
@@ -321,7 +321,7 @@ export default async function DriverReportPage({
               )}
               <R label="Salariu BRUT" value={fmt(data.brutSalary)} bold />
               <tr>
-                <td colSpan={2} className="py-1 border-b border-gray-300" />
+                <td colSpan={2} className="py-1 border-b border-border" />
               </tr>
               <R
                 label="CAS angajat (25%)"
@@ -358,7 +358,7 @@ export default async function DriverReportPage({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-300 pt-4 text-xs text-gray-500 print:text-gray-600">
+      <div className="border-t border-border pt-4 text-xs text-muted-foreground">
         <p>
           Raport generat automat de TMS · {fullName} · {data.periodLabel}
         </p>
