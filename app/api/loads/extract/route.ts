@@ -120,7 +120,7 @@ export async function POST(req: Request) {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content },
       ],
-      max_tokens: 1024,
+      max_completion_tokens: 1024,
       temperature: 0,
     });
 
