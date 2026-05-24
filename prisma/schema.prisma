@@ -187,6 +187,7 @@ model Company {
   payments           Payment[]
   fuelEntries        FuelEntry[]
   mapZonePins        MapZonePin[]
+  aiUsageLogs        AiUsageLog[]
 
   @@index([active])
 }
@@ -226,6 +227,7 @@ model User {
   statusUpdates     LoadStatusHistory[]
   accounts          Account[]
   sessions          Session[]
+  aiUsageLogs       AiUsageLog[]
 
   @@index([companyId, role])
 }
@@ -796,4 +798,23 @@ model AuditLog {
 
   @@index([companyId, createdAt])
   @@index([entityType, entityId])
+}
+
+model AiUsageLog {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String?  @db.ObjectId
+  company      Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  userId       String?  @db.ObjectId
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  model        String   // e.g. "gpt-5"
+  fileType     String   // "image" | "pdf"
+  inputTokens  Int
+  outputTokens Int
+  realCostUsd  Float    // actual OpenAI cost
+  billedUsd    Float    // what we charge the company ($2 per extraction)
+
+  createdAt    DateTime @default(now())
+
+  @@index([companyId, createdAt])
 }

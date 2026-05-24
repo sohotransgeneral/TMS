@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requirePermission } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+
+// Pricing per 1M tokens (USD) — update if OpenAI changes pricing
+const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  "gpt-5":          { input: 15.0,  output: 60.0 },
+  "gpt-4o":         { input: 2.5,   output: 10.0 },
+  "gpt-4.5-preview":{ input: 75.0,  output: 150.0 },
+};
+const BILLED_PER_EXTRACTION = 2.0; // $2 charged to company per AI extraction
+const AI_MODEL = "gpt-5";
 
 const SYSTEM_PROMPT = `You are a logistics assistant. Extract transport load information from the provided document (rate confirmation, BOL, shipper's order, or similar).
 
@@ -39,8 +49,9 @@ Rules:
 - Return only the raw JSON, no markdown, no explanation`;
 
 export async function POST(req: Request) {
+  let me: Awaited<ReturnType<typeof requirePermission>>;
   try {
-    await requirePermission("loads:write");
+    me = await requirePermission("loads:write");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -104,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: AI_MODEL,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content },
@@ -117,6 +128,25 @@ export async function POST(req: Request) {
     // Strip markdown code fences if present
     const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
     const extracted = JSON.parse(cleaned);
+
+    // Log AI usage for billing
+    const inputTokens = response.usage?.prompt_tokens ?? 0;
+    const outputTokens = response.usage?.completion_tokens ?? 0;
+    const pricing = MODEL_PRICING[AI_MODEL] ?? { input: 15.0, output: 60.0 };
+    const realCostUsd = (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000;
+
+    await prisma.aiUsageLog.create({
+      data: {
+        companyId: me.companyId ?? null,
+        userId: me.id ?? null,
+        model: AI_MODEL,
+        fileType: isImage ? "image" : "pdf",
+        inputTokens,
+        outputTokens,
+        realCostUsd,
+        billedUsd: BILLED_PER_EXTRACTION,
+      },
+    });
 
     return NextResponse.json({ ok: true, data: extracted });
   } catch (err) {

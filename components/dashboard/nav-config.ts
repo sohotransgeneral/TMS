@@ -18,6 +18,7 @@ import {
   Bell,
   Container,
   ScrollText,
+  Sparkles,
 } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 
@@ -177,6 +178,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Audit Log",
         icon: ScrollText,
         permissions: ["audit:read"],
+      },
+      {
+        href: "/admin/ai-usage",
+        label: "AI Usage",
+        icon: Sparkles,
+        roles: ["SUPER_ADMIN", "COMPANY_ADMIN"],
       },
       {
         href: "/settings",
