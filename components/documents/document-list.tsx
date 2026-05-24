@@ -148,9 +148,7 @@ function EditExpiryButton({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [value, setValue] = useState(
-    currentExpiry
-      ? new Date(currentExpiry).toISOString().slice(0, 10)
-      : "",
+    currentExpiry ? new Date(currentExpiry).toISOString().slice(0, 10) : "",
   );
 
   async function handleSave() {

@@ -21,7 +21,7 @@ const isPublic = (path: string) =>
  */
 const ROLE_ALLOWED_PREFIXES: Partial<Record<UserRole, string[]>> = {
   DRIVER: ["/driver", "/api"],
-  CUSTOMER: ["/customer", "/accounting/invoices", "/api"],
+  CUSTOMER: ["/customer", "/accounting/invoices", "/admin/notifications", "/api"],
   DISPATCHER: ["/dashboard", "/dispatch", "/fleet", "/customers", "/admin/drivers", "/api"],
   FLEET_MANAGER: ["/dashboard", "/fleet", "/admin/drivers", "/api"],
   ACCOUNTANT: ["/dashboard", "/accounting", "/customers", "/dispatch/loads", "/api"],

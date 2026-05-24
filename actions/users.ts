@@ -19,7 +19,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       ? (typeof raw.companyId === "string" && raw.companyId ? raw.companyId : null)
       : me.companyId;
 
-  if (!targetCompanyId) return failure("Selectează o companie.");
+  // companyId is optional — SUPER_ADMIN can create users without a company
 
   const parsed = userCreateSchema.safeParse(raw);
   if (!parsed.success) {

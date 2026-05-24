@@ -21,11 +21,12 @@ export default async function CustomerLoadsPage() {
   const me = await requirePermission("loads:read_own");
 
   // Find the Customer record linked to this portal user
-  const customer = me.companyId
-    ? await prisma.customer.findFirst({
-        where: { companyId: me.companyId, userId: me.id },
-      })
-    : null;
+  const customer = await prisma.customer.findFirst({
+    where: {
+      userId: me.id,
+      ...(me.companyId ? { companyId: me.companyId } : {}),
+    },
+  });
 
   const loads = customer
     ? await prisma.load.findMany({

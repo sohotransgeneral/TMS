@@ -151,6 +151,7 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Invoices",
         icon: Receipt,
         permissions: ["invoices:read"],
+        roles: ["COMPANY_ADMIN", "SUPER_ADMIN", "ACCOUNTANT", "DISPATCHER", "FLEET_MANAGER", "DRIVER"],
       },
       {
         href: "/accounting/expenses",

@@ -92,7 +92,6 @@ export function UserFormDialog({
             <Field
               name="companyId"
               label="Companie"
-              required
               error={errors.companyId}
             >
               <Select id="companyId" name="companyId" defaultValue="">
