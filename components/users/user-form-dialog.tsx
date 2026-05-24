@@ -50,7 +50,9 @@ export function UserFormDialog({
   customers = [],
 }: UserFormDialogProps) {
   const [open, setOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(initial?.role ?? "DISPATCHER");
+  const [selectedRole, setSelectedRole] = useState(
+    initial?.role ?? "DISPATCHER",
+  );
   const editing = Boolean(initial);
   const action = toActionState(editing ? updateUser : createUser);
   const [state, formAction, pending] = useActionState<
@@ -165,7 +167,8 @@ export function UserFormDialog({
                 <option value="">— Selectează clientul —</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}{c.email ? ` (${c.email})` : ""}
+                    {c.name}
+                    {c.email ? ` (${c.email})` : ""}
                   </option>
                 ))}
               </Select>

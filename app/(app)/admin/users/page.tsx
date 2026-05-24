@@ -113,7 +113,9 @@ export default async function UsersPage({
             icon={<Users className="h-10 w-10" />}
             title="Nu există utilizatori"
             description="Adaugă primul membru al echipei."
-            action={<NewUserButton companies={companies} customers={customers} />}
+            action={
+              <NewUserButton companies={companies} customers={customers} />
+            }
           />
         ) : (
           <Table>

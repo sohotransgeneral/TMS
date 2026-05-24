@@ -65,7 +65,16 @@ export async function proxy(req: NextRequest) {
   }
 
   const role = user.role as UserRole | undefined;
-  if (role && !isAllowed(role, pathname)) {
+
+  // If role is missing from the JWT (old session), force re-login
+  if (!role) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (!isAllowed(role, pathname)) {
     const dest = ROLE_DEFAULT[role] ?? "/dashboard";
     const url = req.nextUrl.clone();
     url.pathname = dest;

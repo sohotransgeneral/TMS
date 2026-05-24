@@ -9,6 +9,7 @@ import {
   Upload,
   ExternalLink,
   Loader2,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -129,6 +130,83 @@ function OpenButton({ docId }: { docId: string }) {
         ) : (
           <ExternalLink className="h-4 w-4" />
         )}
+      </button>
+    </div>
+  );
+}
+
+// ── EditExpiryButton — inline date picker to update/clear expiresAt ───────────
+function EditExpiryButton({
+  docId,
+  currentExpiry,
+  onDone,
+}: {
+  docId: string;
+  currentExpiry: Date | string | null;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [value, setValue] = useState(
+    currentExpiry
+      ? new Date(currentExpiry).toISOString().slice(0, 10)
+      : "",
+  );
+
+  async function handleSave() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/documents/${docId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresAt: value || null }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Expiry updated");
+      setOpen(false);
+      onDone();
+    } catch {
+      toast.error("Failed to update expiry");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+        title="Edit expiry date"
+      >
+        <CalendarClock className="h-4 w-4" />
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-7 rounded border border-input bg-background px-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring [color-scheme:light] dark:[color-scheme:dark]"
+      />
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={loading}
+        className="h-7 rounded bg-primary px-2 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+      >
+        {loading ? "…" : "Save"}
+      </button>
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="h-7 rounded border border-input px-2 text-xs hover:bg-muted"
+      >
+        ✕
       </button>
     </div>
   );
@@ -346,6 +424,13 @@ export function DocumentList({
 
                 <div className="flex items-center gap-1 shrink-0">
                   <OpenButton docId={doc.id} />
+                  {canDelete && (
+                    <EditExpiryButton
+                      docId={doc.id}
+                      currentExpiry={doc.expiresAt}
+                      onDone={() => onRefresh?.()}
+                    />
+                  )}
                   {canDelete && (
                     <button
                       type="button"
