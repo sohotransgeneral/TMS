@@ -123,7 +123,11 @@ export function GpsTracker({ loadId }: { loadId?: string }) {
   // Re-acquire wake lock when tab becomes visible again (browser releases it on hide)
   useEffect(() => {
     const onVisibility = async () => {
-      if (document.visibilityState === "visible" && tracking && !wakeLockRef.current) {
+      if (
+        document.visibilityState === "visible" &&
+        tracking &&
+        !wakeLockRef.current
+      ) {
         await acquireWakeLock();
       }
     };
@@ -173,7 +177,7 @@ export function GpsTracker({ loadId }: { loadId?: string }) {
       : status === "acquiring"
         ? "Acquiring GPS signal…"
         : status === "error"
-          ? errorMsg ?? "GPS unavailable"
+          ? (errorMsg ?? "GPS unavailable")
           : "Location tracking is off";
 
   return (

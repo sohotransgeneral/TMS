@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,13 +14,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#1d4ed8" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "TMS — Transport Management System",
     template: "%s · TMS",
   },
   description:
-    "TMS SaaS pentru trucking & logistică: dispatch, șoferi, camioane, facturare, GPS.",
+    "TMS SaaS for trucking & logistics: dispatch, drivers, trucks, invoicing, GPS.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "TMS",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -33,6 +58,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         <Providers>{children}</Providers>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
