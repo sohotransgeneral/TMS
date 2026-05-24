@@ -69,7 +69,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 
   DISPATCHER: [
     "company:read",
-    "users:read",
     "trucks:read", "trailers:read", "drivers:read",
     "loads:read", "loads:write", "loads:assign", "loads:update_status",
     "customers:read", "customers:write",

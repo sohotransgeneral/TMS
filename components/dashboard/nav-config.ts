@@ -159,7 +159,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/admin/users",
         label: "Users",
         icon: Users,
-        permissions: ["users:read"],
+        permissions: ["users:write"],
       },
       {
         href: "/admin/company",
