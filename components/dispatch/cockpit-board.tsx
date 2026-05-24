@@ -283,7 +283,10 @@ export function CockpitBoard({
     // Don't start pan if the target is a card (has draggable role)
     const el = e.target as HTMLElement;
     if (el.closest("[data-dnd-draggable]")) return;
-    panState.current = { startX: e.pageX, scrollLeft: boardRef.current?.scrollLeft ?? 0 };
+    panState.current = {
+      startX: e.pageX,
+      scrollLeft: boardRef.current?.scrollLeft ?? 0,
+    };
     document.body.style.userSelect = "none";
   }
 

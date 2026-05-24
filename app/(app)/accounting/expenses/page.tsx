@@ -77,19 +77,17 @@ export default async function ExpensesPage({
       select: { id: true, plateNumber: true },
       orderBy: { plateNumber: "asc" },
     }),
-    prisma.user.findMany({
-      where: me.companyId
-        ? { companyId: me.companyId, role: "DRIVER" }
-        : { role: "DRIVER" },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
+    prisma.driverProfile.findMany({
+      where: me.companyId ? { companyId: me.companyId } : {},
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: { firstName: "asc" },
     }),
   ]);
 
   const opts = {
     loads: loads.map((l) => ({ id: l.id, label: l.referenceNumber })),
     trucks: trucks.map((t) => ({ id: t.id, label: t.plateNumber })),
-    drivers: drivers.map((d) => ({ id: d.id, label: d.name ?? "" })),
+    drivers: drivers.map((d) => ({ id: d.id, label: `${d.firstName} ${d.lastName}` })),
   };
 
   return (
