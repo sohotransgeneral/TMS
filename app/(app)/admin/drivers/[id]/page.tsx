@@ -15,6 +15,8 @@ import {
 } from "@/components/drivers/driver-financial-report";
 import { PeriodSelector } from "@/components/drivers/period-selector";
 import { DriverAdjustmentsPanel } from "@/components/drivers/driver-adjustments-panel";
+import { DriverExpensesPanel } from "@/components/drivers/driver-expenses-panel";
+import { ExpenseFormDialog } from "@/components/accounting/expense-dialog";
 import { FileDown, ExternalLink } from "lucide-react";
 
 export const metadata = { title: "Driver Details" };
@@ -113,6 +115,27 @@ export default async function DriverDetailPage({
     where: { driverProfileId: driver.id, periodKey },
     orderBy: { createdAt: "asc" },
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const periodExpenses: any[] = await (prisma as any).expense.findMany({
+    where: { driverId: driver.id, occurredAt: { gte: from, lte: to } },
+    orderBy: { occurredAt: "desc" },
+    include: { load: { select: { referenceNumber: true } } },
+  });
+
+  const [loadsOpts, trucksOpts] = await Promise.all([
+    prisma.load.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      select: { id: true, referenceNumber: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.truck.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      select: { id: true, plateNumber: true },
+      orderBy: { plateNumber: "asc" },
+    }),
+  ]);
 
   const fullName = `${driver.firstName} ${driver.lastName}`;
 
@@ -360,6 +383,29 @@ export default async function DriverDetailPage({
             </table>
           </div>
         )}
+      </section>
+
+      {/* Expenses in period */}
+      <section className="rounded-lg border bg-card p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold">Expenses in period ({periodExpenses.length})</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Toggle each expense between <strong>Driver</strong> (deducted from salary) and <strong>Company</strong> (absorbed by company)
+            </p>
+          </div>
+          <ExpenseFormDialog
+            loads={loadsOpts.map((l) => ({ id: l.id, label: l.referenceNumber }))}
+            trucks={trucksOpts.map((t) => ({ id: t.id, label: t.plateNumber }))}
+            drivers={[{ id: driver.id, label: fullName }]}
+            trigger={
+              <Button variant="outline" size="sm">
+                + Add Expense
+              </Button>
+            }
+          />
+        </div>
+        <DriverExpensesPanel expenses={periodExpenses} />
       </section>
 
       {/* Documents */}

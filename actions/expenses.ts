@@ -207,6 +207,24 @@ export async function decideExpense(formData: FormData): Promise<ActionResult> {
   return success({ id }, decision === "APPROVED" ? "Expense approved." : "Expense rejected.");
 }
 
+export async function setExpenseChargedTo(
+  expenseId: string,
+  chargedTo: "DRIVER" | "COMPANY",
+): Promise<ActionResult> {
+  const me = await requirePermission("expenses:write");
+  if (!me.companyId) return failure("You are not assigned to a company.");
+
+  const target = await prisma.expense.findUnique({ where: { id: expenseId } });
+  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma.expense as any).update({ where: { id: expenseId }, data: { chargedTo } });
+
+  revalidatePath("/admin/drivers");
+  revalidatePath("/accounting/expenses");
+  return success(null, `Charged to ${chargedTo === "DRIVER" ? "driver" : "company"}.`);
+}
+
 export async function deleteExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
   if (!me.companyId) return failure("You are not assigned to a company.");
