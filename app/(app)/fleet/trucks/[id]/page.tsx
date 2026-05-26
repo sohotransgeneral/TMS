@@ -65,7 +65,7 @@ export default async function TruckDetailPage({
   });
   if (!truck) notFound();
 
-  const [documents, permits] = await Promise.all([
+  const [documents, permits, driverRows] = await Promise.all([
     prisma.document.findMany({
       where: { truckId: id },
       include: { uploadedBy: { select: { name: true } } },
@@ -75,7 +75,16 @@ export default async function TruckDetailPage({
       where: { truckId: id },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.driverProfile.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      select: { id: true, firstName: true, lastName: true },
+    }),
   ]);
+
+  const drivers = driverRows.map((d) => ({
+    id: d.id,
+    label: `${d.firstName} ${d.lastName}`.trim(),
+  }));
 
   return (
     <div className="space-y-6">
@@ -152,9 +161,9 @@ export default async function TruckDetailPage({
       <section className="rounded-lg border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-semibold">Special Permits ({permits.length})</h3>
-          <NewPermitButton truckId={truck.id} />
+          <NewPermitButton truckId={truck.id} drivers={drivers} />
         </div>
-        <PermitList permits={permits} truckId={truck.id} canEdit />
+        <PermitList permits={permits} truckId={truck.id} canEdit drivers={drivers} />
       </section>
 
       {/* Documents */}

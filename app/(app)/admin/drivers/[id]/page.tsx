@@ -389,13 +389,19 @@ export default async function DriverDetailPage({
       <section className="rounded-lg border bg-card p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h3 className="font-semibold">Expenses in period ({periodExpenses.length})</h3>
+            <h3 className="font-semibold">
+              Expenses in period ({periodExpenses.length})
+            </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Toggle each expense between <strong>Driver</strong> (deducted from salary) and <strong>Company</strong> (absorbed by company)
+              Toggle each expense between <strong>Driver</strong> (deducted from
+              salary) and <strong>Company</strong> (absorbed by company)
             </p>
           </div>
           <ExpenseFormDialog
-            loads={loadsOpts.map((l) => ({ id: l.id, label: l.referenceNumber }))}
+            loads={loadsOpts.map((l) => ({
+              id: l.id,
+              label: l.referenceNumber,
+            }))}
             trucks={trucksOpts.map((t) => ({ id: t.id, label: t.plateNumber }))}
             drivers={[{ id: driver.id, label: fullName }]}
             trigger={

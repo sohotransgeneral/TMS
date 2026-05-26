@@ -109,6 +109,7 @@ export default async function PermitsPage() {
                 <TableHead>Valid To</TableHead>
                 <TableHead className="text-right">Cost</TableHead>
                 <TableHead>Docs</TableHead>
+                <TableHead>Charged To</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -178,6 +179,13 @@ export default async function PermitsPage() {
                         </a>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {(p as unknown as { chargedTo: string }).chargedTo === "DRIVER" ? (
+                      <Badge variant="secondary" className="text-blue-600 border-blue-300">👤 Driver</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground">🏢 Company</Badge>
+                    )}
                   </TableCell>
                   <TableCell>{statusBadge(p.validTo)}</TableCell>
                 </TableRow>

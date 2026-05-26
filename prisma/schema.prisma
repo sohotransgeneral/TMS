@@ -910,6 +910,10 @@ model TruckPermit {
   cost         Float?
   currency     String    @default("USD")
 
+  // Who bears the cost
+  chargedTo    String    @default("COMPANY")  // "DRIVER" | "COMPANY"
+  driverId     String?   @db.ObjectId         // set when chargedTo = "DRIVER"
+
   // Documents (stored in Vercel Blob / local)
   permitImageUrl String?  // photo / scan of the permit document
   invoiceUrl     String?  // invoice / receipt for the permit fee

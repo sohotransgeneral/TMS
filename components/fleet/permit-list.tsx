@@ -28,6 +28,8 @@ export type PermitItem = {
   validTo: Date | string | null;
   cost: number | null;
   currency: string;
+  chargedTo: string;
+  driverId: string | null;
   permitImageUrl: string | null;
   invoiceUrl: string | null;
   notes: string | null;
@@ -61,10 +63,12 @@ export function PermitList({
   permits,
   truckId,
   canEdit = true,
+  drivers = [],
 }: {
   permits: PermitItem[];
   truckId: string;
   canEdit?: boolean;
+  drivers?: { id: string; label: string }[];
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -95,10 +99,17 @@ export function PermitList({
     <div className="grid gap-3 sm:grid-cols-2">
       {permits.map((p) => (
         <div key={p.id} className="rounded-lg border bg-card p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 shrink-0 text-amber-500" />
               <span className="font-semibold text-sm">{typeLabel(p.type)}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                p.chargedTo === "DRIVER"
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  : "bg-muted text-muted-foreground"
+              }`}>
+                {p.chargedTo === "DRIVER" ? "👤 Driver" : "🏢 Company"}
+              </span>
             </div>
             <div className="flex items-center gap-1">
               {statusBadge(p.validTo)}
@@ -109,7 +120,7 @@ export function PermitList({
                     cost={p.cost}
                     currency={p.currency}
                   />
-                  <EditPermitButton permit={p} truckId={truckId} />
+                  <EditPermitButton permit={p} truckId={truckId} drivers={drivers} />
                   <Button
                     size="icon"
                     variant="ghost"

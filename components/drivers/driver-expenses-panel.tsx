@@ -62,7 +62,11 @@ function ChargedToToggle({
       onClick={toggle}
       disabled={pending}
       className="h-7 gap-1.5 text-xs"
-      title={isDriver ? "Charged to driver — click to move to company" : "Charged to company — click to move to driver"}
+      title={
+        isDriver
+          ? "Charged to driver — click to move to company"
+          : "Charged to company — click to move to driver"
+      }
     >
       {isDriver ? (
         <>

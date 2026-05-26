@@ -43,6 +43,8 @@ type Permit = {
   validTo: Date | string | null;
   cost: number | null;
   currency: string;
+  chargedTo: string;
+  driverId: string | null;
   permitImageUrl: string | null;
   invoiceUrl: string | null;
   notes: string | null;
@@ -153,12 +155,15 @@ export function PermitFormDialog({
   truckId,
   initial,
   trigger,
+  drivers = [],
 }: {
   truckId: string;
   initial?: Permit;
   trigger: React.ReactNode;
+  drivers?: { id: string; label: string }[];
 }) {
   const [open, setOpen] = useState(false);
+  const [chargedTo, setChargedTo] = useState(initial?.chargedTo ?? "COMPANY");
   const isEdit = !!initial;
   const action = toActionState(isEdit ? updatePermit : createPermit);
   const [state, formAction, pending] = useActionState<
@@ -275,6 +280,32 @@ export function PermitFormDialog({
               </Field>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field name="chargedTo" label="Charged to">
+                <Select
+                  name="chargedTo"
+                  value={chargedTo}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setChargedTo(e.target.value)}
+                >
+                  <option value="COMPANY">🏢 Company</option>
+                  <option value="DRIVER">🧑‍💼 Driver</option>
+                </Select>
+              </Field>
+              {chargedTo === "DRIVER" && (
+                <Field name="driverId" label="Driver">
+                  <Select
+                    name="driverId"
+                    defaultValue={initial?.driverId ?? ""}
+                  >
+                    <option value="">— Select driver</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>{d.label}</option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+            </div>
+
             {/* File uploads */}
             <div className="grid gap-4 rounded-lg border bg-muted/30 p-4 sm:grid-cols-2">
               <FileUploadField
@@ -317,10 +348,17 @@ export function PermitFormDialog({
   );
 }
 
-export function NewPermitButton({ truckId }: { truckId: string }) {
+export function NewPermitButton({
+  truckId,
+  drivers = [],
+}: {
+  truckId: string;
+  drivers?: { id: string; label: string }[];
+}) {
   return (
     <PermitFormDialog
       truckId={truckId}
+      drivers={drivers}
       trigger={
         <Button size="sm">
           <Plus className="mr-2 h-4 w-4" /> Add Permit
@@ -333,14 +371,17 @@ export function NewPermitButton({ truckId }: { truckId: string }) {
 export function EditPermitButton({
   permit,
   truckId,
+  drivers = [],
 }: {
   permit: Permit;
   truckId: string;
+  drivers?: { id: string; label: string }[];
 }) {
   return (
     <PermitFormDialog
       truckId={truckId}
       initial={permit}
+      drivers={drivers}
       trigger={
         <Button size="icon" variant="ghost" className="h-7 w-7">
           <Pencil className="h-3.5 w-3.5" />
