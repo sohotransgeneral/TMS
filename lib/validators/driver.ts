@@ -33,6 +33,9 @@ export const driverCreateSchema = z.object({
   salaryFixedAmount: fields.optionalNumber,
   grossPercent: fields.optionalNumber,
   commissionRate: fields.optionalNumber,
+  taxCas: fields.optionalNumber,
+  taxCass: fields.optionalNumber,
+  taxImpozit: fields.optionalNumber,
 
   status: z.enum(statusValues).default("AVAILABLE"),
   internalNotes: fields.optionalString,

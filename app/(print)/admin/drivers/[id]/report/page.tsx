@@ -56,6 +56,9 @@ export default async function DriverReportPage({
     driver.grossPercent,
     driver.salaryFixedAmount,
     driver.commissionRate,
+    (driver as { taxCas?: number | null }).taxCas ?? null,
+    (driver as { taxCass?: number | null }).taxCass ?? null,
+    (driver as { taxImpozit?: number | null }).taxImpozit ?? null,
     period,
     await getCompanyCurrency(me.companyId),
   );
@@ -401,17 +404,17 @@ export default async function DriverReportPage({
                 <td colSpan={2} className="py-1 border-b border-border" />
               </tr>
               <R
-                label="Employee pension (25%)"
+                label={`Employee pension (${data.taxRates.cas}%)`}
                 value={`- ${fmt(data.taxes.cas)}`}
                 neg
               />
               <R
-                label="Employee health ins. (10%)"
+                label={`Employee health ins. (${data.taxRates.cass}%)`}
                 value={`- ${fmt(data.taxes.cass)}`}
                 neg
               />
               <R
-                label="Income tax (10%)"
+                label={`Income tax (${data.taxRates.impozit}%)`}
                 value={`- ${fmt(data.taxes.impozit)}`}
                 neg
               />

@@ -37,6 +37,9 @@ export type DriverRow = {
   salaryFixedAmount: number | null;
   grossPercent: number | null;
   commissionRate: number | null;
+  taxCas: number | null;
+  taxCass: number | null;
+  taxImpozit: number | null;
   internalNotes: string | null;
   user: { id: string; email: string; phone: string | null };
 };
@@ -332,6 +335,61 @@ export function DriverFormDialog({
                 defaultValue={initial?.commissionRate ?? ""}
               />
             </Field>
+            <div className="col-span-full border-t pt-2">
+              <p className="text-xs font-medium text-muted-foreground mb-2">
+                Tax rates (%)
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <Field
+                  name="taxCas"
+                  label="CAS (pension)"
+                  error={errors.taxCas}
+                >
+                  <Input
+                    id="taxCas"
+                    name="taxCas"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    placeholder="25"
+                    defaultValue={initial?.taxCas ?? ""}
+                  />
+                </Field>
+                <Field
+                  name="taxCass"
+                  label="CASS (health)"
+                  error={errors.taxCass}
+                >
+                  <Input
+                    id="taxCass"
+                    name="taxCass"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    placeholder="10"
+                    defaultValue={initial?.taxCass ?? ""}
+                  />
+                </Field>
+                <Field
+                  name="taxImpozit"
+                  label="Income tax"
+                  error={errors.taxImpozit}
+                >
+                  <Input
+                    id="taxImpozit"
+                    name="taxImpozit"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    placeholder="10"
+                    defaultValue={initial?.taxImpozit ?? ""}
+                  />
+                </Field>
+              </div>
+            </div>
           </div>
 
           <Field

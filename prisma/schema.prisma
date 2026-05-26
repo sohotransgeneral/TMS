@@ -317,6 +317,11 @@ model DriverProfile {
   grossPercent       Float?    // used when salaryType = PERCENT_GROSS (e.g. 90 = driver keeps 90%)
   commissionRate     Float?    // bonus commission on top of base (all types)
 
+  // Tax rates (percentages, e.g. 25 = 25%). Defaults match Romanian PFA/employee rates
+  taxCas             Float?    @default(25)   // Employee pension contribution %
+  taxCass            Float?    @default(10)   // Employee health insurance %
+  taxImpozit         Float?    @default(10)   // Income tax % (applied after CAS+CASS)
+
   status             DriverStatus @default(AVAILABLE)
   rating             Float?       @default(5)
   internalNotes      String?
@@ -698,6 +703,7 @@ model Expense {
   driver     DriverProfile? @relation(fields: [driverId], references: [id], onDelete: SetNull)
 
   receiptUrl String?
+  chargedTo  String        @default("COMPANY") // "DRIVER" | "COMPANY"
 
   status       ExpenseStatus @default(PENDING)
   approvedById String?       @db.ObjectId

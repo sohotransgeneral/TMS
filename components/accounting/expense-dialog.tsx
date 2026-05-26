@@ -41,6 +41,7 @@ export type ExpenseInitial = {
   truckId: string | null;
   driverId: string | null;
   receiptUrl: string | null;
+  chargedTo: string | null;
 };
 
 const toDate = (d: Date | string | null | undefined) => {
@@ -210,6 +211,20 @@ export function ExpenseFormDialog({
               type="url"
               defaultValue={initial?.receiptUrl ?? ""}
             />
+          </Field>
+          <Field name="chargedTo" label="Charged to" error={e.chargedTo}>
+            <Select
+              id="chargedTo"
+              name="chargedTo"
+              defaultValue={initial?.chargedTo ?? "COMPANY"}
+            >
+              <option value="COMPANY">
+                🏢 Company (not deducted from driver)
+              </option>
+              <option value="DRIVER">
+                🧑‍💼 Driver (deducted from driver salary)
+              </option>
+            </Select>
           </Field>
           <DialogFooter>
             <Button

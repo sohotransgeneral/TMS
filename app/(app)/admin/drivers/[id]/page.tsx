@@ -245,6 +245,9 @@ export default async function DriverDetailPage({
             grossPercent={driver.grossPercent}
             salaryFixedAmount={driver.salaryFixedAmount}
             commissionRate={driver.commissionRate}
+            taxCas={(driver as { taxCas?: number | null }).taxCas}
+            taxCass={(driver as { taxCass?: number | null }).taxCass}
+            taxImpozit={(driver as { taxImpozit?: number | null }).taxImpozit}
             period={period}
             companyCurrency={companyCurrency}
           />

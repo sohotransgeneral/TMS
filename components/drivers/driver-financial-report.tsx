@@ -79,11 +79,16 @@ export function getPeriodRange(period: string): {
 }
 
 /* ─── tax calculation (RO) ──────────────────────────────────── */
-function calcTaxes(brut: number) {
-  const cas = brut * 0.25; // CAS angajat 25%
-  const cass = brut * 0.1; // CASS angajat 10%
+function calcTaxes(
+  brut: number,
+  casRate = 25,
+  cassRate = 10,
+  impozitRate = 10,
+) {
+  const cas = brut * (casRate / 100);
+  const cass = brut * (cassRate / 100);
   const base = Math.max(0, brut - cas - cass);
-  const impozit = base * 0.1; // Impozit venit 10%
+  const impozit = base * (impozitRate / 100);
   const total = cas + cass + impozit;
   const net = brut - total;
   return { cas, cass, impozit, total, net };
@@ -170,6 +175,9 @@ export async function DriverFinancialReport({
   grossPercent,
   salaryFixedAmount,
   commissionRate,
+  taxCas,
+  taxCass,
+  taxImpozit,
   period,
   companyCurrency = "USD",
 }: {
@@ -179,6 +187,9 @@ export async function DriverFinancialReport({
   grossPercent?: number | null;
   salaryFixedAmount?: number | null;
   commissionRate: number | null;
+  taxCas?: number | null;
+  taxCass?: number | null;
+  taxImpozit?: number | null;
   period: string;
   companyCurrency?: string;
 }) {
@@ -206,12 +217,16 @@ export async function DriverFinancialReport({
     _count: true,
   });
 
-  // 3. Expenses by type
-  const expenses = await prisma.expense.groupBy({
-    by: ["type"],
+  // 3. Expenses by type — only DRIVER-charged ones affect driver deductions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const expensesRaw: any[] = await prisma.expense.findMany({
     where: { driverId, occurredAt: { gte: from, lte: to }, status: "APPROVED" },
-    _sum: { amount: true },
   });
+  const expensesDriver = expensesRaw.filter((e) => e.chargedTo === "DRIVER");
+
+  const expenseMap: Record<string, number> = {};
+  for (const e of expensesDriver)
+    expenseMap[e.type] = (expenseMap[e.type] ?? 0) + e.amount;
 
   // 4. Permits (trucks driven in loads in period)
   const truckIds = await prisma.load.findMany({
@@ -263,8 +278,6 @@ export async function DriverFinancialReport({
   const permitsCost = permitsAgg?._sum.cost ?? 0;
   const maintCost = maintAgg?._sum.cost ?? 0;
 
-  const expenseMap: Record<string, number> = {};
-  for (const e of expenses) expenseMap[e.type] = e._sum.amount ?? 0;
   const tollCost = expenseMap["TOLL"] ?? 0;
   const parkingCost = expenseMap["PARKING"] ?? 0;
   const repairCost = expenseMap["REPAIR"] ?? 0;
@@ -296,7 +309,12 @@ export async function DriverFinancialReport({
   const commission =
     type === "PER_MI" && commissionRate ? revenue * (commissionRate / 100) : 0;
   const brutSalary = baseSalary + commission + adjustmentsTotal;
-  const taxes = calcTaxes(Math.max(0, brutSalary));
+  const taxes = calcTaxes(
+    Math.max(0, brutSalary),
+    taxCas ?? 25,
+    taxCass ?? 10,
+    taxImpozit ?? 10,
+  );
 
   const currency = loads[0]?.currency ?? companyCurrency;
 
@@ -498,17 +516,17 @@ export async function DriverFinancialReport({
 
           <Section title="Taxes (RO)" icon={Receipt}>
             <Row
-              label="Employee pension (25%)"
+              label={`Employee pension (${taxCas ?? 25}%)`}
               value={`-${fmt(taxes.cas, currency)}`}
               negative
             />
             <Row
-              label="Employee health (10%)"
+              label={`Employee health (${taxCass ?? 10}%)`}
               value={`-${fmt(taxes.cass, currency)}`}
               negative
             />
             <Row
-              label="Income tax (10%)"
+              label={`Income tax (${taxImpozit ?? 10}%)`}
               value={`-${fmt(taxes.impozit, currency)}`}
               negative
             />

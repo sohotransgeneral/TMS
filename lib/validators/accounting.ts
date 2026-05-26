@@ -75,6 +75,7 @@ export const expenseCreateSchema = z.object({
   truckId: optionalString,
   driverId: optionalString,
   receiptUrl: optionalString,
+  chargedTo: z.enum(["DRIVER", "COMPANY"]).default("COMPANY"),
 });
 
 export const expenseUpdateSchema = expenseCreateSchema.partial().extend({

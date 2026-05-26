@@ -39,6 +39,7 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
       truckId: d.truckId || null,
       driverId,
       receiptUrl: d.receiptUrl,
+      chargedTo: d.chargedTo ?? "COMPANY",
       reportedById: me.id,
       status: "PENDING",
     },
