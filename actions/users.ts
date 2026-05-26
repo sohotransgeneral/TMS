@@ -60,6 +60,49 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // If DRIVER role, create DriverProfile from form data
+  if (parsed.data.role === "DRIVER" && targetCompanyId) {
+    const firstName = (typeof raw.firstName === "string" ? raw.firstName : "").trim();
+    const lastName  = (typeof raw.lastName  === "string" ? raw.lastName  : "").trim();
+    const toDate = (v: unknown) => {
+      if (!v || typeof v !== "string" || !v.trim()) return null;
+      const d = new Date(v); return isNaN(d.getTime()) ? null : d;
+    };
+    const toNum = (v: unknown) => {
+      const n = parseFloat(String(v ?? ""));
+      return isNaN(n) ? null : n;
+    };
+    const cats = typeof raw.licenseCategories === "string" && raw.licenseCategories.trim()
+      ? raw.licenseCategories.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [];
+    await prisma.driverProfile.create({
+      data: {
+        companyId: targetCompanyId,
+        userId: user.id,
+        firstName: firstName || (parsed.data.name?.split(" ")[0] ?? ""),
+        lastName:  lastName  || (parsed.data.name?.split(" ").slice(1).join(" ") ?? ""),
+        cnp: typeof raw.cnp === "string" && raw.cnp.trim() ? raw.cnp.trim() : null,
+        licenseNumber: typeof raw.licenseNumber === "string" && raw.licenseNumber.trim() ? raw.licenseNumber.trim() : null,
+        licenseCategories: cats,
+        licenseIssuedAt: toDate(raw.licenseIssuedAt),
+        licenseExpiresAt: toDate(raw.licenseExpiresAt),
+        tachoCardNumber: typeof raw.tachoCardNumber === "string" && raw.tachoCardNumber.trim() ? raw.tachoCardNumber.trim() : null,
+        tachoCardExpiresAt: toDate(raw.tachoCardExpiresAt),
+        status: (typeof raw.driverStatus === "string" && raw.driverStatus) ? raw.driverStatus as never : "AVAILABLE",
+        salaryType: typeof raw.salaryType === "string" && raw.salaryType ? raw.salaryType : "PER_MI",
+        salaryPerKm: toNum(raw.salaryPerKm),
+        salaryFixedAmount: toNum(raw.salaryFixedAmount),
+        grossPercent: toNum(raw.grossPercent),
+        commissionRate: toNum(raw.commissionRate),
+        taxCas: toNum(raw.taxCas),
+        taxCass: toNum(raw.taxCass),
+        taxImpozit: toNum(raw.taxImpozit),
+        internalNotes: typeof raw.internalNotes === "string" && raw.internalNotes.trim() ? raw.internalNotes.trim() : null,
+      },
+    });
+    revalidatePath("/admin/drivers");
+  }
+
   await logAudit({
     action: "user.create",
     userId: me.id,
@@ -139,6 +182,53 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
         });
       }
     }
+  }
+
+  // Upsert DriverProfile when role is DRIVER
+  if (parsed.data.role === "DRIVER" && target.companyId) {
+    const raw = Object.fromEntries(formData);
+    const toDate = (v: unknown) => {
+      if (!v || typeof v !== "string" || !v.trim()) return null;
+      const d = new Date(v); return isNaN(d.getTime()) ? null : d;
+    };
+    const toNum = (v: unknown) => {
+      const n = parseFloat(String(v ?? ""));
+      return isNaN(n) ? null : n;
+    };
+    const cats = typeof raw.licenseCategories === "string" && raw.licenseCategories.trim()
+      ? raw.licenseCategories.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : [];
+    const firstName = (typeof raw.firstName === "string" ? raw.firstName : "").trim();
+    const lastName  = (typeof raw.lastName  === "string" ? raw.lastName  : "").trim();
+    const driverData = {
+      companyId: target.companyId,
+      userId: id,
+      firstName: firstName || target.name?.split(" ")[0] || "",
+      lastName:  lastName  || target.name?.split(" ").slice(1).join(" ") || "",
+      cnp: typeof raw.cnp === "string" && raw.cnp.trim() ? raw.cnp.trim() : null,
+      licenseNumber: typeof raw.licenseNumber === "string" && raw.licenseNumber.trim() ? raw.licenseNumber.trim() : null,
+      licenseCategories: cats,
+      licenseIssuedAt: toDate(raw.licenseIssuedAt),
+      licenseExpiresAt: toDate(raw.licenseExpiresAt),
+      tachoCardNumber: typeof raw.tachoCardNumber === "string" && raw.tachoCardNumber.trim() ? raw.tachoCardNumber.trim() : null,
+      tachoCardExpiresAt: toDate(raw.tachoCardExpiresAt),
+      status: (typeof raw.driverStatus === "string" && raw.driverStatus) ? raw.driverStatus as never : "AVAILABLE",
+      salaryType: typeof raw.salaryType === "string" && raw.salaryType ? raw.salaryType : "PER_MI",
+      salaryPerKm: toNum(raw.salaryPerKm),
+      salaryFixedAmount: toNum(raw.salaryFixedAmount),
+      grossPercent: toNum(raw.grossPercent),
+      commissionRate: toNum(raw.commissionRate),
+      taxCas: toNum(raw.taxCas),
+      taxCass: toNum(raw.taxCass),
+      taxImpozit: toNum(raw.taxImpozit),
+      internalNotes: typeof raw.internalNotes === "string" && raw.internalNotes.trim() ? raw.internalNotes.trim() : null,
+    };
+    await prisma.driverProfile.upsert({
+      where: { userId: id },
+      create: driverData,
+      update: driverData,
+    });
+    revalidatePath("/admin/drivers");
   }
 
   await logAudit({

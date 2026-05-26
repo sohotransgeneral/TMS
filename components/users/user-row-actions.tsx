@@ -21,6 +21,28 @@ type UserRow = {
     email: string | null;
     userId?: string | null;
   }>;
+  driverProfile?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    cnp: string | null;
+    licenseNumber: string | null;
+    licenseCategories: string[];
+    licenseIssuedAt: Date | string | null;
+    licenseExpiresAt: Date | string | null;
+    tachoCardNumber: string | null;
+    tachoCardExpiresAt: Date | string | null;
+    status: string;
+    salaryType: string | null;
+    salaryPerKm: number | null;
+    salaryFixedAmount: number | null;
+    grossPercent: number | null;
+    commissionRate: number | null;
+    taxCas: number | null;
+    taxCass: number | null;
+    taxImpozit: number | null;
+    internalNotes: string | null;
+  } | null;
 };
 
 export function UserRowActions({

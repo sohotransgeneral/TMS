@@ -194,7 +194,9 @@ export function CockpitBoard({
     // Mouse: start drag after 6px movement
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     // Touch (mobile): long press 250ms before drag activates
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
+    }),
   );
 
   // Use pointer-within first (best for large empty columns), fall back to rect intersection

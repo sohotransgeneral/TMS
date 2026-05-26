@@ -64,6 +64,30 @@ export default async function UsersPage({
         createdAt: true,
         company: { select: { name: true } },
         customerProfiles: { select: { id: true, name: true }, take: 1 },
+        driverProfile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            cnp: true,
+            licenseNumber: true,
+            licenseCategories: true,
+            licenseIssuedAt: true,
+            licenseExpiresAt: true,
+            tachoCardNumber: true,
+            tachoCardExpiresAt: true,
+            status: true,
+            salaryType: true,
+            salaryPerKm: true,
+            salaryFixedAmount: true,
+            grossPercent: true,
+            commissionRate: true,
+            taxCas: true,
+            taxCass: true,
+            taxImpozit: true,
+            internalNotes: true,
+          },
+        },
       },
     }),
     prisma.user.count({ where }),
@@ -169,6 +193,7 @@ export default async function UsersPage({
                         ...u,
                         linkedCustomer: u.customerProfiles[0] ?? null,
                         customers,
+                        driverProfile: u.driverProfile ?? null,
                       }}
                       isSelf={u.id === me.id}
                     />
