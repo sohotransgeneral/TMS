@@ -24,23 +24,36 @@ import { Upload, Sparkles, FileText, X, AlertCircle } from "lucide-react";
 type Opt = { id: string; label: string };
 
 type ExtractedData = {
+  referenceNumber?: string | null;
   customerName?: string | null;
   pickupAddress?: string;
   pickupCity?: string | null;
+  pickupState?: string | null;
+  pickupZip?: string | null;
   pickupCountry?: string | null;
   pickupDate?: string | null;
+  pickupWindow?: string | null;
+  pickupContact?: string | null;
+  pickupPhone?: string | null;
   pickupNotes?: string | null;
   deliveryAddress?: string;
   deliveryCity?: string | null;
+  deliveryState?: string | null;
+  deliveryZip?: string | null;
   deliveryCountry?: string | null;
   deliveryDate?: string | null;
+  deliveryWindow?: string | null;
+  deliveryContact?: string | null;
+  deliveryPhone?: string | null;
   deliveryNotes?: string | null;
   cargoDescription?: string | null;
   weightKg?: number | null;
+  weightLbs?: number | null;
   volumeM3?: number | null;
   packages?: number | null;
   temperature?: string | null;
   isHazardous?: boolean;
+  equipmentType?: string | null;
   price?: number | null;
   currency?: string;
   estimatedDistanceKm?: number | null;
@@ -273,6 +286,18 @@ export function LoadImportDialog({
           {/* ── Step 2: Review form ── */}
           {step === "review" && extracted && (
             <form action={formAction} className="grid gap-6">
+              {/* Reference */}
+              <section className="grid gap-3 rounded-lg border bg-card p-4">
+                <h3 className="text-sm font-semibold">Reference</h3>
+                <Field name="referenceNumber" label="Reference / Load #">
+                  <Input
+                    name="referenceNumber"
+                    defaultValue={d.referenceNumber ?? ""}
+                    placeholder="e.g. 1234567 / LOAD-2026-001"
+                  />
+                </Field>
+              </section>
+
               {/* Customer */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Customer</h3>
@@ -305,19 +330,25 @@ export function LoadImportDialog({
                     required
                   />
                 </Field>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Field name="pickupCity" label="City">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field name="pickupCity" label="City, State ZIP">
                     <Input
                       name="pickupCity"
-                      defaultValue={d.pickupCity ?? ""}
+                      defaultValue={
+                        [
+                          d.pickupCity,
+                          d.pickupState ? `, ${d.pickupState}` : "",
+                          d.pickupZip ? ` ${d.pickupZip}` : "",
+                        ].filter(Boolean).join("").trim() || (d.pickupCity ?? "")
+                      }
+                      placeholder="Houston, TX 77001"
                     />
                   </Field>
                   <Field name="pickupCountry" label="Country">
-                    <Input
-                      name="pickupCountry"
-                      defaultValue={d.pickupCountry ?? "US"}
-                    />
+                    <Input name="pickupCountry" defaultValue={d.pickupCountry ?? "US"} />
                   </Field>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <Field name="pickupDate" label="Date & Time" required>
                     <Input
                       name="pickupDate"
@@ -326,16 +357,29 @@ export function LoadImportDialog({
                       required
                     />
                   </Field>
-                </div>
-                {d.pickupNotes && (
-                  <Field name="pickupNotes" label="Pickup Notes">
-                    <Textarea
-                      name="pickupNotes"
-                      rows={2}
-                      defaultValue={d.pickupNotes ?? ""}
+                  <Field name="pickupWindow" label="Pickup Window">
+                    <Input
+                      name="pickupWindow"
+                      defaultValue={d.pickupWindow ?? ""}
+                      placeholder="FCFS 08:00-15:00 / By Appt / ASAP"
                     />
                   </Field>
-                )}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field name="pickupContact" label="Contact Person">
+                    <Input name="pickupContact" defaultValue={d.pickupContact ?? ""} />
+                  </Field>
+                  <Field name="pickupPhone" label="Phone">
+                    <Input name="pickupPhone" defaultValue={d.pickupPhone ?? ""} />
+                  </Field>
+                </div>
+                <Field name="pickupNotes" label="Pickup Notes">
+                  <Textarea
+                    name="pickupNotes"
+                    rows={2}
+                    defaultValue={d.pickupNotes ?? ""}
+                  />
+                </Field>
               </section>
 
               {/* Delivery */}
@@ -348,19 +392,25 @@ export function LoadImportDialog({
                     required
                   />
                 </Field>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <Field name="deliveryCity" label="City">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field name="deliveryCity" label="City, State ZIP">
                     <Input
                       name="deliveryCity"
-                      defaultValue={d.deliveryCity ?? ""}
+                      defaultValue={
+                        [
+                          d.deliveryCity,
+                          d.deliveryState ? `, ${d.deliveryState}` : "",
+                          d.deliveryZip ? ` ${d.deliveryZip}` : "",
+                        ].filter(Boolean).join("").trim() || (d.deliveryCity ?? "")
+                      }
+                      placeholder="Los Angeles, CA 90001"
                     />
                   </Field>
                   <Field name="deliveryCountry" label="Country">
-                    <Input
-                      name="deliveryCountry"
-                      defaultValue={d.deliveryCountry ?? "US"}
-                    />
+                    <Input name="deliveryCountry" defaultValue={d.deliveryCountry ?? "US"} />
                   </Field>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <Field name="deliveryDate" label="Date & Time" required>
                     <Input
                       name="deliveryDate"
@@ -369,16 +419,29 @@ export function LoadImportDialog({
                       required
                     />
                   </Field>
-                </div>
-                {d.deliveryNotes && (
-                  <Field name="deliveryNotes" label="Delivery Notes">
-                    <Textarea
-                      name="deliveryNotes"
-                      rows={2}
-                      defaultValue={d.deliveryNotes ?? ""}
+                  <Field name="deliveryWindow" label="Delivery Window">
+                    <Input
+                      name="deliveryWindow"
+                      defaultValue={d.deliveryWindow ?? ""}
+                      placeholder="FCFS 08:00-15:00 / By Appt / ASAP"
                     />
                   </Field>
-                )}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field name="deliveryContact" label="Contact Person">
+                    <Input name="deliveryContact" defaultValue={d.deliveryContact ?? ""} />
+                  </Field>
+                  <Field name="deliveryPhone" label="Phone">
+                    <Input name="deliveryPhone" defaultValue={d.deliveryPhone ?? ""} />
+                  </Field>
+                </div>
+                <Field name="deliveryNotes" label="Delivery Notes">
+                  <Textarea
+                    name="deliveryNotes"
+                    rows={2}
+                    defaultValue={d.deliveryNotes ?? ""}
+                  />
+                </Field>
               </section>
 
               {/* Cargo */}

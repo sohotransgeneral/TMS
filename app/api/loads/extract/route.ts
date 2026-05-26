@@ -12,41 +12,67 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
 const BILLED_PER_EXTRACTION = 2.0; // $2 charged to company per AI extraction
 const AI_MODEL = "gpt-5";
 
-const SYSTEM_PROMPT = `You are a logistics assistant. Extract transport load information from the provided document (rate confirmation, BOL, shipper's order, or similar).
+const SYSTEM_PROMPT = `You are a meticulous logistics data extraction assistant. You will receive a transport document (rate confirmation, broker carrier confirmation, BOL, shipper's order, load tender, dispatch sheet, etc.) and must extract EVERY relevant data point with extreme attention to detail.
 
-Return ONLY a valid JSON object with these fields (use null for missing values):
+CRITICAL OUTPUT REQUIREMENT:
+Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commentary, no explanation. The JSON MUST contain ALL of these keys (use null when the document truly does not state the value — never invent data):
+
 {
-  "customerId": null,
-  "customerName": "string or null — company name of the shipper/customer",
-  "pickupAddress": "string — full street address",
-  "pickupCity": "string or null",
-  "pickupCountry": "string or null — 2-letter code if possible e.g. US",
-  "pickupDate": "ISO8601 datetime string or null",
-  "pickupNotes": "string or null — special instructions at pickup",
-  "deliveryAddress": "string — full street address",
+  "referenceNumber": "string or null — broker load #, PRO #, Order #, Shipment #, Job #, Reference # (NOT the BOL number unless that's the only ID). Strip prefixes like 'Load #' or 'Order:'.",
+  "customerName": "string or null — the BROKER or SHIPPER's COMPANY NAME paying you (the one issuing the rate confirmation). NOT the carrier (you).",
+
+  "pickupAddress": "string — full street address line of pickup (number + street). Do NOT include city/state/zip here — those go in their own fields.",
+  "pickupCity": "string or null — pickup city only",
+  "pickupState": "string or null — 2-letter US state code if applicable (TX, CA, OH, etc.)",
+  "pickupZip": "string or null — pickup ZIP/postal code",
+  "pickupCountry": "string or null — 2-letter country code (US, CA, MX, RO, DE, etc.); default US for US addresses",
+  "pickupDate": "ISO8601 datetime string or null — pickup DATE (and time if specified). If only a date range/window is given (e.g. 'Mon 6/15 0700-1400'), use the START datetime. Year defaults to 2026 if missing.",
+  "pickupWindow": "string or null — appointment-style time window EXACTLY as written (e.g. 'FCFS 08:00-15:00', 'By Appt 09:00', 'ASAP', '0700-1400'). If just one time, put that. Do NOT include date here — only the time/window phrase.",
+  "pickupContact": "string or null — person's name listed as pickup contact, dispatcher, shipping clerk, warehouse contact. NOT a company name.",
+  "pickupPhone": "string or null — phone number for pickup location/contact, digits as written (e.g. '+1 713-555-0123'). Strip 'Tel:', 'Phone:' prefixes.",
+  "pickupNotes": "string or null — ONLY truly special instructions: PU#, dock #, tarps required, PPE, driver-assist, lumper, freezer temp settings, gate codes, references like 'PU# HOUSTON TRANSFER'. Do NOT duplicate window/contact/phone here. Multiple notes separated by '; '.",
+
+  "deliveryAddress": "string — full street address of delivery (number + street only)",
   "deliveryCity": "string or null",
-  "deliveryCountry": "string or null — 2-letter code if possible",
-  "deliveryDate": "ISO8601 datetime string or null",
-  "deliveryNotes": "string or null — special instructions at delivery",
-  "cargoDescription": "string or null",
-  "weightKg": number or null,
-  "weightLbs": number or null,
-  "volumeM3": number or null,
-  "packages": number or null,
-  "temperature": "string or null — e.g. -18°C or 35-41°F",
-  "isHazardous": false,
-  "price": number or null,
-  "currency": "USD",
-  "estimatedDistanceKm": number or null — for US documents extract the miles value directly (do NOT convert to km; US rate confirmations show miles),
-  "internalNotes": "string or null — any other relevant info from the document"
+  "deliveryState": "string or null — 2-letter US state code",
+  "deliveryZip": "string or null",
+  "deliveryCountry": "string or null — 2-letter code; default US",
+  "deliveryDate": "ISO8601 datetime string or null — same rules as pickupDate",
+  "deliveryWindow": "string or null — same format as pickupWindow",
+  "deliveryContact": "string or null — person's name for delivery contact",
+  "deliveryPhone": "string or null — phone for delivery contact/location",
+  "deliveryNotes": "string or null — only special delivery instructions (delivery #, appointment confirmations, dock, signature required, etc.)",
+
+  "cargoDescription": "string or null — what is being hauled (e.g. 'Steel coils', 'Frozen chicken', 'Mixed pallets of electronics'). Combine multiple lines into one short phrase.",
+  "weightLbs": number or null — weight in POUNDS as stated. Extract digits only (e.g. '42,500 lbs' → 42500).",
+  "weightKg": number or null — weight in KG. ONLY fill if document states kg directly. If only lbs given, leave null (we compute it).",
+  "volumeM3": number or null — volume in cubic meters if stated.",
+  "packages": number or null — number of pallets/skids/cases/units (extract the count, e.g. '24 PLT' → 24)",
+  "temperature": "string or null — reefer temp setting, e.g. '34°F', '-18°C', '35-41°F continuous'",
+  "isHazardous": boolean — true ONLY if doc explicitly mentions HAZMAT, ADR, UN number, hazardous class, or DOT placards. Otherwise false.",
+  "equipmentType": "string or null — e.g. 'Dry Van', 'Reefer', 'Flatbed', 'Step Deck', 'Conestoga', 'Power Only'. Map abbreviations: V/Van→Dry Van, R→Reefer, F→Flatbed.",
+
+  "price": number or null — total carrier pay / total rate / line haul + FSC summed. Extract numeric only (e.g. '$2,750.00' → 2750). If multiple totals shown, pick 'TOTAL', 'Total Carrier Pay', 'All-in Rate'.",
+  "currency": "string — 3-letter ISO code: USD, EUR, RON, GBP, CAD, MXN. Default USD if '$' shown without other clues.",
+  "estimatedDistanceKm": number or null — distance value as stated in the document. For US docs the number is in MILES — extract it as-is (do NOT convert). For EU docs already in km, also extract as-is.",
+  "internalNotes": "string or null — any other useful info that doesn't fit elsewhere: detention terms, lumper instructions, accessorial rates, broker MC#, multi-stop summary, payment terms, special accessorials."
 }
 
-Rules:
-- Convert weight from lbs to kg if only lbs are given (1 lb = 0.453592 kg), round to 1 decimal
-- If currency symbol $ is present assume USD
-- If dates have no year, assume current year 2026
-- Do not invent data — use null if unsure
-- Return only the raw JSON, no markdown, no explanation`;
+EXTRACTION RULES (read carefully):
+1. SEPARATION: Always split window, contact, phone and special instructions into their OWN fields. Do NOT dump everything into pickupNotes/deliveryNotes. Example: if doc says "Pickup: 0700-1400 FCFS, Contact: John Smith 713-555-0123, PU# ABC123, Tarps required" then:
+   - pickupWindow: "FCFS 0700-1400"
+   - pickupContact: "John Smith"
+   - pickupPhone: "713-555-0123"
+   - pickupNotes: "PU# ABC123; Tarps required"
+2. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
+3. ADDRESSES: keep street address clean (no city/state in pickupAddress). Always extract state code separately for US.
+4. DATES: prefer ISO8601 with time when known. If only a date is given (no time) use the date with T00:00:00. Years default to 2026 if missing.
+5. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
+6. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings.
+7. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
+8. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
+
+Now extract.`;
 
 export async function POST(req: Request) {
   let me: Awaited<ReturnType<typeof requirePermission>>;
