@@ -10,7 +10,7 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   "gpt-4.5-preview":{ input: 75.0,  output: 150.0 },
 };
 const BILLED_PER_EXTRACTION = 2.0; // $2 charged to company per AI extraction
-const AI_MODEL = "gpt-5";
+const AI_MODEL = "gpt-4o";
 
 const SYSTEM_PROMPT = `You are a meticulous logistics data extraction assistant. You will receive a transport document (rate confirmation, broker carrier confirmation, BOL, shipper's order, load tender, dispatch sheet, etc.) and must extract EVERY relevant data point with extreme attention to detail.
 
@@ -147,14 +147,18 @@ export async function POST(req: Request) {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content },
       ],
-      max_completion_tokens: 4096,
+      max_completion_tokens: 8192,
     });
 
     const finishReason = response.choices[0]?.finish_reason;
     const raw = response.choices[0]?.message?.content ?? "";
 
+    console.log("[extract] model:", AI_MODEL, "finish:", finishReason, "raw length:", raw.length, "choices:", response.choices.length);
+
     if (!raw) {
-      return NextResponse.json({ error: "AI returned an empty response. Please try again." }, { status: 502 });
+      const detail = `finish_reason=${finishReason ?? "none"}, choices=${response.choices.length}, usage=${JSON.stringify(response.usage)}`;
+      console.error("[extract] Empty response:", detail);
+      return NextResponse.json({ error: `AI returned an empty response (${detail}). Please try again.` }, { status: 502 });
     }
 
     if (finishReason === "length") {
