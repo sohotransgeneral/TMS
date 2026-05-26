@@ -339,13 +339,20 @@ export function LoadImportDialog({
                           d.pickupCity,
                           d.pickupState ? `, ${d.pickupState}` : "",
                           d.pickupZip ? ` ${d.pickupZip}` : "",
-                        ].filter(Boolean).join("").trim() || (d.pickupCity ?? "")
+                        ]
+                          .filter(Boolean)
+                          .join("")
+                          .trim() ||
+                        (d.pickupCity ?? "")
                       }
                       placeholder="Houston, TX 77001"
                     />
                   </Field>
                   <Field name="pickupCountry" label="Country">
-                    <Input name="pickupCountry" defaultValue={d.pickupCountry ?? "US"} />
+                    <Input
+                      name="pickupCountry"
+                      defaultValue={d.pickupCountry ?? "US"}
+                    />
                   </Field>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -367,10 +374,16 @@ export function LoadImportDialog({
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field name="pickupContact" label="Contact Person">
-                    <Input name="pickupContact" defaultValue={d.pickupContact ?? ""} />
+                    <Input
+                      name="pickupContact"
+                      defaultValue={d.pickupContact ?? ""}
+                    />
                   </Field>
                   <Field name="pickupPhone" label="Phone">
-                    <Input name="pickupPhone" defaultValue={d.pickupPhone ?? ""} />
+                    <Input
+                      name="pickupPhone"
+                      defaultValue={d.pickupPhone ?? ""}
+                    />
                   </Field>
                 </div>
                 <Field name="pickupNotes" label="Pickup Notes">
@@ -401,13 +414,20 @@ export function LoadImportDialog({
                           d.deliveryCity,
                           d.deliveryState ? `, ${d.deliveryState}` : "",
                           d.deliveryZip ? ` ${d.deliveryZip}` : "",
-                        ].filter(Boolean).join("").trim() || (d.deliveryCity ?? "")
+                        ]
+                          .filter(Boolean)
+                          .join("")
+                          .trim() ||
+                        (d.deliveryCity ?? "")
                       }
                       placeholder="Los Angeles, CA 90001"
                     />
                   </Field>
                   <Field name="deliveryCountry" label="Country">
-                    <Input name="deliveryCountry" defaultValue={d.deliveryCountry ?? "US"} />
+                    <Input
+                      name="deliveryCountry"
+                      defaultValue={d.deliveryCountry ?? "US"}
+                    />
                   </Field>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -429,10 +449,16 @@ export function LoadImportDialog({
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field name="deliveryContact" label="Contact Person">
-                    <Input name="deliveryContact" defaultValue={d.deliveryContact ?? ""} />
+                    <Input
+                      name="deliveryContact"
+                      defaultValue={d.deliveryContact ?? ""}
+                    />
                   </Field>
                   <Field name="deliveryPhone" label="Phone">
-                    <Input name="deliveryPhone" defaultValue={d.deliveryPhone ?? ""} />
+                    <Input
+                      name="deliveryPhone"
+                      defaultValue={d.deliveryPhone ?? ""}
+                    />
                   </Field>
                 </div>
                 <Field name="deliveryNotes" label="Delivery Notes">

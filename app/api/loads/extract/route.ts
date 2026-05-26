@@ -26,8 +26,8 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "pickupState": "string or null — 2-letter US state code if applicable (TX, CA, OH, etc.)",
   "pickupZip": "string or null — pickup ZIP/postal code",
   "pickupCountry": "string or null — 2-letter country code (US, CA, MX, RO, DE, etc.); default US for US addresses",
-  "pickupDate": "ISO8601 datetime string or null — pickup DATE (and time if specified). If only a date range/window is given (e.g. 'Mon 6/15 0700-1400'), use the START datetime. Year defaults to 2026 if missing.",
-  "pickupWindow": "string or null — appointment-style time window EXACTLY as written (e.g. 'FCFS 08:00-15:00', 'By Appt 09:00', 'ASAP', '0700-1400'). If just one time, put that. Do NOT include date here — only the time/window phrase.",
+  "pickupDate": "ISO8601 datetime string or null — the CALENDAR DATE of pickup only (e.g. '2026-06-15T00:00:00'). If the document shows a DATE (Mon 6/15, June 15, 06/15/2026) use that date. If ONLY a time window like '0700-1400' or '07:00 to 14:00' is given with no date, set pickupDate to null. Year defaults to 2026.",
+  "pickupWindow": "string or null — ALWAYS extract ANY time range or time instruction here. Examples: '0700-1400', '07:00 to 14:00', 'FCFS 08:00-15:00', 'By Appt', 'ASAP', '09:00 appt', 'Open 6am-2pm'. Even if only one time is given (e.g. 'Appt 10:00') put it here. NEVER leave this null if there is any time information in the pickup section. Do NOT put time windows in pickupDate or pickupNotes.",
   "pickupContact": "string or null — person's name listed as pickup contact, dispatcher, shipping clerk, warehouse contact. NOT a company name.",
   "pickupPhone": "string or null — phone number for pickup location/contact, digits as written (e.g. '+1 713-555-0123'). Strip 'Tel:', 'Phone:' prefixes.",
   "pickupNotes": "string or null — ONLY truly special instructions: PU#, dock #, tarps required, PPE, driver-assist, lumper, freezer temp settings, gate codes, references like 'PU# HOUSTON TRANSFER'. Do NOT duplicate window/contact/phone here. Multiple notes separated by '; '.",
@@ -38,7 +38,7 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "deliveryZip": "string or null",
   "deliveryCountry": "string or null — 2-letter code; default US",
   "deliveryDate": "ISO8601 datetime string or null — same rules as pickupDate",
-  "deliveryWindow": "string or null — same format as pickupWindow",
+  "deliveryWindow": "string or null — same as pickupWindow: ALWAYS extract any time range or time instruction here. '0700-1400', '07:00 to 14:00', 'FCFS', 'By Appt', 'ASAP', 'Close 15:00', etc. NEVER put time windows in deliveryDate or deliveryNotes.",
   "deliveryContact": "string or null — person's name for delivery contact",
   "deliveryPhone": "string or null — phone for delivery contact/location",
   "deliveryNotes": "string or null — only special delivery instructions (delivery #, appointment confirmations, dock, signature required, etc.)",
@@ -64,13 +64,15 @@ EXTRACTION RULES (read carefully):
    - pickupContact: "John Smith"
    - pickupPhone: "713-555-0123"
    - pickupNotes: "PU# ABC123; Tarps required"
-2. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
-3. ADDRESSES: keep street address clean (no city/state in pickupAddress). Always extract state code separately for US.
-4. DATES: prefer ISO8601 with time when known. If only a date is given (no time) use the date with T00:00:00. Years default to 2026 if missing.
-5. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
-6. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings.
-7. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
-8. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
+2. TIME WINDOWS ARE MANDATORY: Any pattern like "NNNN-NNNN", "NN:NN to NN:NN", "NN:NN-NN:NN", "FCFS", "By Appt", "ASAP", "Open until NN:NN" MUST go into pickupWindow / deliveryWindow. NEVER in pickupDate/deliveryDate (dates are calendar days, not time-of-day ranges). NEVER in notes.
+3. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
+3. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
+4. ADDRESSES: keep street address clean (no city/state in pickupAddress). Always extract state code separately for US.
+5. DATES: prefer ISO8601 with time when known. If only a date is given (no time) use the date with T00:00:00. Years default to 2026 if missing.
+6. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
+7. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings.
+8. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
+9. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
 
 Now extract.`;
 
