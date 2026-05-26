@@ -40,7 +40,15 @@ export const driverCreateSchema = z.object({
 
 export const driverUpdateSchema = driverCreateSchema
   .partial({ password: true, email: true })
-  .extend({ id: z.string().min(1) });
+  .extend({
+    id: z.string().min(1),
+    // Allow empty string → treat as "no change"
+    password: z
+      .string()
+      .optional()
+      .transform((v) => (v && v.length > 0 ? v : undefined))
+      .pipe(z.string().min(8, "Minim 8 caractere").optional()),
+  });
 
 export type DriverCreateInput = z.infer<typeof driverCreateSchema>;
 export type DriverUpdateInput = z.infer<typeof driverUpdateSchema>;

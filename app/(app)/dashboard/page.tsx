@@ -231,17 +231,25 @@ export default async function DashboardPage() {
                 {data.recentLoads.map((l) => (
                   <div key={l.id} className="px-4 py-3 flex flex-col gap-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-sm">{l.referenceNumber}</span>
-                      <Badge variant={STATUS_VARIANT[l.status] ?? "default"} className="text-[10px] px-1.5 py-0">
+                      <span className="font-medium text-sm">
+                        {l.referenceNumber}
+                      </span>
+                      <Badge
+                        variant={STATUS_VARIANT[l.status] ?? "default"}
+                        className="text-[10px] px-1.5 py-0"
+                      >
                         {l.status.replace(/_/g, " ")}
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      {l.pickupCity ?? l.pickupAddress} → {l.deliveryCity ?? l.deliveryAddress}
+                      {l.pickupCity ?? l.pickupAddress} →{" "}
+                      {l.deliveryCity ?? l.deliveryAddress}
                     </p>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-muted-foreground">
-                        {l.driver ? `${l.driver.firstName} ${l.driver.lastName}` : "No driver"}
+                        {l.driver
+                          ? `${l.driver.firstName} ${l.driver.lastName}`
+                          : "No driver"}
                       </span>
                       <span className="text-xs font-medium">
                         {formatCurrency(l.price, l.currency)}
@@ -278,7 +286,9 @@ export default async function DashboardPage() {
                             : "—"}
                         </TD>
                         <TD>
-                          <Badge variant={STATUS_VARIANT[l.status] ?? "default"}>
+                          <Badge
+                            variant={STATUS_VARIANT[l.status] ?? "default"}
+                          >
                             {l.status.replace(/_/g, " ")}
                           </Badge>
                         </TD>

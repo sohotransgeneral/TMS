@@ -29,8 +29,12 @@ export function StatCard({
     <Card>
       <CardContent className="p-3 sm:p-5 flex items-start justify-between gap-2 sm:gap-4">
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm text-muted-foreground leading-tight">{label}</p>
-          <p className="text-xl sm:text-2xl font-semibold mt-0.5 sm:mt-1 truncate">{value}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-tight">
+            {label}
+          </p>
+          <p className="text-xl sm:text-2xl font-semibold mt-0.5 sm:mt-1 truncate">
+            {value}
+          </p>
           {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
         </div>
         {Icon && (

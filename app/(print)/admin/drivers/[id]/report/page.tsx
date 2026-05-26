@@ -80,12 +80,20 @@ export default async function DriverReportPage({
       <div className="border-b-2 border-foreground pb-3 sm:pb-4">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">{fullName}</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{driver.user.email}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+              {fullName}
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              {driver.user.email}
+            </p>
           </div>
           <div className="sm:text-right mt-1 sm:mt-0">
-            <div className="text-base sm:text-lg font-semibold text-foreground">Financial Report</div>
-            <div className="text-xs sm:text-sm text-muted-foreground">{data.periodLabel}</div>
+            <div className="text-base sm:text-lg font-semibold text-foreground">
+              Financial Report
+            </div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {data.periodLabel}
+            </div>
             <div className="text-xs text-muted-foreground">
               Generated:{" "}
               {new Date().toLocaleDateString("en-US", {
@@ -103,12 +111,22 @@ export default async function DriverReportPage({
         {[
           { label: "Loads", value: String(loads.length) },
           { label: "Gross revenue", value: fmt(data.revenue, data.currency) },
-          { label: "Distance", value: `${Math.round(data.totalKm).toLocaleString("en-US")} Mi` },
+          {
+            label: "Distance",
+            value: `${Math.round(data.totalKm).toLocaleString("en-US")} Mi`,
+          },
           { label: "Net salary", value: fmt(data.taxes.net) },
         ].map((k) => (
-          <div key={k.label} className="rounded border border-border p-2.5 sm:p-3">
-            <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight">{k.label}</div>
-            <div className="text-base sm:text-lg font-bold text-foreground mt-0.5 truncate">{k.value}</div>
+          <div
+            key={k.label}
+            className="rounded border border-border p-2.5 sm:p-3"
+          >
+            <div className="text-[10px] sm:text-xs text-muted-foreground leading-tight">
+              {k.label}
+            </div>
+            <div className="text-base sm:text-lg font-bold text-foreground mt-0.5 truncate">
+              {k.value}
+            </div>
           </div>
         ))}
       </div>
@@ -121,27 +139,43 @@ export default async function DriverReportPage({
 
         {/* Mobile card list */}
         {loads.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">No loads in this period</p>
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            No loads in this period
+          </p>
         ) : (
           <>
             <div className="flex flex-col divide-y border rounded sm:hidden">
               {loads.map((l) => (
                 <div key={l.id} className="px-3 py-2.5 flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-semibold">{l.referenceNumber}</span>
-                    <span className="font-semibold text-xs tabular-nums">{fmt(l.price, l.currency)}</span>
+                    <span className="font-mono text-xs font-semibold">
+                      {l.referenceNumber}
+                    </span>
+                    <span className="font-semibold text-xs tabular-nums">
+                      {fmt(l.price, l.currency)}
+                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground truncate">
-                    {l.pickupCity ?? l.pickupAddress.slice(0, 20)} → {l.deliveryCity ?? l.deliveryAddress.slice(0, 20)}
+                    {l.pickupCity ?? l.pickupAddress.slice(0, 20)} →{" "}
+                    {l.deliveryCity ?? l.deliveryAddress.slice(0, 20)}
                   </p>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>{fmtDate(l.pickupDate)} → {fmtDate(l.deliveryDate)}</span>
-                    <span>{Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("en-US")} Mi</span>
+                    <span>
+                      {fmtDate(l.pickupDate)} → {fmtDate(l.deliveryDate)}
+                    </span>
+                    <span>
+                      {Math.round(
+                        l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0,
+                      ).toLocaleString("en-US")}{" "}
+                      Mi
+                    </span>
                   </div>
                   {(l.customer?.name || l.truck?.plateNumber) && (
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                       {l.customer?.name && <span>{l.customer.name}</span>}
-                      {l.truck?.plateNumber && <span className="font-mono">{l.truck.plateNumber}</span>}
+                      {l.truck?.plateNumber && (
+                        <span className="font-mono">{l.truck.plateNumber}</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -181,19 +215,35 @@ export default async function DriverReportPage({
                       key={l.id}
                       className={`border-b border-border ${i % 2 === 0 ? "" : "bg-muted/50"}`}
                     >
-                      <td className="py-1.5 pr-3 font-mono text-xs">{l.referenceNumber}</td>
-                      <td className="py-1.5 pr-3">
-                        <div className="font-medium">{l.pickupCity ?? l.pickupAddress.slice(0, 25)}</div>
-                        <div className="text-xs text-muted-foreground">{fmtDate(l.pickupDate)}</div>
+                      <td className="py-1.5 pr-3 font-mono text-xs">
+                        {l.referenceNumber}
                       </td>
                       <td className="py-1.5 pr-3">
-                        <div className="font-medium">{l.deliveryCity ?? l.deliveryAddress.slice(0, 25)}</div>
-                        <div className="text-xs text-muted-foreground">{fmtDate(l.deliveryDate)}</div>
+                        <div className="font-medium">
+                          {l.pickupCity ?? l.pickupAddress.slice(0, 25)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {fmtDate(l.pickupDate)}
+                        </div>
                       </td>
-                      <td className="py-1.5 pr-3 text-sm">{l.customer?.name ?? "-"}</td>
-                      <td className="py-1.5 pr-3 font-mono text-xs">{l.truck?.plateNumber ?? "-"}</td>
+                      <td className="py-1.5 pr-3">
+                        <div className="font-medium">
+                          {l.deliveryCity ?? l.deliveryAddress.slice(0, 25)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {fmtDate(l.deliveryDate)}
+                        </div>
+                      </td>
+                      <td className="py-1.5 pr-3 text-sm">
+                        {l.customer?.name ?? "-"}
+                      </td>
+                      <td className="py-1.5 pr-3 font-mono text-xs">
+                        {l.truck?.plateNumber ?? "-"}
+                      </td>
                       <td className="py-1.5 pr-6 text-right tabular-nums whitespace-nowrap">
-                        {Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("en-US")}
+                        {Math.round(
+                          l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0,
+                        ).toLocaleString("en-US")}
                       </td>
                       <td className="py-1.5 text-right tabular-nums font-semibold whitespace-nowrap">
                         {fmt(l.price, l.currency)}
@@ -201,7 +251,9 @@ export default async function DriverReportPage({
                     </tr>
                   ))}
                   <tr className="border-t-2 border-border font-bold">
-                    <td colSpan={5} className="py-2 text-sm">TOTAL</td>
+                    <td colSpan={5} className="py-2 text-sm">
+                      TOTAL
+                    </td>
                     <td className="py-2 pr-6 text-right tabular-nums whitespace-nowrap">
                       {Math.round(data.totalKm).toLocaleString("en-US")}
                     </td>
@@ -224,19 +276,79 @@ export default async function DriverReportPage({
           </h2>
           <table className="w-full border-collapse">
             <tbody>
-              <R label="Total revenue" value={fmt(data.revenue, data.currency)} />
-              <tr><td colSpan={2} className="py-1 border-b border-border" /></tr>
-              {data.fuelCost > 0 && <R label={`Fuel (${data.fuelCount} entries)`} value={`- ${fmt(data.fuelCost, data.currency)}`} neg />}
-              {data.tollCost > 0 && <R label="Tolls / Bridge" value={`- ${fmt(data.tollCost, data.currency)}`} neg />}
-              {data.parkingCost > 0 && <R label="Parking" value={`- ${fmt(data.parkingCost, data.currency)}`} neg />}
-              {data.repairCost > 0 && <R label="Repairs" value={`- ${fmt(data.repairCost, data.currency)}`} neg />}
-              {data.maintCost > 0 && <R label="Maintenance" value={`- ${fmt(data.maintCost, data.currency)}`} neg />}
-              {data.permitsCost > 0 && <R label="Special permits" value={`- ${fmt(data.permitsCost, data.currency)}`} neg />}
-              {data.otherCost > 0 && <R label="Other expenses" value={`- ${fmt(data.otherCost, data.currency)}`} neg />}
-              {data.totalDeductions === 0 && <R label="No expenses" value="-" />}
-              <R label="Total deductions" value={`- ${fmt(data.totalDeductions, data.currency)}`} neg bold />
-              <tr><td colSpan={2} className="py-1" /></tr>
-              <R label="Net contribution" value={fmt(data.netContribution, data.currency)} bold />
+              <R
+                label="Total revenue"
+                value={fmt(data.revenue, data.currency)}
+              />
+              <tr>
+                <td colSpan={2} className="py-1 border-b border-border" />
+              </tr>
+              {data.fuelCost > 0 && (
+                <R
+                  label={`Fuel (${data.fuelCount} entries)`}
+                  value={`- ${fmt(data.fuelCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.tollCost > 0 && (
+                <R
+                  label="Tolls / Bridge"
+                  value={`- ${fmt(data.tollCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.parkingCost > 0 && (
+                <R
+                  label="Parking"
+                  value={`- ${fmt(data.parkingCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.repairCost > 0 && (
+                <R
+                  label="Repairs"
+                  value={`- ${fmt(data.repairCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.maintCost > 0 && (
+                <R
+                  label="Maintenance"
+                  value={`- ${fmt(data.maintCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.permitsCost > 0 && (
+                <R
+                  label="Special permits"
+                  value={`- ${fmt(data.permitsCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.otherCost > 0 && (
+                <R
+                  label="Other expenses"
+                  value={`- ${fmt(data.otherCost, data.currency)}`}
+                  neg
+                />
+              )}
+              {data.totalDeductions === 0 && (
+                <R label="No expenses" value="-" />
+              )}
+              <R
+                label="Total deductions"
+                value={`- ${fmt(data.totalDeductions, data.currency)}`}
+                neg
+                bold
+              />
+              <tr>
+                <td colSpan={2} className="py-1" />
+              </tr>
+              <R
+                label="Net contribution"
+                value={fmt(data.netContribution, data.currency)}
+                bold
+              />
             </tbody>
           </table>
         </div>
@@ -247,28 +359,71 @@ export default async function DriverReportPage({
           </h2>
           <table className="w-full border-collapse">
             <tbody>
-              <R label="Distance driven" value={`${Math.round(data.totalKm).toLocaleString("en-US")} Mi`} />
+              <R
+                label="Distance driven"
+                value={`${Math.round(data.totalKm).toLocaleString("en-US")} Mi`}
+              />
               <R
                 label={`Rate ${data.currency}/Mi`}
-                value={driver.salaryPerKm ? `${driver.salaryPerKm} ${data.currency}/Mi` : "-"}
+                value={
+                  driver.salaryPerKm
+                    ? `${driver.salaryPerKm} ${data.currency}/Mi`
+                    : "-"
+                }
               />
-              <R label="Base salary" value={fmt(data.baseSalary, data.currency)} />
+              <R
+                label="Base salary"
+                value={fmt(data.baseSalary, data.currency)}
+              />
               {driver.commissionRate && driver.commissionRate > 0 && (
-                <R label={`Commission (${driver.commissionRate}%)`} value={fmt(data.commission)} />
+                <R
+                  label={`Commission (${driver.commissionRate}%)`}
+                  value={fmt(data.commission)}
+                />
               )}
-              {adjustments.filter((a) => a.amount > 0).map((a) => (
-                <R key={a.id} label={`+ ${a.label}`} value={fmt(a.amount)} />
-              ))}
-              {adjustments.filter((a) => a.amount < 0).map((a) => (
-                <R key={a.id} label={`– ${a.label}`} value={`- ${fmt(Math.abs(a.amount))}`} neg />
-              ))}
+              {adjustments
+                .filter((a) => a.amount > 0)
+                .map((a) => (
+                  <R key={a.id} label={`+ ${a.label}`} value={fmt(a.amount)} />
+                ))}
+              {adjustments
+                .filter((a) => a.amount < 0)
+                .map((a) => (
+                  <R
+                    key={a.id}
+                    label={`– ${a.label}`}
+                    value={`- ${fmt(Math.abs(a.amount))}`}
+                    neg
+                  />
+                ))}
               <R label="GROSS salary" value={fmt(data.brutSalary)} bold />
-              <tr><td colSpan={2} className="py-1 border-b border-border" /></tr>
-              <R label="Employee pension (25%)" value={`- ${fmt(data.taxes.cas)}`} neg />
-              <R label="Employee health ins. (10%)" value={`- ${fmt(data.taxes.cass)}`} neg />
-              <R label="Income tax (10%)" value={`- ${fmt(data.taxes.impozit)}`} neg />
-              <R label="Total taxes" value={`- ${fmt(data.taxes.total)}`} neg bold />
-              <tr><td colSpan={2} className="py-1" /></tr>
+              <tr>
+                <td colSpan={2} className="py-1 border-b border-border" />
+              </tr>
+              <R
+                label="Employee pension (25%)"
+                value={`- ${fmt(data.taxes.cas)}`}
+                neg
+              />
+              <R
+                label="Employee health ins. (10%)"
+                value={`- ${fmt(data.taxes.cass)}`}
+                neg
+              />
+              <R
+                label="Income tax (10%)"
+                value={`- ${fmt(data.taxes.impozit)}`}
+                neg
+              />
+              <R
+                label="Total taxes"
+                value={`- ${fmt(data.taxes.total)}`}
+                neg
+                bold
+              />
+              <tr>
+                <td colSpan={2} className="py-1" />
+              </tr>
               <R label="NET SALARY PAYABLE" value={fmt(data.taxes.net)} bold />
             </tbody>
           </table>
@@ -277,7 +432,10 @@ export default async function DriverReportPage({
 
       {/* Footer */}
       <div className="border-t border-border pt-3 sm:pt-4 text-xs text-muted-foreground">
-        <p>Report auto-generated by TMS &mdash; {fullName} &mdash; {data.periodLabel}</p>
+        <p>
+          Report auto-generated by TMS &mdash; {fullName} &mdash;{" "}
+          {data.periodLabel}
+        </p>
         <p className="mt-1">
           Taxes calculated per Romanian law: Pension 25% + Health Ins. 10% +
           Income Tax 10% of (Gross &minus; Pension &minus; Health Ins.).
