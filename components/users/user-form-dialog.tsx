@@ -70,7 +70,12 @@ function toDateInput(d: Date | string | null | undefined): string {
   return date.toISOString().split("T")[0];
 }
 
-const DRIVER_STATUSES = ["AVAILABLE", "ON_TRIP", "OFF_DUTY", "UNAVAILABLE"] as const;
+const DRIVER_STATUSES = [
+  "AVAILABLE",
+  "ON_TRIP",
+  "OFF_DUTY",
+  "UNAVAILABLE",
+] as const;
 const DRIVER_STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",
   ON_TRIP: "On Trip",
@@ -123,7 +128,9 @@ export function UserFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <div onClick={() => setOpen(true)}>{trigger}</div>
-      <DialogContent className={`max-h-[90vh] overflow-y-auto ${selectedRole === "DRIVER" ? "sm:max-w-2xl" : "sm:max-w-lg"}`}>
+      <DialogContent
+        className={`max-h-[90vh] overflow-y-auto ${selectedRole === "DRIVER" ? "sm:max-w-2xl" : "sm:max-w-lg"}`}
+      >
         <DialogHeader>
           <DialogTitle>{editing ? "Edit User" : "New User"}</DialogTitle>
           <DialogDescription>
@@ -152,7 +159,12 @@ export function UserFormDialog({
           )}
           {selectedRole === "DRIVER" ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field name="firstName" label="First Name" required error={errors.firstName}>
+              <Field
+                name="firstName"
+                label="First Name"
+                required
+                error={errors.firstName}
+              >
                 <Input
                   id="firstName"
                   name="firstName"
@@ -160,7 +172,12 @@ export function UserFormDialog({
                   required
                 />
               </Field>
-              <Field name="lastName" label="Last Name" required error={errors.lastName}>
+              <Field
+                name="lastName"
+                label="Last Name"
+                required
+                error={errors.lastName}
+              >
                 <Input
                   id="lastName"
                   name="lastName"
@@ -277,73 +294,243 @@ export function UserFormDialog({
           {selectedRole === "DRIVER" && (
             <>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="licenseNumber" label="License Number" error={errors.licenseNumber}>
-                  <Input id="licenseNumber" name="licenseNumber" defaultValue={initial?.driverProfile?.licenseNumber ?? ""} />
+                <Field
+                  name="licenseNumber"
+                  label="License Number"
+                  error={errors.licenseNumber}
+                >
+                  <Input
+                    id="licenseNumber"
+                    name="licenseNumber"
+                    defaultValue={initial?.driverProfile?.licenseNumber ?? ""}
+                  />
                 </Field>
-                <Field name="licenseCategories" label="Categories (B, C, CE…)" error={errors.licenseCategories}>
-                  <Input id="licenseCategories" name="licenseCategories" defaultValue={(initial?.driverProfile?.licenseCategories ?? []).join(",")} placeholder="ex: B,C,CE" />
+                <Field
+                  name="licenseCategories"
+                  label="Categories (B, C, CE…)"
+                  error={errors.licenseCategories}
+                >
+                  <Input
+                    id="licenseCategories"
+                    name="licenseCategories"
+                    defaultValue={(
+                      initial?.driverProfile?.licenseCategories ?? []
+                    ).join(",")}
+                    placeholder="ex: B,C,CE"
+                  />
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="licenseIssuedAt" label="License Issued" error={errors.licenseIssuedAt}>
-                  <Input id="licenseIssuedAt" name="licenseIssuedAt" type="date" defaultValue={toDateInput(initial?.driverProfile?.licenseIssuedAt)} />
+                <Field
+                  name="licenseIssuedAt"
+                  label="License Issued"
+                  error={errors.licenseIssuedAt}
+                >
+                  <Input
+                    id="licenseIssuedAt"
+                    name="licenseIssuedAt"
+                    type="date"
+                    defaultValue={toDateInput(
+                      initial?.driverProfile?.licenseIssuedAt,
+                    )}
+                  />
                 </Field>
-                <Field name="licenseExpiresAt" label="License Expires" error={errors.licenseExpiresAt}>
-                  <Input id="licenseExpiresAt" name="licenseExpiresAt" type="date" defaultValue={toDateInput(initial?.driverProfile?.licenseExpiresAt)} />
+                <Field
+                  name="licenseExpiresAt"
+                  label="License Expires"
+                  error={errors.licenseExpiresAt}
+                >
+                  <Input
+                    id="licenseExpiresAt"
+                    name="licenseExpiresAt"
+                    type="date"
+                    defaultValue={toDateInput(
+                      initial?.driverProfile?.licenseExpiresAt,
+                    )}
+                  />
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field name="tachoCardNumber" label="Tachograph Card" error={errors.tachoCardNumber}>
-                  <Input id="tachoCardNumber" name="tachoCardNumber" defaultValue={initial?.driverProfile?.tachoCardNumber ?? ""} />
+                <Field
+                  name="tachoCardNumber"
+                  label="Tachograph Card"
+                  error={errors.tachoCardNumber}
+                >
+                  <Input
+                    id="tachoCardNumber"
+                    name="tachoCardNumber"
+                    defaultValue={initial?.driverProfile?.tachoCardNumber ?? ""}
+                  />
                 </Field>
-                <Field name="tachoCardExpiresAt" label="Tachograph Expires" error={errors.tachoCardExpiresAt}>
-                  <Input id="tachoCardExpiresAt" name="tachoCardExpiresAt" type="date" defaultValue={toDateInput(initial?.driverProfile?.tachoCardExpiresAt)} />
+                <Field
+                  name="tachoCardExpiresAt"
+                  label="Tachograph Expires"
+                  error={errors.tachoCardExpiresAt}
+                >
+                  <Input
+                    id="tachoCardExpiresAt"
+                    name="tachoCardExpiresAt"
+                    type="date"
+                    defaultValue={toDateInput(
+                      initial?.driverProfile?.tachoCardExpiresAt,
+                    )}
+                  />
                 </Field>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field name="driverStatus" label="Status" error={errors.driverStatus}>
-                  <Select id="driverStatus" name="driverStatus" defaultValue={initial?.driverProfile?.status ?? "AVAILABLE"}>
+                <Field
+                  name="driverStatus"
+                  label="Status"
+                  error={errors.driverStatus}
+                >
+                  <Select
+                    id="driverStatus"
+                    name="driverStatus"
+                    defaultValue={initial?.driverProfile?.status ?? "AVAILABLE"}
+                  >
                     {DRIVER_STATUSES.map((s) => (
-                      <option key={s} value={s}>{DRIVER_STATUS_LABELS[s]}</option>
+                      <option key={s} value={s}>
+                        {DRIVER_STATUS_LABELS[s]}
+                      </option>
                     ))}
                   </Select>
                 </Field>
                 <Field name="salaryType" label="Salary Type">
-                  <Select id="salaryType" name="salaryType" defaultValue={initial?.driverProfile?.salaryType ?? "PER_MI"}>
+                  <Select
+                    id="salaryType"
+                    name="salaryType"
+                    defaultValue={
+                      initial?.driverProfile?.salaryType ?? "PER_MI"
+                    }
+                  >
                     <option value="PER_MI">Per Mile</option>
                     <option value="PERCENT_GROSS">% of Gross</option>
                     <option value="FIXED">Fixed Salary</option>
                   </Select>
                 </Field>
-                <Field name="salaryPerKm" label="Rate per mile" error={errors.salaryPerKm}>
-                  <Input id="salaryPerKm" name="salaryPerKm" type="number" step="0.001" defaultValue={initial?.driverProfile?.salaryPerKm ?? ""} />
+                <Field
+                  name="salaryPerKm"
+                  label="Rate per mile"
+                  error={errors.salaryPerKm}
+                >
+                  <Input
+                    id="salaryPerKm"
+                    name="salaryPerKm"
+                    type="number"
+                    step="0.001"
+                    defaultValue={initial?.driverProfile?.salaryPerKm ?? ""}
+                  />
                 </Field>
-                <Field name="grossPercent" label="% of Gross (e.g. 90)" error={errors.grossPercent}>
-                  <Input id="grossPercent" name="grossPercent" type="number" step="0.1" min="0" max="100" defaultValue={initial?.driverProfile?.grossPercent ?? ""} />
+                <Field
+                  name="grossPercent"
+                  label="% of Gross (e.g. 90)"
+                  error={errors.grossPercent}
+                >
+                  <Input
+                    id="grossPercent"
+                    name="grossPercent"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    defaultValue={initial?.driverProfile?.grossPercent ?? ""}
+                  />
                 </Field>
-                <Field name="salaryFixedAmount" label="Fixed amount per month" error={errors.salaryFixedAmount}>
-                  <Input id="salaryFixedAmount" name="salaryFixedAmount" type="number" step="1" defaultValue={initial?.driverProfile?.salaryFixedAmount ?? ""} />
+                <Field
+                  name="salaryFixedAmount"
+                  label="Fixed amount per month"
+                  error={errors.salaryFixedAmount}
+                >
+                  <Input
+                    id="salaryFixedAmount"
+                    name="salaryFixedAmount"
+                    type="number"
+                    step="1"
+                    defaultValue={
+                      initial?.driverProfile?.salaryFixedAmount ?? ""
+                    }
+                  />
                 </Field>
-                <Field name="commissionRate" label="Commission bonus (%)" error={errors.commissionRate}>
-                  <Input id="commissionRate" name="commissionRate" type="number" step="0.01" defaultValue={initial?.driverProfile?.commissionRate ?? ""} />
+                <Field
+                  name="commissionRate"
+                  label="Commission bonus (%)"
+                  error={errors.commissionRate}
+                >
+                  <Input
+                    id="commissionRate"
+                    name="commissionRate"
+                    type="number"
+                    step="0.01"
+                    defaultValue={initial?.driverProfile?.commissionRate ?? ""}
+                  />
                 </Field>
                 <div className="col-span-full border-t pt-2">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Tax rates (%)</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Tax rates (%)
+                  </p>
                   <div className="grid grid-cols-3 gap-3">
-                    <Field name="taxCas" label="CAS (pension)" error={errors.taxCas}>
-                      <Input id="taxCas" name="taxCas" type="number" step="0.1" min="0" max="100" placeholder="25" defaultValue={initial?.driverProfile?.taxCas ?? ""} />
+                    <Field
+                      name="taxCas"
+                      label="CAS (pension)"
+                      error={errors.taxCas}
+                    >
+                      <Input
+                        id="taxCas"
+                        name="taxCas"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        placeholder="25"
+                        defaultValue={initial?.driverProfile?.taxCas ?? ""}
+                      />
                     </Field>
-                    <Field name="taxCass" label="CASS (health)" error={errors.taxCass}>
-                      <Input id="taxCass" name="taxCass" type="number" step="0.1" min="0" max="100" placeholder="10" defaultValue={initial?.driverProfile?.taxCass ?? ""} />
+                    <Field
+                      name="taxCass"
+                      label="CASS (health)"
+                      error={errors.taxCass}
+                    >
+                      <Input
+                        id="taxCass"
+                        name="taxCass"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        placeholder="10"
+                        defaultValue={initial?.driverProfile?.taxCass ?? ""}
+                      />
                     </Field>
-                    <Field name="taxImpozit" label="Income tax" error={errors.taxImpozit}>
-                      <Input id="taxImpozit" name="taxImpozit" type="number" step="0.1" min="0" max="100" placeholder="10" defaultValue={initial?.driverProfile?.taxImpozit ?? ""} />
+                    <Field
+                      name="taxImpozit"
+                      label="Income tax"
+                      error={errors.taxImpozit}
+                    >
+                      <Input
+                        id="taxImpozit"
+                        name="taxImpozit"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        placeholder="10"
+                        defaultValue={initial?.driverProfile?.taxImpozit ?? ""}
+                      />
                     </Field>
                   </div>
                 </div>
               </div>
-              <Field name="internalNotes" label="Internal notes" error={errors.internalNotes}>
-                <Textarea id="internalNotes" name="internalNotes" rows={3} defaultValue={initial?.driverProfile?.internalNotes ?? ""} />
+              <Field
+                name="internalNotes"
+                label="Internal notes"
+                error={errors.internalNotes}
+              >
+                <Textarea
+                  id="internalNotes"
+                  name="internalNotes"
+                  rows={3}
+                  defaultValue={initial?.driverProfile?.internalNotes ?? ""}
+                />
               </Field>
             </>
           )}

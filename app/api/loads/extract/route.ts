@@ -99,15 +99,16 @@ export async function POST(req: Request) {
         },
       ];
     } else {
-      // PDF — send directly to OpenAI as a base64 file (works for all PDFs: digital, scanned, AI-generated)
+      // PDF — upload to OpenAI Files API first, then reference by file_id
+      const uploadedFile = await openai.files.create({
+        file: new File([buffer], file.name || "document.pdf", { type: "application/pdf" }),
+        purpose: "user_data",
+      });
       content = [
         { type: "text", text: "Extract all transport load information from this document." },
         {
           type: "file",
-          file: {
-            data: base64,
-            mime_type: "application/pdf",
-          },
+          file: { file_id: uploadedFile.id },
         },
       ];
     }
