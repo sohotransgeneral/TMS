@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
+import { Prisma, DriverStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
@@ -88,7 +88,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
         licenseExpiresAt: toDate(raw.licenseExpiresAt),
         tachoCardNumber: typeof raw.tachoCardNumber === "string" && raw.tachoCardNumber.trim() ? raw.tachoCardNumber.trim() : null,
         tachoCardExpiresAt: toDate(raw.tachoCardExpiresAt),
-        status: (typeof raw.driverStatus === "string" && raw.driverStatus) ? raw.driverStatus as never : "AVAILABLE",
+        status: (typeof raw.driverStatus === "string" && raw.driverStatus) ? raw.driverStatus as DriverStatus : DriverStatus.AVAILABLE,
         salaryType: typeof raw.salaryType === "string" && raw.salaryType ? raw.salaryType : "PER_MI",
         salaryPerKm: toNum(raw.salaryPerKm),
         salaryFixedAmount: toNum(raw.salaryFixedAmount),
@@ -212,7 +212,7 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
       licenseExpiresAt: toDate(raw.licenseExpiresAt),
       tachoCardNumber: typeof raw.tachoCardNumber === "string" && raw.tachoCardNumber.trim() ? raw.tachoCardNumber.trim() : null,
       tachoCardExpiresAt: toDate(raw.tachoCardExpiresAt),
-      status: (typeof raw.driverStatus === "string" && raw.driverStatus) ? raw.driverStatus as never : "AVAILABLE",
+      status: (typeof raw.driverStatus === "string" && raw.driverStatus) ? raw.driverStatus as DriverStatus : DriverStatus.AVAILABLE,
       salaryType: typeof raw.salaryType === "string" && raw.salaryType ? raw.salaryType : "PER_MI",
       salaryPerKm: toNum(raw.salaryPerKm),
       salaryFixedAmount: toNum(raw.salaryFixedAmount),
