@@ -87,38 +87,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only images and PDFs are supported" }, { status: 400 });
     }
 
-    let content: OpenAI.Chat.ChatCompletionContentPart[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let content: any[];
 
     if (isImage) {
       content = [
-        { type: "text", text: "Extract all transport load information from this document image." },
+        { type: "text", text: "Extract all transport load information from this document." },
         {
           type: "image_url",
           image_url: { url: `data:${mimeType};base64,${base64}`, detail: "high" },
         },
       ];
     } else {
-      // PDF — extract text with pdf-parse, then send as text to GPT-4o
-      // Polyfill browser globals that pdfjs-dist requires in a Node.js environment
-      if (typeof globalThis.DOMMatrix === "undefined") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (globalThis as any).DOMMatrix = class DOMMatrix {};
-      }
-      if (typeof globalThis.Path2D === "undefined") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (globalThis as any).Path2D = class Path2D {};
-      }
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
-      const parsed = await pdfParse(buffer);
-      const pdfText = parsed.text?.trim() ?? "";
-      if (!pdfText) {
-        return NextResponse.json({ error: "Could not extract text from PDF. Try uploading an image instead." }, { status: 422 });
-      }
+      // PDF — send directly to OpenAI as a base64 file (works for all PDFs: digital, scanned, AI-generated)
       content = [
+        { type: "text", text: "Extract all transport load information from this document." },
         {
-          type: "text",
-          text: `Extract all transport load information from the following PDF document text:\n\n${pdfText}`,
+          type: "file",
+          file: {
+            data: base64,
+            mime_type: "application/pdf",
+          },
         },
       ];
     }

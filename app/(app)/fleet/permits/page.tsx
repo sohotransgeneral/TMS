@@ -181,10 +181,21 @@ export default async function PermitsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {(p as unknown as { chargedTo: string }).chargedTo === "DRIVER" ? (
-                      <Badge variant="secondary" className="text-blue-600 border-blue-300">👤 Driver</Badge>
+                    {(p as unknown as { chargedTo: string }).chargedTo ===
+                    "DRIVER" ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-blue-600 border-blue-300"
+                      >
+                        👤 Driver
+                      </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-muted-foreground">🏢 Company</Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground"
+                      >
+                        🏢 Company
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell>{statusBadge(p.validTo)}</TableCell>

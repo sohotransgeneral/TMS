@@ -285,7 +285,9 @@ export function PermitFormDialog({
                 <Select
                   name="chargedTo"
                   value={chargedTo}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setChargedTo(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setChargedTo(e.target.value)
+                  }
                 >
                   <option value="COMPANY">🏢 Company</option>
                   <option value="DRIVER">🧑‍💼 Driver</option>
@@ -299,7 +301,9 @@ export function PermitFormDialog({
                   >
                     <option value="">— Select driver</option>
                     {drivers.map((d) => (
-                      <option key={d.id} value={d.id}>{d.label}</option>
+                      <option key={d.id} value={d.id}>
+                        {d.label}
+                      </option>
                     ))}
                   </Select>
                 </Field>

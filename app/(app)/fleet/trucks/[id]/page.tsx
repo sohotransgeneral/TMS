@@ -163,7 +163,12 @@ export default async function TruckDetailPage({
           <h3 className="font-semibold">Special Permits ({permits.length})</h3>
           <NewPermitButton truckId={truck.id} drivers={drivers} />
         </div>
-        <PermitList permits={permits} truckId={truck.id} canEdit drivers={drivers} />
+        <PermitList
+          permits={permits}
+          truckId={truck.id}
+          canEdit
+          drivers={drivers}
+        />
       </section>
 
       {/* Documents */}
