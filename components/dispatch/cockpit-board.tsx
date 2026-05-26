@@ -6,6 +6,8 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
+  MouseSensor,
   useSensor,
   useSensors,
   useDroppable,
@@ -189,7 +191,10 @@ export function CockpitBoard({
   const [overColumnKey, setOverColumnKey] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Mouse: start drag after 6px movement
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    // Touch (mobile): long press 250ms before drag activates
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
 
   // Use pointer-within first (best for large empty columns), fall back to rect intersection
