@@ -27,20 +27,20 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <Card>
-      <CardContent className="p-5 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-semibold mt-1">{value}</p>
+      <CardContent className="p-3 sm:p-5 flex items-start justify-between gap-2 sm:gap-4">
+        <div className="min-w-0">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-tight">{label}</p>
+          <p className="text-xl sm:text-2xl font-semibold mt-0.5 sm:mt-1 truncate">{value}</p>
           {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
         </div>
         {Icon && (
           <div
             className={cn(
-              "h-10 w-10 rounded-lg grid place-items-center",
+              "h-8 w-8 sm:h-10 sm:w-10 shrink-0 rounded-lg grid place-items-center",
               toneClasses[tone],
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         )}
       </CardContent>

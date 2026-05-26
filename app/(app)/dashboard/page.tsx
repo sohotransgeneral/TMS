@@ -151,19 +151,19 @@ export default async function DashboardPage() {
   const currency = await getCompanyCurrency(user.companyId);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between flex-wrap gap-3">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-end justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">
             Hello, {user.name ?? "User"}!
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
             {ROLE_LABELS[user.role]} · Overview for the current month
           </p>
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Active Loads"
           value={data.activeLoads}
@@ -177,18 +177,18 @@ export default async function DashboardPage() {
           tone="success"
         />
         <StatCard
-          label="Available Trucks"
+          label="Trucks available"
           value={data.availableTrucks}
           icon={Truck}
         />
         <StatCard
-          label="Available Drivers"
+          label="Drivers available"
           value={data.availableDrivers}
           icon={Users}
         />
       </div>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Monthly Revenue"
           value={formatCurrency(data.revenue, currency)}
@@ -202,13 +202,13 @@ export default async function DashboardPage() {
           tone="warning"
         />
         <StatCard
-          label="Estimated Profit"
+          label="Est. Profit"
           value={formatCurrency(data.profit, currency)}
           icon={TrendingUp}
           tone={data.profit >= 0 ? "success" : "destructive"}
         />
         <StatCard
-          label="Documents expiring ≤ 30 days"
+          label="Docs expiring ≤ 30d"
           value={data.expiringDocs}
           icon={AlertTriangle}
           tone={data.expiringDocs > 0 ? "warning" : "default"}
@@ -216,53 +216,80 @@ export default async function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Loads</CardTitle>
+        <CardHeader className="pb-2 px-4 sm:px-6">
+          <CardTitle className="text-base sm:text-lg">Recent Loads</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 sm:px-6 pb-0">
           {data.recentLoads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground px-4 sm:px-0 pb-4">
               No loads recorded yet.
             </p>
           ) : (
             <Suspense>
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Reference</TH>
-                    <TH>Customer</TH>
-                    <TH>Route</TH>
-                    <TH>Driver</TH>
-                    <TH>Status</TH>
-                    <TH className="text-right">Price</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {data.recentLoads.map((l) => (
-                    <TR key={l.id}>
-                      <TD className="font-medium">{l.referenceNumber}</TD>
-                      <TD>{l.customer?.name ?? "—"}</TD>
-                      <TD className="max-w-[280px] truncate">
-                        {l.pickupCity ?? l.pickupAddress} →{" "}
-                        {l.deliveryCity ?? l.deliveryAddress}
-                      </TD>
-                      <TD>
-                        {l.driver
-                          ? `${l.driver.firstName} ${l.driver.lastName}`
-                          : "—"}
-                      </TD>
-                      <TD>
-                        <Badge variant={STATUS_VARIANT[l.status] ?? "default"}>
-                          {l.status.replace(/_/g, " ")}
-                        </Badge>
-                      </TD>
-                      <TD className="text-right font-medium">
+              {/* Mobile: card list */}
+              <div className="flex flex-col divide-y sm:hidden">
+                {data.recentLoads.map((l) => (
+                  <div key={l.id} className="px-4 py-3 flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-sm">{l.referenceNumber}</span>
+                      <Badge variant={STATUS_VARIANT[l.status] ?? "default"} className="text-[10px] px-1.5 py-0">
+                        {l.status.replace(/_/g, " ")}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {l.pickupCity ?? l.pickupAddress} → {l.deliveryCity ?? l.deliveryAddress}
+                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {l.driver ? `${l.driver.firstName} ${l.driver.lastName}` : "No driver"}
+                      </span>
+                      <span className="text-xs font-medium">
                         {formatCurrency(l.price, l.currency)}
-                      </TD>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden sm:block">
+                <Table>
+                  <THead>
+                    <TR>
+                      <TH>Reference</TH>
+                      <TH>Customer</TH>
+                      <TH>Route</TH>
+                      <TH>Driver</TH>
+                      <TH>Status</TH>
+                      <TH className="text-right">Price</TH>
                     </TR>
-                  ))}
-                </TBody>
-              </Table>
+                  </THead>
+                  <TBody>
+                    {data.recentLoads.map((l) => (
+                      <TR key={l.id}>
+                        <TD className="font-medium">{l.referenceNumber}</TD>
+                        <TD>{l.customer?.name ?? "—"}</TD>
+                        <TD className="max-w-[280px] truncate">
+                          {l.pickupCity ?? l.pickupAddress} →{" "}
+                          {l.deliveryCity ?? l.deliveryAddress}
+                        </TD>
+                        <TD>
+                          {l.driver
+                            ? `${l.driver.firstName} ${l.driver.lastName}`
+                            : "—"}
+                        </TD>
+                        <TD>
+                          <Badge variant={STATUS_VARIANT[l.status] ?? "default"}>
+                            {l.status.replace(/_/g, " ")}
+                          </Badge>
+                        </TD>
+                        <TD className="text-right font-medium">
+                          {formatCurrency(l.price, l.currency)}
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              </div>
             </Suspense>
           )}
         </CardContent>
