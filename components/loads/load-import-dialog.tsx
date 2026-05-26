@@ -480,13 +480,13 @@ export function LoadImportDialog({
                   />
                 </Field>
                 <div className="grid gap-3 sm:grid-cols-4">
-                  <Field name="weightKg" label="Weight (lbs)">
+                  <Field name="weightKg" label={`Weight (${d.weightLbs != null && d.weightKg == null ? "lbs" : "lbs"})`}>
                     <Input
                       name="weightKg"
                       type="number"
                       step="any"
                       min="0"
-                      defaultValue={d.weightKg ?? ""}
+                      defaultValue={d.weightLbs ?? d.weightKg ?? ""}
                     />
                   </Field>
                   <Field name="volumeM3" label="Volume (m³)">

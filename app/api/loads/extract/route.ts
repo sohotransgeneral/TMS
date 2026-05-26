@@ -70,7 +70,7 @@ EXTRACTION RULES (read carefully):
 4. ADDRESSES: keep street address clean (no city/state in pickupAddress). Always extract state code separately for US.
 5. DATES: prefer ISO8601 with time when known. If only a date is given (no time) use the date with T00:00:00. Years default to 2026 if missing.
 6. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
-7. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings.
+7. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings. For weight: ALWAYS fill weightLbs if document shows pounds (lbs, LBS, lb, LB). Fill weightKg ONLY if document explicitly states kg/KG. Never leave both null if a weight is visible.
 8. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
 9. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
 
