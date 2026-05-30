@@ -305,7 +305,10 @@ export async function DriverFinancialReport({
     baseSalary = salaryFixedAmount ?? 0;
   } else if (type === "FIXED_WEEKLY") {
     const msInPeriod = to.getTime() - from.getTime();
-    const weeksInPeriod = Math.max(1, Math.round(msInPeriod / (7 * 24 * 3600 * 1000)));
+    const weeksInPeriod = Math.max(
+      1,
+      Math.round(msInPeriod / (7 * 24 * 3600 * 1000)),
+    );
     baseSalary = (salaryFixedAmount ?? 0) * weeksInPeriod;
   } else {
     baseSalary = salaryPerKm ? totalKm * salaryPerKm : 0;
@@ -483,7 +486,10 @@ export async function DriverFinancialReport({
               />
             )}
             {type === "FIXED" && (
-              <Row label="Fixed salary (monthly)" value={fmt(baseSalary, currency)} />
+              <Row
+                label="Fixed salary (monthly)"
+                value={fmt(baseSalary, currency)}
+              />
             )}
             {type === "FIXED_WEEKLY" && (
               <Row

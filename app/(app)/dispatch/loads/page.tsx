@@ -248,16 +248,28 @@ export default async function LoadsPage({
                     {l.pickupCompanyName ?? "—"}
                   </TableCell>
                   <TableCell>{l.pickupCity ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.pickupState ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.pickupCountry ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.pickupZip ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {l.pickupState ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {l.pickupCountry ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {l.pickupZip ?? "—"}
+                  </TableCell>
                   <TableCell className="max-w-[160px] truncate">
                     {l.deliveryCompanyName ?? "—"}
                   </TableCell>
                   <TableCell>{l.deliveryCity ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.deliveryState ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.deliveryCountry ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{l.deliveryZip ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {l.deliveryState ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {l.deliveryCountry ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {l.deliveryZip ?? "—"}
+                  </TableCell>
                   <TableCell>
                     <LoadStatusBadge status={l.status} />
                   </TableCell>

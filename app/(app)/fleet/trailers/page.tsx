@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 export default function TrailersPage() {
   redirect("/fleet/trucks");
 }
-import { PageHeader } from "@/components/dashboard/page-header";
+
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { Pagination } from "@/components/ui/pagination";

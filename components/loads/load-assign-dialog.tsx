@@ -164,9 +164,6 @@ export function LoadAssignDialog({
   );
 }
 
-type Opt = { id: string; label: string };
-
-export function LoadAssignDialog({
   loadId,
   current,
   drivers,
