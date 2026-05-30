@@ -90,7 +90,9 @@ export function LoadAssignDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Assign Resources</DialogTitle>
-          <DialogDescription>Select driver, truck and trailer.</DialogDescription>
+          <DialogDescription>
+            Select driver, truck and trailer.
+          </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="grid gap-4">
           <input type="hidden" name="id" value={loadId} />

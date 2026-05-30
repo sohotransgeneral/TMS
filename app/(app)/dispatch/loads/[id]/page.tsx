@@ -59,7 +59,6 @@ export default async function LoadDetailPage({
   const [drivers, trucks, trailers] = await Promise.all([
     prisma.driverProfile.findMany({
       where,
-      include: { user: { select: { name: true } } },
       select: {
         id: true,
         firstName: true,

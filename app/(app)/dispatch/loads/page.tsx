@@ -107,7 +107,7 @@ export default async function LoadsPage({
       }),
       prisma.driverProfile.findMany({
         where: companyWhere,
-        include: { user: { select: { name: true } } },
+        select: { id: true, user: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
       }),
       prisma.truck.findMany({
