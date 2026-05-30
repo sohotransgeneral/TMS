@@ -1,6 +1,8 @@
-import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/session";
-import { parseListParams, buildSearch } from "@/lib/action-helpers";
+import { redirect } from "next/navigation";
+
+export default function TrailersPage() {
+  redirect("/fleet/trucks");
+}
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SearchInput } from "@/components/ui/search-input";
 import { FilterSelect } from "@/components/ui/filter-select";

@@ -326,6 +326,12 @@ model DriverProfile {
   rating             Float?       @default(5)
   internalNotes      String?
 
+  // Assigned vehicle
+  truckId            String?      @unique @db.ObjectId
+  truck              Truck?       @relation("DriverTruck", fields: [truckId], references: [id], onDelete: SetNull)
+  trailerId          String?      @unique @db.ObjectId
+  trailer            Trailer?     @relation("DriverTrailer", fields: [trailerId], references: [id], onDelete: SetNull)
+
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -380,6 +386,7 @@ model Truck {
 
   status          TruckStatus   @default(AVAILABLE)
   notes           String?
+  fleetNumber     Int?
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -390,6 +397,7 @@ model Truck {
   fuelEntries     FuelEntry[]
   gpsLocations    GPSLocation[]
   permits         TruckPermit[]
+  assignedDriver  DriverProfile? @relation("DriverTruck")
 
   @@unique([companyId, plateNumber])
   @@index([companyId, status])
@@ -412,12 +420,14 @@ model Trailer {
 
   status             TrailerStatus @default(AVAILABLE)
   notes              String?
+  fleetNumber        Int?
 
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
   loads              Load[]
   maintenances       Maintenance[]
+  assignedDriver     DriverProfile? @relation("DriverTrailer")
 
   @@unique([companyId, plateNumber])
   @@index([companyId, status])

@@ -42,19 +42,25 @@ type UserRow = {
     taxCass: number | null;
     taxImpozit: number | null;
     internalNotes: string | null;
+    truckId?: string | null;
+    trailerId?: string | null;
   } | null;
 };
 
 export function UserRowActions({
   user,
   isSelf,
+  trucks = [],
+  trailers = [],
 }: {
   user: UserRow;
   isSelf: boolean;
+  trucks?: { id: string; label: string }[];
+  trailers?: { id: string; label: string }[];
 }) {
   return (
     <div className="flex items-center justify-end gap-1">
-      <EditUserButton user={user} />
+      <EditUserButton user={user} trucks={trucks} trailers={trailers} />
       {!isSelf && (
         <>
           <ConfirmDialog

@@ -98,6 +98,8 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
         taxCass: toNum(raw.taxCass),
         taxImpozit: toNum(raw.taxImpozit),
         internalNotes: typeof raw.internalNotes === "string" && raw.internalNotes.trim() ? raw.internalNotes.trim() : null,
+        truckId: typeof raw.driverTruckId === "string" && raw.driverTruckId ? raw.driverTruckId : null,
+        trailerId: typeof raw.driverTrailerId === "string" && raw.driverTrailerId ? raw.driverTrailerId : null,
       },
     });
     revalidatePath("/admin/drivers");
@@ -222,6 +224,8 @@ export async function updateUser(formData: FormData): Promise<ActionResult> {
       taxCass: toNum(raw.taxCass),
       taxImpozit: toNum(raw.taxImpozit),
       internalNotes: typeof raw.internalNotes === "string" && raw.internalNotes.trim() ? raw.internalNotes.trim() : null,
+      truckId: typeof raw.driverTruckId === "string" && raw.driverTruckId ? raw.driverTruckId : null,
+      trailerId: typeof raw.driverTrailerId === "string" && raw.driverTrailerId ? raw.driverTrailerId : null,
     };
     await prisma.driverProfile.upsert({
       where: { userId: id },

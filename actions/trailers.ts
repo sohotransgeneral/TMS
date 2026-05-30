@@ -21,8 +21,15 @@ export async function createTrailer(formData: FormData): Promise<ActionResult> {
   });
   if (exists) return failure("A trailer with this number already exists.");
 
+  const maxTrailer = await prisma.trailer.findFirst({
+    where: { companyId: me.companyId },
+    orderBy: { fleetNumber: "desc" },
+    select: { fleetNumber: true },
+  });
+  const fleetNumber = (maxTrailer?.fleetNumber ?? 0) + 1;
+
   const trailer = await prisma.trailer.create({
-    data: { ...parsed.data, companyId: me.companyId },
+    data: { ...parsed.data, companyId: me.companyId, fleetNumber },
   });
 
   await logAudit({
@@ -33,7 +40,7 @@ export async function createTrailer(formData: FormData): Promise<ActionResult> {
     entityId: trailer.id,
   });
 
-  revalidatePath("/fleet/trailers");
+  revalidatePath("/fleet/trucks");
   return success({ id: trailer.id }, "Trailer created.");
 }
 
@@ -62,7 +69,7 @@ export async function updateTrailer(formData: FormData): Promise<ActionResult> {
     entityId: id,
   });
 
-  revalidatePath("/fleet/trailers");
+  revalidatePath("/fleet/trucks");
   return success(undefined, "Trailer updated.");
 }
 
@@ -83,6 +90,6 @@ export async function deleteTrailer(id: string): Promise<ActionResult> {
     entityId: id,
   });
 
-  revalidatePath("/fleet/trailers");
+  revalidatePath("/fleet/trucks");
   return success(undefined, "Trailer deleted.");
 }

@@ -21,8 +21,15 @@ export async function createTruck(formData: FormData): Promise<ActionResult> {
   });
   if (exists) return failure("A truck with this number already exists.");
 
+  const maxTruck = await prisma.truck.findFirst({
+    where: { companyId: me.companyId },
+    orderBy: { fleetNumber: "desc" },
+    select: { fleetNumber: true },
+  });
+  const fleetNumber = (maxTruck?.fleetNumber ?? 0) + 1;
+
   const truck = await prisma.truck.create({
-    data: { ...parsed.data, companyId: me.companyId },
+    data: { ...parsed.data, companyId: me.companyId, fleetNumber },
   });
 
   await logAudit({

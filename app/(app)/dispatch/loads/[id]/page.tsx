@@ -60,16 +60,17 @@ export default async function LoadDetailPage({
     prisma.driverProfile.findMany({
       where,
       include: { user: { select: { name: true } } },
+      select: { id: true, firstName: true, lastName: true, truckId: true, trailerId: true, user: { select: { name: true } } },
     }),
     prisma.truck.findMany({
       where,
       orderBy: { plateNumber: "asc" },
-      select: { id: true, plateNumber: true },
+      select: { id: true, plateNumber: true, fleetNumber: true },
     }),
     prisma.trailer.findMany({
       where,
       orderBy: { plateNumber: "asc" },
-      select: { id: true, plateNumber: true },
+      select: { id: true, plateNumber: true, fleetNumber: true },
     }),
   ]);
 
@@ -115,10 +116,18 @@ export default async function LoadDetailPage({
                 id: d.id,
                 label: d.user?.name ?? "Driver",
               }))}
-              trucks={trucks.map((t) => ({ id: t.id, label: t.plateNumber }))}
+              trucks={trucks.map((t) => ({
+                id: t.id,
+                label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+              }))}
               trailers={trailers.map((t) => ({
                 id: t.id,
-                label: t.plateNumber,
+                label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+              }))}
+              driverAssignments={drivers.map((d) => ({
+                id: d.id,
+                truckId: d.truckId,
+                trailerId: d.trailerId,
               }))}
               trigger={
                 <Button variant="outline">

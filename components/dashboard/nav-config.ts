@@ -96,15 +96,9 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: "/fleet/trucks",
-        label: "Trucks",
+        label: "Trucks & Trailers",
         icon: Truck,
         permissions: ["trucks:read"],
-      },
-      {
-        href: "/fleet/trailers",
-        label: "Trailers",
-        icon: Container,
-        permissions: ["trailers:read"],
       },
       {
         href: "/fleet/maintenance",

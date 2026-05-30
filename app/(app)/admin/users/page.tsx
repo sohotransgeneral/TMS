@@ -47,7 +47,7 @@ export default async function UsersPage({
     ...buildSearch(q, ["name", "email", "phone"]),
   };
 
-  const [users, total, companies, customers] = await Promise.all([
+  const [users, total, companies, customers, trucks, trailers] = await Promise.all([
     prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -86,6 +86,8 @@ export default async function UsersPage({
             taxCass: true,
             taxImpozit: true,
             internalNotes: true,
+            truckId: true,
+            trailerId: true,
           },
         },
       },
@@ -102,6 +104,20 @@ export default async function UsersPage({
           where: { companyId: me.companyId },
           select: { id: true, name: true, email: true, userId: true },
           orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
+    me.companyId
+      ? prisma.truck.findMany({
+          where: { companyId: me.companyId },
+          select: { id: true, plateNumber: true, fleetNumber: true },
+          orderBy: { fleetNumber: "asc" },
+        })
+      : Promise.resolve([]),
+    me.companyId
+      ? prisma.trailer.findMany({
+          where: { companyId: me.companyId },
+          select: { id: true, plateNumber: true, fleetNumber: true },
+          orderBy: { fleetNumber: "asc" },
         })
       : Promise.resolve([]),
   ]);
@@ -196,6 +212,14 @@ export default async function UsersPage({
                         driverProfile: u.driverProfile ?? null,
                       }}
                       isSelf={u.id === me.id}
+                      trucks={trucks.map((t) => ({
+                        id: t.id,
+                        label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+                      }))}
+                      trailers={trailers.map((t) => ({
+                        id: t.id,
+                        label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+                      }))}
                     />
                   </TableCell>
                 </TableRow>

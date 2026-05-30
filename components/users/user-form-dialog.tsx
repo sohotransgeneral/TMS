@@ -52,6 +52,8 @@ type UserRow = {
     taxCass: number | null;
     taxImpozit: number | null;
     internalNotes: string | null;
+    truckId?: string | null;
+    trailerId?: string | null;
   } | null;
 };
 
@@ -92,6 +94,8 @@ interface UserFormDialogProps {
   trigger: React.ReactNode;
   companies?: CompanyOpt[];
   customers?: CustomerOpt[];
+  trucks?: { id: string; label: string }[];
+  trailers?: { id: string; label: string }[];
 }
 
 export function UserFormDialog({
@@ -99,6 +103,8 @@ export function UserFormDialog({
   trigger,
   companies = [],
   customers = [],
+  trucks = [],
+  trailers = [],
 }: UserFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(
@@ -532,6 +538,38 @@ export function UserFormDialog({
                   defaultValue={initial?.driverProfile?.internalNotes ?? ""}
                 />
               </Field>
+
+              {/* Vehicle assignment */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field name="driverTruckId" label="Assigned Truck">
+                  <Select
+                    id="driverTruckId"
+                    name="driverTruckId"
+                    defaultValue={initial?.driverProfile?.truckId ?? ""}
+                  >
+                    <option value="">— none —</option>
+                    {trucks.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field name="driverTrailerId" label="Assigned Trailer">
+                  <Select
+                    id="driverTrailerId"
+                    name="driverTrailerId"
+                    defaultValue={initial?.driverProfile?.trailerId ?? ""}
+                  >
+                    <option value="">— none —</option>
+                    {trailers.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
             </>
           )}
           <Field
@@ -591,10 +629,20 @@ export function NewUserButton({
   );
 }
 
-export function EditUserButton({ user }: { user: UserRow }) {
+export function EditUserButton({
+  user,
+  trucks = [],
+  trailers = [],
+}: {
+  user: UserRow;
+  trucks?: { id: string; label: string }[];
+  trailers?: { id: string; label: string }[];
+}) {
   return (
     <UserFormDialog
       initial={user}
+      trucks={trucks}
+      trailers={trailers}
       trigger={
         <Button variant="ghost" size="icon" aria-label="Edit">
           <Pencil className="h-4 w-4" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 
 type Opt = { id: string; label: string };
+type DriverAssignment = { id: string; truckId: string | null; trailerId: string | null };
 
 export type LoadFormInitial = {
   id: string;
@@ -73,12 +74,14 @@ export function LoadForm({
   drivers,
   trucks,
   trailers,
+  driverAssignments = [],
 }: {
   initial?: LoadFormInitial;
   customers: Opt[];
   drivers: Opt[];
   trucks: Opt[];
   trailers: Opt[];
+  driverAssignments?: DriverAssignment[];
 }) {
   const editing = Boolean(initial);
   const router = useRouter();
@@ -87,6 +90,22 @@ export function LoadForm({
     ActionResult | null,
     FormData
   >(action, null);
+
+  const [driverId, setDriverId] = useState(initial?.driverId ?? "");
+  const [truckId, setTruckId] = useState(initial?.truckId ?? "");
+  const [trailerId, setTrailerId] = useState(initial?.trailerId ?? "");
+
+  function handleDriverChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    setDriverId(id);
+    if (id) {
+      const assignment = driverAssignments.find((a) => a.id === id);
+      if (assignment) {
+        setTruckId(assignment.truckId ?? "");
+        setTrailerId(assignment.trailerId ?? "");
+      }
+    }
+  }
 
   useEffect(() => {
     if (!state) return;
@@ -558,7 +577,8 @@ export function LoadForm({
             <Select
               id="driverId"
               name="driverId"
-              defaultValue={initial?.driverId ?? ""}
+              value={driverId}
+              onChange={handleDriverChange}
             >
               <option value="">—</option>
               {drivers.map((d) => (
@@ -572,7 +592,8 @@ export function LoadForm({
             <Select
               id="truckId"
               name="truckId"
-              defaultValue={initial?.truckId ?? ""}
+              value={truckId}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTruckId(e.target.value)}
             >
               <option value="">—</option>
               {trucks.map((t) => (
@@ -586,7 +607,8 @@ export function LoadForm({
             <Select
               id="trailerId"
               name="trailerId"
-              defaultValue={initial?.trailerId ?? ""}
+              value={trailerId}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTrailerId(e.target.value)}
             >
               <option value="">—</option>
               {trailers.map((t) => (
