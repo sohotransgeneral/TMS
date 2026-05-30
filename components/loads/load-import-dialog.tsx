@@ -330,22 +330,27 @@ export function LoadImportDialog({
                     required
                   />
                 </Field>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field name="pickupCity" label="City, State ZIP">
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <Field name="pickupCity" label="City">
                     <Input
                       name="pickupCity"
-                      defaultValue={
-                        [
-                          d.pickupCity,
-                          d.pickupState ? `, ${d.pickupState}` : "",
-                          d.pickupZip ? ` ${d.pickupZip}` : "",
-                        ]
-                          .filter(Boolean)
-                          .join("")
-                          .trim() ||
-                        (d.pickupCity ?? "")
-                      }
-                      placeholder="Houston, TX 77001"
+                      defaultValue={d.pickupCity ?? ""}
+                      placeholder="Houston"
+                    />
+                  </Field>
+                  <Field name="pickupState" label="State">
+                    <Input
+                      name="pickupState"
+                      defaultValue={d.pickupState ?? ""}
+                      placeholder="TX"
+                      maxLength={10}
+                    />
+                  </Field>
+                  <Field name="pickupZip" label="ZIP">
+                    <Input
+                      name="pickupZip"
+                      defaultValue={d.pickupZip ?? ""}
+                      placeholder="77001"
                     />
                   </Field>
                   <Field name="pickupCountry" label="Country">
@@ -405,22 +410,27 @@ export function LoadImportDialog({
                     required
                   />
                 </Field>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field name="deliveryCity" label="City, State ZIP">
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <Field name="deliveryCity" label="City">
                     <Input
                       name="deliveryCity"
-                      defaultValue={
-                        [
-                          d.deliveryCity,
-                          d.deliveryState ? `, ${d.deliveryState}` : "",
-                          d.deliveryZip ? ` ${d.deliveryZip}` : "",
-                        ]
-                          .filter(Boolean)
-                          .join("")
-                          .trim() ||
-                        (d.deliveryCity ?? "")
-                      }
-                      placeholder="Los Angeles, CA 90001"
+                      defaultValue={d.deliveryCity ?? ""}
+                      placeholder="Los Angeles"
+                    />
+                  </Field>
+                  <Field name="deliveryState" label="State">
+                    <Input
+                      name="deliveryState"
+                      defaultValue={d.deliveryState ?? ""}
+                      placeholder="CA"
+                      maxLength={10}
+                    />
+                  </Field>
+                  <Field name="deliveryZip" label="ZIP">
+                    <Input
+                      name="deliveryZip"
+                      defaultValue={d.deliveryZip ?? ""}
+                      placeholder="90001"
                     />
                   </Field>
                   <Field name="deliveryCountry" label="Country">

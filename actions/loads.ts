@@ -69,13 +69,13 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   // Geocode pickup/delivery if coords not provided
   if (!d.pickupLat || !d.pickupLng) {
     const geo = await geocodeAddress(
-      [d.pickupAddress, d.pickupCity, d.pickupCountry].filter(Boolean).join(", "),
+      [d.pickupAddress, d.pickupCity, d.pickupState, d.pickupZip, d.pickupCountry].filter(Boolean).join(", "),
     );
     if (geo) { d.pickupLat = geo.lat; d.pickupLng = geo.lng; }
   }
   if (!d.deliveryLat || !d.deliveryLng) {
     const geo = await geocodeAddress(
-      [d.deliveryAddress, d.deliveryCity, d.deliveryCountry].filter(Boolean).join(", "),
+      [d.deliveryAddress, d.deliveryCity, d.deliveryState, d.deliveryZip, d.deliveryCountry].filter(Boolean).join(", "),
     );
     if (geo) { d.deliveryLat = geo.lat; d.deliveryLng = geo.lng; }
   }
@@ -88,6 +88,8 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       pickupCompanyName: d.pickupCompanyName,
       pickupAddress: d.pickupAddress,
       pickupCity: d.pickupCity,
+      pickupState: d.pickupState,
+      pickupZip: d.pickupZip,
       pickupCountry: d.pickupCountry,
       pickupLat: d.pickupLat,
       pickupLng: d.pickupLng,
@@ -99,6 +101,8 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       deliveryCompanyName: d.deliveryCompanyName,
       deliveryAddress: d.deliveryAddress,
       deliveryCity: d.deliveryCity,
+      deliveryState: d.deliveryState,
+      deliveryZip: d.deliveryZip,
       deliveryCountry: d.deliveryCountry,
       deliveryLat: d.deliveryLat,
       deliveryLng: d.deliveryLng,

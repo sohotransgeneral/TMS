@@ -23,22 +23,22 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
 
   "pickupAddress": "string — full street address line of pickup (number + street). Do NOT include city/state/zip here — those go in their own fields.",
   "pickupCity": "string or null — pickup city only",
-  "pickupState": "string or null — 2-letter US state code if applicable (TX, CA, OH, etc.)",
-  "pickupZip": "string or null — pickup ZIP/postal code",
+  "pickupState": "string or null — 2-letter US state code (TX, CA, OH, NJ, etc.). MANDATORY when a US city is present: extract it from the city line (e.g. 'Newark, NJ 07114' → 'NJ'). Never leave null if the document shows a state.",
+  "pickupZip": "string or null — pickup ZIP/postal code. MANDATORY when present: extract the 5-digit (or ZIP+4) code from the address/city line (e.g. 'Newark, NJ 07114' → '07114'). Never leave null if a postal code is visible.",
   "pickupCountry": "string or null — 2-letter country code (US, CA, MX, RO, DE, etc.); default US for US addresses",
   "pickupDate": "ISO8601 datetime string or null — the CALENDAR DATE of pickup only (e.g. '2026-06-15T00:00:00'). If the document shows a DATE (Mon 6/15, June 15, 06/15/2026) use that date. If ONLY a time window like '0700-1400' or '07:00 to 14:00' is given with no date, set pickupDate to null. Year defaults to 2026.",
-  "pickupWindow": "string or null — ALWAYS extract ANY time range or time instruction here. Examples: '0700-1400', '07:00 to 14:00', 'FCFS 08:00-15:00', 'By Appt', 'ASAP', '09:00 appt', 'Open 6am-2pm'. Even if only one time is given (e.g. 'Appt 10:00') put it here. NEVER leave this null if there is any time information in the pickup section. Do NOT put time windows in pickupDate or pickupNotes.",
+  "pickupWindow": "string or null — ALWAYS extract ANY time range or time instruction here, NORMALIZED to HH:MM-HH:MM 24-hour format. Convert '0700-1400' → '07:00-14:00', '7a-2p' → '07:00-14:00', '07:00 to 14:00' → '07:00-14:00', '8 AM - 4 PM' → '08:00-16:00'. Keep FCFS/By Appt/ASAP prefixes if present (e.g. 'FCFS 08:00-15:00'). Even if only one time is given (e.g. 'Appt 10:00') put it here as '10:00'. NEVER leave this null if there is any time information in the pickup section. Do NOT put time windows in pickupDate or pickupNotes.",
   "pickupContact": "string or null — person's name listed as pickup contact, dispatcher, shipping clerk, warehouse contact. NOT a company name.",
   "pickupPhone": "string or null — phone number for pickup location/contact, digits as written (e.g. '+1 713-555-0123'). Strip 'Tel:', 'Phone:' prefixes.",
   "pickupNotes": "string or null — ONLY truly special instructions: PU#, dock #, tarps required, PPE, driver-assist, lumper, freezer temp settings, gate codes, references like 'PU# HOUSTON TRANSFER'. Do NOT duplicate window/contact/phone here. Multiple notes separated by '; '.",
 
   "deliveryAddress": "string — full street address of delivery (number + street only)",
   "deliveryCity": "string or null",
-  "deliveryState": "string or null — 2-letter US state code",
-  "deliveryZip": "string or null",
+  "deliveryState": "string or null — 2-letter US state code. MANDATORY when a US city is present: extract from the city line (e.g. 'Los Angeles, CA 90001' → 'CA'). Never leave null if a state is shown.",
+  "deliveryZip": "string or null — delivery ZIP/postal code. MANDATORY when present: extract from the address/city line (e.g. 'Los Angeles, CA 90001' → '90001'). Never leave null if a postal code is visible.",
   "deliveryCountry": "string or null — 2-letter code; default US",
   "deliveryDate": "ISO8601 datetime string or null — same rules as pickupDate",
-  "deliveryWindow": "string or null — same as pickupWindow: ALWAYS extract any time range or time instruction here. '0700-1400', '07:00 to 14:00', 'FCFS', 'By Appt', 'ASAP', 'Close 15:00', etc. NEVER put time windows in deliveryDate or deliveryNotes.",
+  "deliveryWindow": "string or null — same as pickupWindow: ALWAYS extract any time range here, NORMALIZED to HH:MM-HH:MM 24-hour format. '0700-1400' → '07:00-14:00', '8 AM - 4 PM' → '08:00-16:00'. Keep FCFS/By Appt/ASAP if present. NEVER put time windows in deliveryDate or deliveryNotes.",
   "deliveryContact": "string or null — person's name for delivery contact",
   "deliveryPhone": "string or null — phone for delivery contact/location",
   "deliveryNotes": "string or null — only special delivery instructions (delivery #, appointment confirmations, dock, signature required, etc.)",
@@ -66,8 +66,7 @@ EXTRACTION RULES (read carefully):
    - pickupNotes: "PU# ABC123; Tarps required"
 2. TIME WINDOWS ARE MANDATORY: Any pattern like "NNNN-NNNN", "NN:NN to NN:NN", "NN:NN-NN:NN", "FCFS", "By Appt", "ASAP", "Open until NN:NN" MUST go into pickupWindow / deliveryWindow. NEVER in pickupDate/deliveryDate (dates are calendar days, not time-of-day ranges). NEVER in notes.
 3. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
-3. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
-4. ADDRESSES: keep street address clean (no city/state in pickupAddress). Always extract state code separately for US.
+4. ADDRESSES: keep street address clean (no city/state in pickupAddress). ALWAYS split a "City, State ZIP" line into THREE separate fields. Examples: "Newark, NJ 07114" → city="Newark", state="NJ", zip="07114". "Los Angeles, CA 90001-1234" → city="Los Angeles", state="CA", zip="90001-1234". "Houston TX 77001" → city="Houston", state="TX", zip="77001". NEVER leave state or zip null when they appear anywhere in the location block.
 5. DATES: prefer ISO8601 with time when known. If only a date is given (no time) use the date with T00:00:00. Years default to 2026 if missing.
 6. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
 7. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings. For weight: ALWAYS fill weightLbs if document shows pounds (lbs, LBS, lb, LB). Fill weightKg ONLY if document explicitly states kg/KG. Never leave both null if a weight is visible.
