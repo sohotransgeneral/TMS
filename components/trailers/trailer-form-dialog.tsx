@@ -27,10 +27,11 @@ import type { ActionResult } from "@/lib/action-helpers";
 export type TrailerRow = {
   id: string;
   plateNumber: string;
+  fleetNumber: number | null;
+  pairedTruckId: string | null;
   type: string | null;
   capacityKg: number | null;
   volumeM3: number | null;
-  axles: number | null;
   insuranceExpiresAt: Date | string | null;
   itpExpiresAt: Date | string | null;
   status: string;
@@ -57,9 +58,11 @@ const toDateInput = (d: Date | string | null | undefined) =>
 
 export function TrailerFormDialog({
   initial,
+  trucks = [],
   trigger,
 }: {
   initial?: TrailerRow;
+  trucks?: { id: string; label: string }[];
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -93,7 +96,16 @@ export function TrailerFormDialog({
         <form action={formAction} className="grid gap-4">
           {editing && <input type="hidden" name="id" value={initial!.id} />}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field name="fleetNumber" label="Fleet # (ID)" error={e.fleetNumber}>
+              <Input
+                id="fleetNumber"
+                name="fleetNumber"
+                type="number"
+                defaultValue={initial?.fleetNumber ?? ""}
+                placeholder="auto"
+              />
+            </Field>
             <Field
               name="plateNumber"
               label="Plate Number"
@@ -122,7 +134,7 @@ export function TrailerFormDialog({
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field name="capacityKg" label="Capacity (kg)" error={e.capacityKg}>
               <Input
                 id="capacityKg"
@@ -138,14 +150,6 @@ export function TrailerFormDialog({
                 type="number"
                 step="0.1"
                 defaultValue={initial?.volumeM3 ?? ""}
-              />
-            </Field>
-            <Field name="axles" label="Axles" error={e.axles}>
-              <Input
-                id="axles"
-                name="axles"
-                type="number"
-                defaultValue={initial?.axles ?? ""}
               />
             </Field>
           </div>
@@ -191,6 +195,21 @@ export function TrailerFormDialog({
             </Select>
           </Field>
 
+          <Field name="pairedTruckId" label="Paired Truck" error={e.pairedTruckId}>
+            <Select
+              id="pairedTruckId"
+              name="pairedTruckId"
+              defaultValue={initial?.pairedTruckId ?? ""}
+            >
+              <option value="">— none —</option>
+              {trucks.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
           <DialogFooter>
             <Button
               type="button"
@@ -209,9 +228,10 @@ export function TrailerFormDialog({
   );
 }
 
-export function NewTrailerButton() {
+export function NewTrailerButton({ trucks = [] }: { trucks?: { id: string; label: string }[] }) {
   return (
     <TrailerFormDialog
+      trucks={trucks}
       trigger={
         <Button>
           <Plus className="h-4 w-4" /> New Trailer
@@ -221,11 +241,12 @@ export function NewTrailerButton() {
   );
 }
 
-export function TrailerRowActions({ trailer }: { trailer: TrailerRow }) {
+export function TrailerRowActions({ trailer, trucks = [] }: { trailer: TrailerRow; trucks?: { id: string; label: string }[] }) {
   return (
     <div className="flex items-center justify-end gap-1">
       <TrailerFormDialog
         initial={trailer}
+        trucks={trucks}
         trigger={
           <Button variant="ghost" size="icon" aria-label="Edit">
             <Pencil className="h-4 w-4" />

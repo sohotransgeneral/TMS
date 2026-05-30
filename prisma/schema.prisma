@@ -387,6 +387,7 @@ model Truck {
   status          TruckStatus   @default(AVAILABLE)
   notes           String?
   fleetNumber     Int?
+  pairedTrailerId String?       @db.ObjectId
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -421,6 +422,7 @@ model Trailer {
   status             TrailerStatus @default(AVAILABLE)
   notes              String?
   fleetNumber        Int?
+  pairedTruckId      String?       @db.ObjectId
 
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt

@@ -24,6 +24,8 @@ import type { ActionResult } from "@/lib/action-helpers";
 export type TruckRow = {
   id: string;
   plateNumber: string;
+  fleetNumber: number | null;
+  pairedTrailerId: string | null;
   vin: string | null;
   make: string | null;
   model: string | null;
@@ -51,9 +53,11 @@ const toDateInput = (d: Date | string | null | undefined) =>
 
 export function TruckFormDialog({
   initial,
+  trailers = [],
   trigger,
 }: {
   initial?: TruckRow;
+  trailers?: { id: string; label: string }[];
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -87,7 +91,16 @@ export function TruckFormDialog({
         <form action={formAction} className="grid gap-4">
           {editing && <input type="hidden" name="id" value={initial!.id} />}
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field name="fleetNumber" label="Fleet # (ID)" error={e.fleetNumber}>
+              <Input
+                id="fleetNumber"
+                name="fleetNumber"
+                type="number"
+                defaultValue={initial?.fleetNumber ?? ""}
+                placeholder="auto"
+              />
+            </Field>
             <Field
               name="plateNumber"
               label="Plate Number"
@@ -224,6 +237,21 @@ export function TruckFormDialog({
             />
           </Field>
 
+          <Field name="pairedTrailerId" label="Paired Trailer" error={e.pairedTrailerId}>
+            <Select
+              id="pairedTrailerId"
+              name="pairedTrailerId"
+              defaultValue={initial?.pairedTrailerId ?? ""}
+            >
+              <option value="">— none —</option>
+              {trailers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
           <DialogFooter>
             <Button
               type="button"
@@ -242,9 +270,10 @@ export function TruckFormDialog({
   );
 }
 
-export function NewTruckButton() {
+export function NewTruckButton({ trailers = [] }: { trailers?: { id: string; label: string }[] }) {
   return (
     <TruckFormDialog
+      trailers={trailers}
       trigger={
         <Button>
           <Plus className="h-4 w-4" /> New Truck
@@ -254,11 +283,12 @@ export function NewTruckButton() {
   );
 }
 
-export function TruckRowActions({ truck }: { truck: TruckRow }) {
+export function TruckRowActions({ truck, trailers = [] }: { truck: TruckRow; trailers?: { id: string; label: string }[] }) {
   return (
     <div className="flex items-center justify-end gap-1">
       <TruckFormDialog
         initial={truck}
+        trailers={trailers}
         trigger={
           <Button variant="ghost" size="icon" aria-label="Edit">
             <Pencil className="h-4 w-4" />

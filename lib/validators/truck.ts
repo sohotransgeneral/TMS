@@ -14,6 +14,8 @@ export const truckSchema = z.object({
   mileage: fields.optionalNumber,
   fuelType: fields.optionalString,
   avgConsumption: fields.optionalNumber,
+  fleetNumber: fields.optionalNumber,
+  pairedTrailerId: fields.optionalString,
 
   insuranceExpiresAt: fields.optionalDate,
   itpExpiresAt: fields.optionalDate,

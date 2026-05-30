@@ -26,7 +26,7 @@ export async function createTrailer(formData: FormData): Promise<ActionResult> {
     orderBy: { fleetNumber: "desc" },
     select: { fleetNumber: true },
   });
-  const fleetNumber = (maxTrailer?.fleetNumber ?? 0) + 1;
+  const fleetNumber = parsed.data.fleetNumber ?? (maxTrailer?.fleetNumber ?? 0) + 1;
 
   const trailer = await prisma.trailer.create({
     data: { ...parsed.data, companyId: me.companyId, fleetNumber },

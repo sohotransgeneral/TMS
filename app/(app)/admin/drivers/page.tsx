@@ -129,7 +129,9 @@ export default async function DriversPage({
             icon={<IdCard className="h-10 w-10" />}
             title="No drivers found"
             description="Add your first driver to assign loads."
-            action={<NewDriverButton trucks={truckOpts} trailers={trailerOpts} />}
+            action={
+              <NewDriverButton trucks={truckOpts} trailers={trailerOpts} />
+            }
           />
         ) : (
           <Table>

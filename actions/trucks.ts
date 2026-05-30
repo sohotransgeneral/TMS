@@ -26,7 +26,7 @@ export async function createTruck(formData: FormData): Promise<ActionResult> {
     orderBy: { fleetNumber: "desc" },
     select: { fleetNumber: true },
   });
-  const fleetNumber = (maxTruck?.fleetNumber ?? 0) + 1;
+  const fleetNumber = parsed.data.fleetNumber ?? (maxTruck?.fleetNumber ?? 0) + 1;
 
   const truck = await prisma.truck.create({
     data: { ...parsed.data, companyId: me.companyId, fleetNumber },

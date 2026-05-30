@@ -106,8 +106,8 @@ export default async function TrucksPage({
         description="Company fleet."
         action={
           <div className="flex gap-2">
-            <NewTrailerButton />
-            <NewTruckButton />
+            <NewTrailerButton trucks={truckOpts} />
+            <NewTruckButton trailers={trailerOpts} />
           </div>
         }
       />
@@ -214,7 +214,7 @@ export default async function TrucksPage({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <TruckRowActions truck={t} />
+                        <TruckRowActions truck={t} trailers={trailerOpts} />
                       </TableCell>
                     </TableRow>
                   );
@@ -243,7 +243,7 @@ export default async function TrucksPage({
               icon={<Container className="h-10 w-10" />}
               title="No trailers found"
               description="Add your first trailer."
-              action={<NewTrailerButton />}
+              action={<NewTrailerButton trucks={truckOpts} />}
             />
           ) : (
             <Table>
@@ -331,7 +331,7 @@ export default async function TrucksPage({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <TrailerRowActions trailer={tr} />
+                        <TrailerRowActions trailer={tr} trucks={truckOpts} />
                       </TableCell>
                     </TableRow>
                   );
