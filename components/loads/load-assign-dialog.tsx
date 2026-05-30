@@ -164,13 +164,6 @@ export function LoadAssignDialog({
   );
 }
 
-  loadId,
-  current,
-  drivers,
-  trucks,
-  trailers,
-  trigger,
-}: {
   loadId: string;
   current: {
     driverId?: string | null;
