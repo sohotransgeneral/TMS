@@ -18,7 +18,11 @@ import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 
 type Opt = { id: string; label: string };
-type DriverAssignment = { id: string; truckId: string | null; trailerId: string | null };
+type DriverAssignment = {
+  id: string;
+  truckId: string | null;
+  trailerId: string | null;
+};
 
 export function LoadAssignDialog({
   loadId,
@@ -113,7 +117,9 @@ export function LoadAssignDialog({
               id="truckId"
               name="truckId"
               value={truckId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTruckId(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setTruckId(e.target.value)
+              }
             >
               <option value="">— no truck —</option>
               {trucks.map((t) => (
@@ -128,7 +134,9 @@ export function LoadAssignDialog({
               id="trailerId"
               name="trailerId"
               value={trailerId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTrailerId(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setTrailerId(e.target.value)
+              }
             >
               <option value="">— no trailer —</option>
               {trailers.map((t) => (
@@ -155,7 +163,6 @@ export function LoadAssignDialog({
     </Dialog>
   );
 }
-
 
 type Opt = { id: string; label: string };
 

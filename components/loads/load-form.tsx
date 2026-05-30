@@ -13,7 +13,11 @@ import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 
 type Opt = { id: string; label: string };
-type DriverAssignment = { id: string; truckId: string | null; trailerId: string | null };
+type DriverAssignment = {
+  id: string;
+  truckId: string | null;
+  trailerId: string | null;
+};
 
 export type LoadFormInitial = {
   id: string;
@@ -21,6 +25,8 @@ export type LoadFormInitial = {
   pickupCompanyName: string | null;
   pickupAddress: string;
   pickupCity: string | null;
+  pickupState: string | null;
+  pickupZip: string | null;
   pickupCountry: string | null;
   pickupDate: Date | string;
   pickupWindow: string | null;
@@ -30,6 +36,8 @@ export type LoadFormInitial = {
   deliveryCompanyName: string | null;
   deliveryAddress: string;
   deliveryCity: string | null;
+  deliveryState: string | null;
+  deliveryZip: string | null;
   deliveryCountry: string | null;
   deliveryDate: Date | string;
   deliveryWindow: string | null;
@@ -170,12 +178,28 @@ export function LoadForm({
             />
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <Field name="pickupCity" label="City" error={e.pickupCity}>
             <Input
               id="pickupCity"
               name="pickupCity"
               defaultValue={initial?.pickupCity ?? ""}
+            />
+          </Field>
+          <Field name="pickupState" label="State" error={e.pickupState}>
+            <Input
+              id="pickupState"
+              name="pickupState"
+              placeholder="TX"
+              maxLength={10}
+              defaultValue={initial?.pickupState ?? ""}
+            />
+          </Field>
+          <Field name="pickupZip" label="ZIP" error={e.pickupZip}>
+            <Input
+              id="pickupZip"
+              name="pickupZip"
+              defaultValue={initial?.pickupZip ?? ""}
             />
           </Field>
           <Field name="pickupCountry" label="Country" error={e.pickupCountry}>
@@ -185,6 +209,8 @@ export function LoadForm({
               defaultValue={initial?.pickupCountry ?? "US"}
             />
           </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field
             name="pickupDate"
             label="Date & Time"
@@ -285,12 +311,28 @@ export function LoadForm({
             />
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <Field name="deliveryCity" label="City" error={e.deliveryCity}>
             <Input
               id="deliveryCity"
               name="deliveryCity"
               defaultValue={initial?.deliveryCity ?? ""}
+            />
+          </Field>
+          <Field name="deliveryState" label="State" error={e.deliveryState}>
+            <Input
+              id="deliveryState"
+              name="deliveryState"
+              placeholder="CA"
+              maxLength={10}
+              defaultValue={initial?.deliveryState ?? ""}
+            />
+          </Field>
+          <Field name="deliveryZip" label="ZIP" error={e.deliveryZip}>
+            <Input
+              id="deliveryZip"
+              name="deliveryZip"
+              defaultValue={initial?.deliveryZip ?? ""}
             />
           </Field>
           <Field
@@ -304,6 +346,8 @@ export function LoadForm({
               defaultValue={initial?.deliveryCountry ?? ""}
             />
           </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field
             name="deliveryDate"
             label="Date & Time"
@@ -593,7 +637,9 @@ export function LoadForm({
               id="truckId"
               name="truckId"
               value={truckId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTruckId(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setTruckId(e.target.value)
+              }
             >
               <option value="">—</option>
               {trucks.map((t) => (
@@ -608,7 +654,9 @@ export function LoadForm({
               id="trailerId"
               name="trailerId"
               value={trailerId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTrailerId(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setTrailerId(e.target.value)
+              }
             >
               <option value="">—</option>
               {trailers.map((t) => (

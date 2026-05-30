@@ -411,7 +411,8 @@ export function UserFormDialog({
                   >
                     <option value="PER_MI">Per Mile</option>
                     <option value="PERCENT_GROSS">% of Gross</option>
-                    <option value="FIXED">Fixed Salary</option>
+                    <option value="FIXED_WEEKLY">Fixed — per week</option>
+                    <option value="FIXED">Fixed — per month</option>
                   </Select>
                 </Field>
                 <Field
@@ -444,7 +445,7 @@ export function UserFormDialog({
                 </Field>
                 <Field
                   name="salaryFixedAmount"
-                  label="Fixed amount per month"
+                  label="Fixed amount (month or week)"
                   error={errors.salaryFixedAmount}
                 >
                   <Input

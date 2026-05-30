@@ -492,6 +492,8 @@ model Load {
   pickupCompanyName String?  // shipper company
   pickupAddress   String
   pickupCity      String?
+  pickupState     String?   // 2-letter state/province code
+  pickupZip       String?
   pickupCountry   String?
   pickupLat       Float?
   pickupLng       Float?
@@ -505,6 +507,8 @@ model Load {
   deliveryCompanyName String? // receiver company
   deliveryAddress String
   deliveryCity    String?
+  deliveryState   String?   // 2-letter state/province code
+  deliveryZip     String?
   deliveryCountry String?
   deliveryLat     Float?
   deliveryLng     Float?

@@ -26,12 +26,23 @@ export default async function EditLoadPage({
     }),
     prisma.driverProfile.findMany({
       where,
-      select: { id: true, truckId: true, trailerId: true, user: { select: { name: true } } },
+      select: {
+        id: true,
+        truckId: true,
+        trailerId: true,
+        user: { select: { name: true } },
+      },
     }),
     prisma.truck.findMany({
       where,
       orderBy: { fleetNumber: "asc" },
-      select: { id: true, plateNumber: true, make: true, model: true, fleetNumber: true },
+      select: {
+        id: true,
+        plateNumber: true,
+        make: true,
+        model: true,
+        fleetNumber: true,
+      },
     }),
     prisma.trailer.findMany({
       where,

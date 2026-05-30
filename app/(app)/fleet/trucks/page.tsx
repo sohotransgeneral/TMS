@@ -207,7 +207,9 @@ export default async function TrucksPage({
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_VARIANT[t.status] ?? "secondary"}>
+                        <Badge
+                          variant={STATUS_VARIANT[t.status] ?? "secondary"}
+                        >
                           {STATUS_LABELS[t.status] ?? t.status}
                         </Badge>
                       </TableCell>
@@ -230,7 +232,9 @@ export default async function TrucksPage({
         <div className="flex items-center gap-2">
           <Container className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-lg font-semibold">Trailers</h2>
-          <span className="text-sm text-muted-foreground">({trailers.length})</span>
+          <span className="text-sm text-muted-foreground">
+            ({trailers.length})
+          </span>
         </div>
 
         <div className="rounded-lg border bg-card">
@@ -256,17 +260,25 @@ export default async function TrucksPage({
               </TableHeader>
               <TableBody>
                 {trailers.map((tr) => {
-                  const itpD = tr.itpExpiresAt ? daysUntil(tr.itpExpiresAt) : null;
-                  const rcaD = tr.insuranceExpiresAt ? daysUntil(tr.insuranceExpiresAt) : null;
+                  const itpD = tr.itpExpiresAt
+                    ? daysUntil(tr.itpExpiresAt)
+                    : null;
+                  const rcaD = tr.insuranceExpiresAt
+                    ? daysUntil(tr.insuranceExpiresAt)
+                    : null;
                   return (
                     <TableRow key={tr.id}>
                       <TableCell className="text-muted-foreground font-mono text-sm w-12">
                         {tr.fleetNumber != null ? `#${tr.fleetNumber}` : "—"}
                       </TableCell>
-                      <TableCell className="font-medium">{tr.plateNumber}</TableCell>
+                      <TableCell className="font-medium">
+                        {tr.plateNumber}
+                      </TableCell>
                       <TableCell>{tr.type ?? "—"}</TableCell>
                       <TableCell className="text-sm">
-                        {tr.capacityKg ? `${tr.capacityKg.toLocaleString("en")} kg` : "—"}
+                        {tr.capacityKg
+                          ? `${tr.capacityKg.toLocaleString("en")} kg`
+                          : "—"}
                         {tr.volumeM3 ? ` · ${tr.volumeM3} m³` : ""}
                       </TableCell>
                       <TableCell className="text-xs space-y-0.5">
@@ -274,29 +286,43 @@ export default async function TrucksPage({
                           ITP:{" "}
                           {tr.itpExpiresAt ? (
                             itpD! < 0 ? (
-                              <Badge variant="destructive">{formatDate(tr.itpExpiresAt)}</Badge>
+                              <Badge variant="destructive">
+                                {formatDate(tr.itpExpiresAt)}
+                              </Badge>
                             ) : itpD! <= 30 ? (
-                              <Badge variant="outline" className="border-amber-500 text-amber-600">
+                              <Badge
+                                variant="outline"
+                                className="border-amber-500 text-amber-600"
+                              >
                                 {formatDate(tr.itpExpiresAt)}
                               </Badge>
                             ) : (
                               formatDate(tr.itpExpiresAt)
                             )
-                          ) : "—"}
+                          ) : (
+                            "—"
+                          )}
                         </div>
                         <div>
                           RCA:{" "}
                           {tr.insuranceExpiresAt ? (
                             rcaD! < 0 ? (
-                              <Badge variant="destructive">{formatDate(tr.insuranceExpiresAt)}</Badge>
+                              <Badge variant="destructive">
+                                {formatDate(tr.insuranceExpiresAt)}
+                              </Badge>
                             ) : rcaD! <= 30 ? (
-                              <Badge variant="outline" className="border-amber-500 text-amber-600">
+                              <Badge
+                                variant="outline"
+                                className="border-amber-500 text-amber-600"
+                              >
                                 {formatDate(tr.insuranceExpiresAt)}
                               </Badge>
                             ) : (
                               formatDate(tr.insuranceExpiresAt)
                             )
-                          ) : "—"}
+                          ) : (
+                            "—"
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>

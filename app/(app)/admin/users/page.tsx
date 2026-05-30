@@ -47,80 +47,81 @@ export default async function UsersPage({
     ...buildSearch(q, ["name", "email", "phone"]),
   };
 
-  const [users, total, companies, customers, trucks, trailers] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: pageSize,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        telegramChatId: true,
-        role: true,
-        active: true,
-        createdAt: true,
-        company: { select: { name: true } },
-        customerProfiles: { select: { id: true, name: true }, take: 1 },
-        driverProfile: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            cnp: true,
-            licenseNumber: true,
-            licenseCategories: true,
-            licenseIssuedAt: true,
-            licenseExpiresAt: true,
-            tachoCardNumber: true,
-            tachoCardExpiresAt: true,
-            status: true,
-            salaryType: true,
-            salaryPerKm: true,
-            salaryFixedAmount: true,
-            grossPercent: true,
-            commissionRate: true,
-            taxCas: true,
-            taxCass: true,
-            taxImpozit: true,
-            internalNotes: true,
-            truckId: true,
-            trailerId: true,
+  const [users, total, companies, customers, trucks, trailers] =
+    await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          telegramChatId: true,
+          role: true,
+          active: true,
+          createdAt: true,
+          company: { select: { name: true } },
+          customerProfiles: { select: { id: true, name: true }, take: 1 },
+          driverProfile: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              cnp: true,
+              licenseNumber: true,
+              licenseCategories: true,
+              licenseIssuedAt: true,
+              licenseExpiresAt: true,
+              tachoCardNumber: true,
+              tachoCardExpiresAt: true,
+              status: true,
+              salaryType: true,
+              salaryPerKm: true,
+              salaryFixedAmount: true,
+              grossPercent: true,
+              commissionRate: true,
+              taxCas: true,
+              taxCass: true,
+              taxImpozit: true,
+              internalNotes: true,
+              truckId: true,
+              trailerId: true,
+            },
           },
         },
-      },
-    }),
-    prisma.user.count({ where }),
-    isSuperAdmin
-      ? prisma.company.findMany({
-          select: { id: true, name: true },
-          orderBy: { name: "asc" },
-        })
-      : Promise.resolve([]),
-    me.companyId
-      ? prisma.customer.findMany({
-          where: { companyId: me.companyId },
-          select: { id: true, name: true, email: true, userId: true },
-          orderBy: { name: "asc" },
-        })
-      : Promise.resolve([]),
-    me.companyId
-      ? prisma.truck.findMany({
-          where: { companyId: me.companyId },
-          select: { id: true, plateNumber: true, fleetNumber: true },
-          orderBy: { fleetNumber: "asc" },
-        })
-      : Promise.resolve([]),
-    me.companyId
-      ? prisma.trailer.findMany({
-          where: { companyId: me.companyId },
-          select: { id: true, plateNumber: true, fleetNumber: true },
-          orderBy: { fleetNumber: "asc" },
-        })
-      : Promise.resolve([]),
-  ]);
+      }),
+      prisma.user.count({ where }),
+      isSuperAdmin
+        ? prisma.company.findMany({
+            select: { id: true, name: true },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
+      me.companyId
+        ? prisma.customer.findMany({
+            where: { companyId: me.companyId },
+            select: { id: true, name: true, email: true, userId: true },
+            orderBy: { name: "asc" },
+          })
+        : Promise.resolve([]),
+      me.companyId
+        ? prisma.truck.findMany({
+            where: { companyId: me.companyId },
+            select: { id: true, plateNumber: true, fleetNumber: true },
+            orderBy: { fleetNumber: "asc" },
+          })
+        : Promise.resolve([]),
+      me.companyId
+        ? prisma.trailer.findMany({
+            where: { companyId: me.companyId },
+            select: { id: true, plateNumber: true, fleetNumber: true },
+            orderBy: { fleetNumber: "asc" },
+          })
+        : Promise.resolve([]),
+    ]);
 
   return (
     <div className="space-y-6">

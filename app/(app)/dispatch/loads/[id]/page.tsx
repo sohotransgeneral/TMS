@@ -60,7 +60,14 @@ export default async function LoadDetailPage({
     prisma.driverProfile.findMany({
       where,
       include: { user: { select: { name: true } } },
-      select: { id: true, firstName: true, lastName: true, truckId: true, trailerId: true, user: { select: { name: true } } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        truckId: true,
+        trailerId: true,
+        user: { select: { name: true } },
+      },
     }),
     prisma.truck.findMany({
       where,

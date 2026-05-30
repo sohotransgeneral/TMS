@@ -21,7 +21,6 @@ import {
   LoadRefLink,
 } from "@/components/loads/load-status-badge";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { Plus, PackageOpen } from "lucide-react";
 import { LoadImportDialog } from "@/components/loads/load-import-dialog";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
@@ -77,10 +76,27 @@ export default async function LoadsPage({
         orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
-        include: {
+        select: {
+          id: true,
+          referenceNumber: true,
+          status: true,
+          loadType: true,
+          pickupCompanyName: true,
+          pickupCity: true,
+          pickupState: true,
+          pickupZip: true,
+          pickupCountry: true,
+          pickupDate: true,
+          deliveryCompanyName: true,
+          deliveryCity: true,
+          deliveryState: true,
+          deliveryZip: true,
+          deliveryCountry: true,
+          price: true,
+          currency: true,
           customer: { select: { name: true } },
-          driver: { include: { user: { select: { name: true } } } },
-          truck: { select: { plateNumber: true } },
+          truck: { select: { plateNumber: true, fleetNumber: true } },
+          driver: { select: { user: { select: { name: true } } } },
         },
       }),
       prisma.load.count({ where }),
@@ -185,7 +201,7 @@ export default async function LoadsPage({
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card">
+      <div className="overflow-x-auto rounded-lg border bg-card">
         {loads.length === 0 ? (
           <EmptyState
             icon={<PackageOpen className="h-10 w-10" />}
@@ -200,51 +216,58 @@ export default async function LoadsPage({
             }
           />
         ) : (
-          <Table>
+          <Table className="text-xs whitespace-nowrap">
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Traseu</TableHead>
-                <TableHead>Pickup</TableHead>
-                <TableHead>Driver / Truck</TableHead>
+                <TableHead className="w-14">ID</TableHead>
+                <TableHead>Shipper</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead className="w-10">St.</TableHead>
+                <TableHead className="w-10">Cty</TableHead>
+                <TableHead className="w-16">Zip</TableHead>
+                <TableHead>Consignee</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead className="w-10">St.</TableHead>
+                <TableHead className="w-10">Cty</TableHead>
+                <TableHead className="w-16">Zip</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="w-10">LTL</TableHead>
+                <TableHead className="w-12">Truck</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loads.map((l) => (
                 <TableRow key={l.id}>
-                  <TableCell>
+                  <TableCell className="font-mono">
                     <LoadRefLink
                       id={l.id}
                       referenceNumber={l.referenceNumber}
                     />
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {l.customer?.name ?? "—"}
+                  <TableCell className="max-w-[160px] truncate">
+                    {l.pickupCompanyName ?? "—"}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {l.pickupCity ?? l.pickupAddress} →{" "}
-                    {l.deliveryCity ?? l.deliveryAddress}
+                  <TableCell>{l.pickupCity ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.pickupState ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.pickupCountry ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.pickupZip ?? "—"}</TableCell>
+                  <TableCell className="max-w-[160px] truncate">
+                    {l.deliveryCompanyName ?? "—"}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {formatDate(l.pickupDate, true)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {l.driver?.user?.name ?? "—"}
-                    {l.truck && (
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {l.truck.plateNumber}
-                      </span>
-                    )}
-                  </TableCell>
+                  <TableCell>{l.deliveryCity ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.deliveryState ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.deliveryCountry ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{l.deliveryZip ?? "—"}</TableCell>
                   <TableCell>
                     <LoadStatusBadge status={l.status} />
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCurrency(l.price, l.currency)}
+                  <TableCell>{l.loadType === "LTL" ? "Yes" : "No"}</TableCell>
+                  <TableCell className="font-mono">
+                    {l.truck
+                      ? l.truck.fleetNumber != null
+                        ? `${l.truck.fleetNumber}`
+                        : l.truck.plateNumber
+                      : "—"}
                   </TableCell>
                 </TableRow>
               ))}
