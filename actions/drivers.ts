@@ -65,6 +65,8 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
         taxImpozit: d.taxImpozit ?? null,
         status: d.status ?? "AVAILABLE",
         internalNotes: d.internalNotes ?? null,
+        truckId: d.truckId || null,
+        trailerId: d.trailerId || null,
       },
     });
 
@@ -128,6 +130,8 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
         taxCass: d.taxCass ?? null,
         taxImpozit: d.taxImpozit ?? null,
         internalNotes: d.internalNotes ?? null,
+        truckId: d.truckId || null,
+        trailerId: d.trailerId || null,
       },
     });
   } catch (err) {

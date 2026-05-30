@@ -37,6 +37,9 @@ export const driverCreateSchema = z.object({
   taxCass: fields.optionalNumber,
   taxImpozit: fields.optionalNumber,
 
+  truckId: fields.optionalString,
+  trailerId: fields.optionalString,
+
   status: z.enum(statusValues).default("AVAILABLE"),
   internalNotes: fields.optionalString,
 });

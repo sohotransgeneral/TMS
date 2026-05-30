@@ -41,6 +41,8 @@ export type DriverRow = {
   taxCass: number | null;
   taxImpozit: number | null;
   internalNotes: string | null;
+  truckId?: string | null;
+  trailerId?: string | null;
   user: { id: string; email: string; phone: string | null };
 };
 
@@ -60,9 +62,13 @@ function toDateInput(d: Date | string | null | undefined) {
 
 export function DriverFormDialog({
   initial,
+  trucks = [],
+  trailers = [],
   trigger,
 }: {
   initial?: DriverRow;
+  trucks?: { id: string; label: string }[];
+  trailers?: { id: string; label: string }[];
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -406,6 +412,42 @@ export function DriverFormDialog({
             />
           </Field>
 
+          {/* Vehicle assignment */}
+          <div className="grid gap-4 sm:grid-cols-2 border-t pt-4">
+            <Field name="truckId" label="Assigned Truck" error={errors.truckId}>
+              <Select
+                id="truckId"
+                name="truckId"
+                defaultValue={initial?.truckId ?? ""}
+              >
+                <option value="">— none —</option>
+                {trucks.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field
+              name="trailerId"
+              label="Assigned Trailer"
+              error={errors.trailerId}
+            >
+              <Select
+                id="trailerId"
+                name="trailerId"
+                defaultValue={initial?.trailerId ?? ""}
+              >
+                <option value="">— none —</option>
+                {trailers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -424,9 +466,17 @@ export function DriverFormDialog({
   );
 }
 
-export function NewDriverButton() {
+export function NewDriverButton({
+  trucks = [],
+  trailers = [],
+}: {
+  trucks?: { id: string; label: string }[];
+  trailers?: { id: string; label: string }[];
+}) {
   return (
     <DriverFormDialog
+      trucks={trucks}
+      trailers={trailers}
       trigger={
         <Button>
           <Plus className="h-4 w-4" /> New Driver
@@ -436,11 +486,21 @@ export function NewDriverButton() {
   );
 }
 
-export function DriverRowActions({ driver }: { driver: DriverRow }) {
+export function DriverRowActions({
+  driver,
+  trucks = [],
+  trailers = [],
+}: {
+  driver: DriverRow;
+  trucks?: { id: string; label: string }[];
+  trailers?: { id: string; label: string }[];
+}) {
   return (
     <div className="flex items-center justify-end gap-1">
       <DriverFormDialog
         initial={driver}
+        trucks={trucks}
+        trailers={trailers}
         trigger={
           <Button variant="ghost" size="icon" aria-label="Edit">
             <Pencil className="h-4 w-4" />

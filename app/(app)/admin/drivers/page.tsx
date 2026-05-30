@@ -73,7 +73,7 @@ export default async function DriversPage({
     ...buildSearch(q, ["firstName", "lastName", "licenseNumber", "cnp"]),
   };
 
-  const [drivers, total] = await Promise.all([
+  const [drivers, total, trucks, trailers] = await Promise.all([
     prisma.driverProfile.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -82,14 +82,33 @@ export default async function DriversPage({
       include: { user: { select: { id: true, email: true, phone: true } } },
     }),
     prisma.driverProfile.count({ where }),
+    prisma.truck.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      orderBy: { fleetNumber: "asc" },
+      select: { id: true, plateNumber: true, fleetNumber: true },
+    }),
+    prisma.trailer.findMany({
+      where: { companyId: me.companyId ?? undefined },
+      orderBy: { fleetNumber: "asc" },
+      select: { id: true, plateNumber: true, fleetNumber: true },
+    }),
   ]);
+
+  const truckOpts = trucks.map((t) => ({
+    id: t.id,
+    label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+  }));
+  const trailerOpts = trailers.map((t) => ({
+    id: t.id,
+    label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+  }));
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Drivers"
         description="Your team and document validity."
-        action={<NewDriverButton />}
+        action={<NewDriverButton trucks={truckOpts} trailers={trailerOpts} />}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -110,7 +129,7 @@ export default async function DriversPage({
             icon={<IdCard className="h-10 w-10" />}
             title="No drivers found"
             description="Add your first driver to assign loads."
-            action={<NewDriverButton />}
+            action={<NewDriverButton trucks={truckOpts} trailers={trailerOpts} />}
           />
         ) : (
           <Table>
@@ -177,6 +196,8 @@ export default async function DriversPage({
                         ...d,
                         licenseCategories: d.licenseCategories ?? [],
                       }}
+                      trucks={truckOpts}
+                      trailers={trailerOpts}
                     />
                   </TableCell>
                 </TableRow>
