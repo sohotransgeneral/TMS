@@ -68,7 +68,7 @@ export function DriverFormDialog({
 }: {
   initial?: DriverRow;
   trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
-  trailers?: { id: string; label: string }[];
+  trailers?: { id: string; label: string; pairedTruckId?: string | null }[];
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
