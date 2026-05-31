@@ -29,6 +29,9 @@ export type DriverRow = {
   licenseNumber: string | null;
   licenseCategories: string[];
   licenseExpiresAt: Date | string | null;
+  medicalCardNumber: string | null;
+  medicalCardIssuedAt: Date | string | null;
+  medicalCardExpiresAt: Date | string | null;
   tachoCardNumber: string | null;
   tachoCardExpiresAt: Date | string | null;
   status: string;
@@ -273,6 +276,44 @@ export function DriverFormDialog({
                 name="tachoCardExpiresAt"
                 type="date"
                 defaultValue={toDateInput(initial?.tachoCardExpiresAt)}
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field
+              name="medicalCardNumber"
+              label="Medical Card #"
+              error={errors.medicalCardNumber}
+            >
+              <Input
+                id="medicalCardNumber"
+                name="medicalCardNumber"
+                defaultValue={initial?.medicalCardNumber ?? ""}
+              />
+            </Field>
+            <Field
+              name="medicalCardIssuedAt"
+              label="Medical Card Issued"
+              error={errors.medicalCardIssuedAt}
+            >
+              <Input
+                id="medicalCardIssuedAt"
+                name="medicalCardIssuedAt"
+                type="date"
+                defaultValue={toDateInput(initial?.medicalCardIssuedAt)}
+              />
+            </Field>
+            <Field
+              name="medicalCardExpiresAt"
+              label="Medical Card Expires"
+              error={errors.medicalCardExpiresAt}
+            >
+              <Input
+                id="medicalCardExpiresAt"
+                name="medicalCardExpiresAt"
+                type="date"
+                defaultValue={toDateInput(initial?.medicalCardExpiresAt)}
               />
             </Field>
           </div>

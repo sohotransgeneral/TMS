@@ -303,6 +303,9 @@ model DriverProfile {
   licenseCategories  String[]     @default([])
   licenseIssuedAt    DateTime?
   licenseExpiresAt   DateTime?
+  medicalCardNumber   String?
+  medicalCardIssuedAt DateTime?
+  medicalCardExpiresAt DateTime?
 
   // Tachograph card
   tachoCardNumber    String?

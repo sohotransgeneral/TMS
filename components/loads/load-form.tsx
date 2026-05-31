@@ -324,23 +324,27 @@ export function LoadForm({
           </Field>
           <div className="grid grid-cols-3 gap-2 items-end">
             <div className="col-span-2">
-            <Field
-            name="pickupDate"
-            label="Date & Time"
-            required
-            error={e.pickupDate}
-          >
-            <Input
-              id="pickupDate"
-              name="pickupDate"
-              type="datetime-local"
-              defaultValue={toDateTimeInput(initial?.pickupDate)}
-              required
-            />
-          </Field>
+              <Field
+                name="pickupDate"
+                label="Date & Time"
+                required
+                error={e.pickupDate}
+              >
+                <Input
+                  id="pickupDate"
+                  name="pickupDate"
+                  type="datetime-local"
+                  defaultValue={toDateTimeInput(initial?.pickupDate)}
+                  required
+                />
+              </Field>
             </div>
             <Field name="pickupTimezone" label="TZ" error={e.pickupTimezone}>
-              <Select id="pickupTimezone" name="pickupTimezone" defaultValue={initial?.pickupTimezone ?? ""}>
+              <Select
+                id="pickupTimezone"
+                name="pickupTimezone"
+                defaultValue={initial?.pickupTimezone ?? ""}
+              >
                 <option value="">—</option>
                 <option value="ET">ET</option>
                 <option value="CT">CT</option>
@@ -458,23 +462,31 @@ export function LoadForm({
           </Field>
           <div className="grid grid-cols-3 gap-2 items-end">
             <div className="col-span-2">
-            <Field
-            name="deliveryDate"
-            label="Date & Time"
-            required
-            error={e.deliveryDate}
-          >
-            <Input
-              id="deliveryDate"
-              name="deliveryDate"
-              type="datetime-local"
-              defaultValue={toDateTimeInput(initial?.deliveryDate)}
-              required
-            />
-          </Field>
+              <Field
+                name="deliveryDate"
+                label="Date & Time"
+                required
+                error={e.deliveryDate}
+              >
+                <Input
+                  id="deliveryDate"
+                  name="deliveryDate"
+                  type="datetime-local"
+                  defaultValue={toDateTimeInput(initial?.deliveryDate)}
+                  required
+                />
+              </Field>
             </div>
-            <Field name="deliveryTimezone" label="TZ" error={e.deliveryTimezone}>
-              <Select id="deliveryTimezone" name="deliveryTimezone" defaultValue={initial?.deliveryTimezone ?? ""}>
+            <Field
+              name="deliveryTimezone"
+              label="TZ"
+              error={e.deliveryTimezone}
+            >
+              <Select
+                id="deliveryTimezone"
+                name="deliveryTimezone"
+                defaultValue={initial?.deliveryTimezone ?? ""}
+              >
                 <option value="">—</option>
                 <option value="ET">ET</option>
                 <option value="CT">CT</option>
@@ -714,7 +726,11 @@ export function LoadForm({
         <section className="grid content-start gap-3 rounded-lg border bg-card p-6">
           <h3 className="font-semibold">Groups and Billing</h3>
           <Field name="enteredBy" label="Entered By" error={e.enteredBy}>
-            <Select id="enteredBy" name="enteredBy" defaultValue={initial?.enteredBy ?? userName ?? ""}>
+            <Select
+              id="enteredBy"
+              name="enteredBy"
+              defaultValue={initial?.enteredBy ?? userName ?? ""}
+            >
               <option value="">—</option>
               {userName && <option value={userName}>{userName}</option>}
               <option value="Dispatcher">Dispatcher</option>
@@ -836,7 +852,6 @@ export function LoadForm({
           <input type="hidden" name="currency" value="USD" />
         </section>
       </div>
-
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Assignment (optional)</h3>
