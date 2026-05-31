@@ -54,6 +54,7 @@ export function InvoiceForm({
   defaultLoadId,
   defaultCustomerId,
   defaultItems,
+  defaultSeries,
 }: {
   initial?: InvoiceInitial;
   customers: Opt[];
@@ -64,6 +65,7 @@ export function InvoiceForm({
   defaultLoadId?: string | null;
   defaultCustomerId?: string | null;
   defaultItems?: ItemRow[];
+  defaultSeries?: string;
 }) {
   const editing = Boolean(initial);
   const router = useRouter();
@@ -85,7 +87,7 @@ export function InvoiceForm({
   const [selectedLoadId, setSelectedLoadId] = useState<string>(
     initial?.loadId ?? defaultLoadId ?? "",
   );
-  const [series, setSeries] = useState<string>(initial?.series ?? "");
+  const [series, setSeries] = useState<string>(initial?.series ?? defaultSeries ?? "");
 
   // Auto-fill from load when selection changes
   useEffect(() => {
@@ -108,7 +110,7 @@ export function InvoiceForm({
     }
     setItems(newItems);
     if (ld.loadInvoiceNumber) setSeries(ld.loadInvoiceNumber);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // if no loadInvoiceNumber, keep the auto-generated preview (defaultSeries)
   }, [selectedLoadId]);
 
   useEffect(() => {

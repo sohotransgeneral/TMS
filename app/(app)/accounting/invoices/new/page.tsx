@@ -72,7 +72,7 @@ export default async function NewInvoicePage({
     }),
     prisma.company.findUnique({
       where: { id: companyId },
-      select: { vatRate: true, invoicePrefix: true },
+      select: { vatRate: true, invoicePrefix: true, invoiceCounter: true },
     }),
   ]);
 
@@ -120,6 +120,11 @@ export default async function NewInvoicePage({
         defaultLoadId={loadIdFromUrl}
         defaultCustomerId={sp.customerId ?? null}
         defaultItems={defaultItems}
+        defaultSeries={(() => {
+          const prefix = company?.invoicePrefix || "INV";
+          const next = (company?.invoiceCounter ?? 0) + 1;
+          return `${prefix}-${new Date().getFullYear()}-${String(next).padStart(5, "0")}`;
+        })()}
       />
     </div>
   );
