@@ -12,6 +12,44 @@ const MODEL_PRICING: Record<string, { input: number; output: number }> = {
 const BILLED_PER_EXTRACTION = 2.0; // $2 charged to company per AI extraction
 const AI_MODEL = "gpt-4o";
 
+// US state (and CA province) → IANA timezone, used to auto-fill load timezones.
+const STATE_TIMEZONE: Record<string, string> = {
+  // Eastern
+  CT: "America/New_York", DE: "America/New_York", FL: "America/New_York",
+  GA: "America/New_York", ME: "America/New_York", MD: "America/New_York",
+  MA: "America/New_York", MI: "America/New_York", NH: "America/New_York",
+  NJ: "America/New_York", NY: "America/New_York", NC: "America/New_York",
+  OH: "America/New_York", PA: "America/New_York", RI: "America/New_York",
+  SC: "America/New_York", VT: "America/New_York", VA: "America/New_York",
+  WV: "America/New_York", DC: "America/New_York", IN: "America/New_York",
+  KY: "America/New_York",
+  // Central
+  AL: "America/Chicago", AR: "America/Chicago", IL: "America/Chicago",
+  IA: "America/Chicago", KS: "America/Chicago", LA: "America/Chicago",
+  MN: "America/Chicago", MS: "America/Chicago", MO: "America/Chicago",
+  NE: "America/Chicago", ND: "America/Chicago", OK: "America/Chicago",
+  SD: "America/Chicago", TN: "America/Chicago", TX: "America/Chicago",
+  WI: "America/Chicago",
+  // Mountain
+  AZ: "America/Phoenix", CO: "America/Denver", ID: "America/Denver",
+  MT: "America/Denver", NM: "America/Denver", UT: "America/Denver",
+  WY: "America/Denver",
+  // Pacific
+  CA: "America/Los_Angeles", NV: "America/Los_Angeles",
+  OR: "America/Los_Angeles", WA: "America/Los_Angeles",
+  // Alaska / Hawaii
+  AK: "America/Anchorage", HI: "Pacific/Honolulu",
+  // Canada provinces
+  ON: "America/Toronto", QC: "America/Toronto", BC: "America/Vancouver",
+  AB: "America/Edmonton", MB: "America/Winnipeg", SK: "America/Regina",
+  NS: "America/Halifax", NB: "America/Moncton", NL: "America/St_Johns",
+};
+
+function tzFromState(state: unknown): string | null {
+  if (typeof state !== "string") return null;
+  return STATE_TIMEZONE[state.trim().toUpperCase()] ?? null;
+}
+
 const SYSTEM_PROMPT = `You are a meticulous logistics data extraction assistant. You will receive a transport document (rate confirmation, broker carrier confirmation, BOL, shipper's order, load tender, dispatch sheet, etc.) and must extract EVERY relevant data point with extreme attention to detail.
 
 CRITICAL OUTPUT REQUIREMENT:
@@ -19,7 +57,9 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
 
 {
   "referenceNumber": "string or null — broker load #, PRO #, Order #, Shipment #, Job #, Reference # (NOT the BOL number unless that's the only ID). Strip prefixes like 'Load #' or 'Order:'.",
+  "loadNumber": "string or null — the broker/shipper's LOAD NUMBER specifically (often labeled 'Load #', 'Load No', 'Load ID'). If only one ID exists and it's already in referenceNumber, you may repeat it here. Strip prefixes.",
   "customerName": "string or null — the BROKER or SHIPPER's COMPANY NAME paying you (the one issuing the rate confirmation). NOT the carrier (you).",
+  "commodity": "string or null — the commodity/product type being hauled in SHORT form (e.g. 'Steel', 'Produce', 'Auto parts', 'General freight', 'Frozen food'). This is a category, distinct from the longer cargoDescription.",
 
   "pickupAddress": "string — full street address line of pickup (number + street). Do NOT include city/state/zip here — those go in their own fields.",
   "pickupCity": "string or null — pickup city only",
@@ -30,7 +70,8 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "pickupWindow": "string or null — ALWAYS extract ANY time range or time instruction here, NORMALIZED to HH:MM-HH:MM 24-hour format. Convert '0700-1400' → '07:00-14:00', '7a-2p' → '07:00-14:00', '07:00 to 14:00' → '07:00-14:00', '8 AM - 4 PM' → '08:00-16:00'. Keep FCFS/By Appt/ASAP prefixes if present (e.g. 'FCFS 08:00-15:00'). Even if only one time is given (e.g. 'Appt 10:00') put it here as '10:00'. NEVER leave this null if there is any time information in the pickup section. Do NOT put time windows in pickupDate or pickupNotes.",
   "pickupContact": "string or null — person's name listed as pickup contact, dispatcher, shipping clerk, warehouse contact. NOT a company name.",
   "pickupPhone": "string or null — phone number for pickup location/contact, digits as written (e.g. '+1 713-555-0123'). Strip 'Tel:', 'Phone:' prefixes.",
-  "pickupNotes": "string or null — ONLY truly special instructions: PU#, dock #, tarps required, PPE, driver-assist, lumper, freezer temp settings, gate codes, references like 'PU# HOUSTON TRANSFER'. Do NOT duplicate window/contact/phone here. Multiple notes separated by '; '.",
+  "pickupNumber": "string or null — the PICKUP NUMBER / PU# / Pickup Ref / Shipper Ref / appointment confirmation number for the pickup location (e.g. 'PU# 12345', 'Pickup Number: ABC-99'). Strip prefixes, keep the code itself.",
+  "pickupNotes": "string or null — ONLY truly special instructions: dock #, tarps required, PPE, driver-assist, lumper, freezer temp settings, gate codes. Do NOT duplicate the pickup number (that goes in pickupNumber), window, contact, or phone here. Multiple notes separated by '; '.",
 
   "deliveryAddress": "string — full street address of delivery (number + street only)",
   "deliveryCity": "string or null",
@@ -39,9 +80,10 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "deliveryCountry": "string or null — 2-letter code; default US",
   "deliveryDate": "ISO8601 datetime string or null — same rules as pickupDate",
   "deliveryWindow": "string or null — same as pickupWindow: ALWAYS extract any time range here, NORMALIZED to HH:MM-HH:MM 24-hour format. '0700-1400' → '07:00-14:00', '8 AM - 4 PM' → '08:00-16:00'. Keep FCFS/By Appt/ASAP if present. NEVER put time windows in deliveryDate or deliveryNotes.",
-  "deliveryContact": "string or null — person's name for delivery contact",
-  "deliveryPhone": "string or null — phone for delivery contact/location",
-  "deliveryNotes": "string or null — only special delivery instructions (delivery #, appointment confirmations, dock, signature required, etc.)",
+  "deliveryContact": "string or null — person's name listed for the delivery/consignee/receiver contact. Look carefully in the CONSIGNEE / SHIP TO / DELIVERY / RECEIVER block for any contact name, even if it's only near the phone number. Do not leave null if any name is present in the delivery section.",
+  "deliveryPhone": "string or null — phone number for the delivery/consignee/receiver location or contact. Look carefully in the CONSIGNEE / SHIP TO / DELIVERY block. Digits as written; strip 'Tel:'/'Phone:' prefixes. Do not leave null if any phone is present in the delivery section.",
+  "deliveryNumber": "string or null — the DELIVERY NUMBER / DEL# / Delivery Ref / Consignee Ref / PO at delivery / appointment confirmation number for the delivery location. Strip prefixes, keep the code.",
+  "deliveryNotes": "string or null — only special delivery instructions (dock, signature required, receiving hours notes, etc.). Do NOT put the delivery number here (that goes in deliveryNumber).",
 
   "cargoDescription": "string or null — what is being hauled (e.g. 'Steel coils', 'Frozen chicken', 'Mixed pallets of electronics'). Combine multiple lines into one short phrase.",
   "weightLbs": number or null — weight in POUNDS as stated. Extract digits only (e.g. '42,500 lbs' → 42500).",
@@ -204,6 +246,16 @@ export async function POST(req: Request) {
         billedUsd: BILLED_PER_EXTRACTION,
       },
     });
+
+    // Auto-derive timezones from the detected state when AI didn't provide one.
+    if (!extracted.pickupTimezone) {
+      const tz = tzFromState(extracted.pickupState);
+      if (tz) extracted.pickupTimezone = tz;
+    }
+    if (!extracted.deliveryTimezone) {
+      const tz = tzFromState(extracted.deliveryState);
+      if (tz) extracted.deliveryTimezone = tz;
+    }
 
     return NextResponse.json({ ok: true, data: extracted });
   } catch (err) {

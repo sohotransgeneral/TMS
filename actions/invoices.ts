@@ -132,7 +132,99 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
   return success({ id: invoice.id, number }, `Invoice ${number} created.`);
 }
 
-export async function updateInvoice(formData: FormData): Promise<ActionResult> {
+/**
+ * One-click invoice creation from a load. Builds line items from the load's
+ * price (+ accessorial), links it to the load, and flips the load status to
+ * INVOICED. Requires the load to have a customer assigned.
+ */
+export async function createInvoiceFromLoad(
+  loadId: string,
+): Promise<ActionResult> {
+  const me = await requirePermission("invoices:write");
+  if (!me.companyId) return failure("You are not assigned to a company.");
+
+  const load = await prisma.load.findFirst({
+    where: { id: loadId, companyId: me.companyId },
+    include: { invoice: { select: { id: true } } },
+  });
+  if (!load) return failure("Load not found.");
+  if (load.invoice) return failure("This load already has an invoice.");
+  if (!load.customerId)
+    return failure("Assign a Bill-to customer to the load before invoicing.");
+
+  // Build line items from the load.
+  const items: InvoiceItem[] = [];
+  const route = [load.pickupCity, load.deliveryCity].filter(Boolean).join(" > ");
+  items.push({
+    description: route
+      ? `Freight: ${route}`
+      : `Freight \u2014 Load ${load.referenceNumber}`,
+    quantity: 1,
+    unitPrice: load.price ?? 0,
+  });
+  if (load.accessorialAmount && load.accessorialAmount > 0) {
+    items.push({
+      description: "Accessorials",
+      quantity: 1,
+      unitPrice: load.accessorialAmount,
+    });
+  }
+
+  const { subtotal, vatAmount, total } = totalsOf(items, 0);
+  const { number, series } = await nextInvoiceNumber(me.companyId);
+  const issueDate = new Date();
+  const dueDate = new Date(issueDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  const invoice = await prisma.invoice.create({
+    data: {
+      companyId: me.companyId,
+      number,
+      series: load.loadInvoiceNumber ?? series,
+      issueDate,
+      dueDate,
+      customerId: load.customerId,
+      loadId: load.id,
+      subtotal,
+      vatRate: 0,
+      vatAmount,
+      total,
+      currency: load.currency ?? "USD",
+      items: items as never,
+      status: "DRAFT",
+    },
+  });
+
+  // Flip the load to INVOICED + record status history.
+  await prisma.load.update({
+    where: { id: load.id },
+    data: {
+      status: "INVOICED",
+      statusHistory: {
+        create: {
+          status: "INVOICED",
+          changedById: me.id,
+          note: `Invoice ${number} created`,
+        },
+      },
+    },
+  });
+
+  await logAudit({
+    action: "invoice.createFromLoad",
+    userId: me.id,
+    companyId: me.companyId,
+    entityType: "Invoice",
+    entityId: invoice.id,
+    meta: { number, total, loadId: load.id },
+  });
+
+  revalidatePath("/accounting/invoices");
+  revalidatePath(`/dispatch/loads/${load.id}`);
+  return success(
+    { id: invoice.id, number },
+    `Invoice ${number} created and load marked Invoiced.`,
+  );
+}
   const me = await requirePermission("invoices:write");
   if (!me.companyId) return failure("You are not assigned to a company.");
 

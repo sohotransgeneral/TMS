@@ -25,7 +25,9 @@ type Opt = { id: string; label: string };
 
 type ExtractedData = {
   referenceNumber?: string | null;
+  loadNumber?: string | null;
   customerName?: string | null;
+  commodity?: string | null;
   pickupAddress?: string;
   pickupCity?: string | null;
   pickupState?: string | null;
@@ -35,7 +37,9 @@ type ExtractedData = {
   pickupWindow?: string | null;
   pickupContact?: string | null;
   pickupPhone?: string | null;
+  pickupNumber?: string | null;
   pickupNotes?: string | null;
+  pickupTimezone?: string | null;
   deliveryAddress?: string;
   deliveryCity?: string | null;
   deliveryState?: string | null;
@@ -45,7 +49,9 @@ type ExtractedData = {
   deliveryWindow?: string | null;
   deliveryContact?: string | null;
   deliveryPhone?: string | null;
+  deliveryNumber?: string | null;
   deliveryNotes?: string | null;
+  deliveryTimezone?: string | null;
   cargoDescription?: string | null;
   weightKg?: number | null;
   weightLbs?: number | null;
@@ -304,13 +310,22 @@ export function LoadImportDialog({
               {/* Reference */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Reference</h3>
-                <Field name="referenceNumber" label="Reference / Load #">
-                  <Input
-                    name="referenceNumber"
-                    defaultValue={d.referenceNumber ?? ""}
-                    placeholder="e.g. 1234567 / LOAD-2026-001"
-                  />
-                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field name="referenceNumber" label="Reference / Load #">
+                    <Input
+                      name="referenceNumber"
+                      defaultValue={d.referenceNumber ?? ""}
+                      placeholder="e.g. 1234567 / LOAD-2026-001"
+                    />
+                  </Field>
+                  <Field name="loadNumber" label="Load Number">
+                    <Input
+                      name="loadNumber"
+                      defaultValue={d.loadNumber ?? d.referenceNumber ?? ""}
+                      placeholder="Broker load #"
+                    />
+                  </Field>
+                </div>
               </section>
 
               {/* Customer */}
@@ -410,6 +425,18 @@ export function LoadImportDialog({
                     />
                   </Field>
                 </div>
+                <Field name="pickupNumber" label="Pickup Number (PU#)">
+                  <Input
+                    name="pickupNumber"
+                    defaultValue={d.pickupNumber ?? ""}
+                    placeholder="PU# / appointment confirmation"
+                  />
+                </Field>
+                <input
+                  type="hidden"
+                  name="pickupTimezone"
+                  defaultValue={d.pickupTimezone ?? ""}
+                />
                 <Field name="pickupNotes" label="Pickup Notes">
                   <Textarea
                     name="pickupNotes"
@@ -490,6 +517,18 @@ export function LoadImportDialog({
                     />
                   </Field>
                 </div>
+                <Field name="deliveryNumber" label="Delivery Number (DEL#)">
+                  <Input
+                    name="deliveryNumber"
+                    defaultValue={d.deliveryNumber ?? ""}
+                    placeholder="DEL# / appointment confirmation"
+                  />
+                </Field>
+                <input
+                  type="hidden"
+                  name="deliveryTimezone"
+                  defaultValue={d.deliveryTimezone ?? ""}
+                />
                 <Field name="deliveryNotes" label="Delivery Notes">
                   <Textarea
                     name="deliveryNotes"
@@ -502,12 +541,28 @@ export function LoadImportDialog({
               {/* Cargo */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Cargo</h3>
-                <Field name="cargoDescription" label="Description">
-                  <Input
-                    name="cargoDescription"
-                    defaultValue={d.cargoDescription ?? ""}
-                  />
-                </Field>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Field name="commodity" label="Commodity">
+                    <Input
+                      name="commodity"
+                      defaultValue={d.commodity ?? ""}
+                      placeholder="Steel / Produce / General freight"
+                    />
+                  </Field>
+                  <Field name="equipment" label="Equipment">
+                    <Input
+                      name="equipment"
+                      defaultValue={d.equipmentType ?? ""}
+                      placeholder="Dry Van / Reefer / Flatbed"
+                    />
+                  </Field>
+                  <Field name="cargoDescription" label="Description">
+                    <Input
+                      name="cargoDescription"
+                      defaultValue={d.cargoDescription ?? ""}
+                    />
+                  </Field>
+                </div>
                 <div className="grid gap-3 sm:grid-cols-4">
                   <Field
                     name="weightKg"

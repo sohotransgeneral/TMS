@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LoadStatusBadge } from "@/components/loads/load-status-badge";
 import { LoadStatusButton } from "@/components/loads/load-status-button";
 import { LoadAssignDialog } from "@/components/loads/load-assign-dialog";
+import { CreateInvoiceButton } from "@/components/loads/create-invoice-button";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
@@ -134,14 +135,8 @@ export default async function LoadDetailPage({
                 <Pencil className="mr-2 h-4 w-4" /> Edit
               </Link>
             </Button>
-            {load.status === "DELIVERED" && !load.invoice && (
-              <Button asChild variant="outline">
-                <Link
-                  href={`/accounting/invoices/new?loadId=${load.id}&customerId=${load.customerId ?? ""}&price=${load.price}&currency=${load.currency}`}
-                >
-                  <FileText className="mr-2 h-4 w-4" /> Issue Invoice
-                </Link>
-              </Button>
+            {!load.invoice && (
+              <CreateInvoiceButton loadId={load.id} />
             )}
             {load.invoice && (
               <Button asChild variant="outline">
