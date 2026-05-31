@@ -97,11 +97,11 @@ export default async function ReportsPage({
       prisma.load.findMany({
         where: {
           companyId,
-          createdAt: { gte: last30 },
+          updatedAt: { gte: last30 },
           ...(driverId ? { driverId } : {}),
           ...(truckId ? { truckId } : {}),
         },
-        select: { createdAt: true, status: true, price: true },
+        select: { updatedAt: true, status: true, price: true },
       }),
       prisma.expense.groupBy({
         by: ["type"],
@@ -175,7 +175,7 @@ export default async function ReportsPage({
     dayMap.set(fmtDay(d), 0);
   }
   loads.forEach((l) => {
-    const k = fmtDay(l.createdAt);
+    const k = fmtDay(l.updatedAt);
     if (dayMap.has(k)) dayMap.set(k, (dayMap.get(k) ?? 0) + 1);
   });
   const loadsPerDay = Array.from(dayMap, ([day, count]) => ({ day, count }));

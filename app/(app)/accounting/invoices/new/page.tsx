@@ -66,6 +66,7 @@ export default async function NewInvoicePage({
         deliveryCity: true,
         price: true,
         accessorialAmount: true,
+        loadInvoiceNumber: true,
       },
       take: 100,
     }),

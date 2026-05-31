@@ -24,9 +24,9 @@ export async function GET() {
     }),
     prisma.payment.aggregate({ where: { companyId, paidAt: { gte: yearStart } }, _sum: { amount: true }, _count: true }),
     prisma.load.findMany({
-      where: { companyId, createdAt: { gte: last30 } },
-      select: { referenceNumber: true, status: true, price: true, currency: true, customer: { select: { name: true } }, createdAt: true },
-      orderBy: { createdAt: "desc" },
+      where: { companyId, updatedAt: { gte: last30 } },
+      select: { referenceNumber: true, status: true, price: true, currency: true, customer: { select: { name: true } }, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
       take: 200,
     }),
     prisma.expense.findMany({
@@ -58,7 +58,7 @@ export async function GET() {
       status: l.status,
       price: l.price,
       currency: l.currency,
-      date: l.createdAt,
+      date: l.updatedAt,
     })),
     expenses: expenses.map((e) => ({
       description: e.description ?? "—",

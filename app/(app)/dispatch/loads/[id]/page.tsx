@@ -126,7 +126,7 @@ export default async function LoadDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={load.referenceNumber}
-        description={`Created ${formatDate(load.createdAt, true)} by ${load.createdBy?.name ?? "—"}`}
+        description={`Updated ${formatDate(load.updatedAt, true)} by ${load.createdBy?.name ?? "—"}`}
         action={
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">

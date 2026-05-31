@@ -82,7 +82,7 @@ async function getOverview(companyId: string) {
     }),
     prisma.load.findMany({
       where: { companyId },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
       take: 8,
       include: {
         customer: { select: { name: true } },

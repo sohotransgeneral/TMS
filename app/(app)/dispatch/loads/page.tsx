@@ -73,7 +73,7 @@ export default async function LoadsPage({
     await Promise.all([
       prisma.load.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         skip,
         take: pageSize,
         select: {

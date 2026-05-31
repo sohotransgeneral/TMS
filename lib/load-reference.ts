@@ -12,7 +12,7 @@ export async function nextLoadReference(companyId: string): Promise<string> {
   const start = new Date(year, 0, 1);
   const end = new Date(year + 1, 0, 1);
   const count = await prisma.load.count({
-    where: { companyId, createdAt: { gte: start, lt: end } },
+    where: { companyId, updatedAt: { gte: start, lt: end } },
   });
   const seq = String(count + 1).padStart(5, "0");
   return `L-${year}-${seq}`;
