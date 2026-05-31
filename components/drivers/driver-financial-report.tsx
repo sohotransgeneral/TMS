@@ -530,30 +530,30 @@ export async function DriverFinancialReport({
             <Row label="GROSS salary" value={fmt(brutSalary, currency)} big />
           </Section>
 
-          {(taxCas != null || taxCass != null || taxImpozit != null) && (
-          <Section title="Taxes (RO)" icon={Receipt}>
-            <Row
-              label={`Employee pension (${taxCas ?? 25}%)`}
-              value={`-${fmt(taxes.cas, currency)}`}
-              negative
-            />
-            <Row
-              label={`Employee health (${taxCass ?? 10}%)`}
-              value={`-${fmt(taxes.cass, currency)}`}
-              negative
-            />
-            <Row
-              label={`Income tax (${taxImpozit ?? 10}%)`}
-              value={`-${fmt(taxes.impozit, currency)}`}
-              negative
-            />
-            <Row
-              label="Total taxes"
-              value={`-${fmt(taxes.total, currency)}`}
-              big
-              negative
-            />
-          </Section>
+          {((taxCas != null && taxCas > 0) || (taxCass != null && taxCass > 0) || (taxImpozit != null && taxImpozit > 0)) && (
+            <Section title="Taxes (RO)" icon={Receipt}>
+              <Row
+                label={`Employee pension (${taxCas ?? 25}%)`}
+                value={`-${fmt(taxes.cas, currency)}`}
+                negative
+              />
+              <Row
+                label={`Employee health (${taxCass ?? 10}%)`}
+                value={`-${fmt(taxes.cass, currency)}`}
+                negative
+              />
+              <Row
+                label={`Income tax (${taxImpozit ?? 10}%)`}
+                value={`-${fmt(taxes.impozit, currency)}`}
+                negative
+              />
+              <Row
+                label="Total taxes"
+                value={`-${fmt(taxes.total, currency)}`}
+                big
+                negative
+              />
+            </Section>
           )}
 
           <div className="rounded-lg border-2 border-green-500/30 bg-green-500/5 px-4 py-3">

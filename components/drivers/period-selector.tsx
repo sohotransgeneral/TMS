@@ -15,7 +15,7 @@ export function PeriodSelector() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const current = params.get("period") ?? "month";
+  const current = params.get("period") ?? "week";
 
   const set = useCallback(
     (p: string) => {

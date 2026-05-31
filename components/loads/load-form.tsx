@@ -77,19 +77,62 @@ export type LoadFormInitial = {
 };
 
 const ACCESSORIALS = [
-  "Detention","Driver Assist","Drop Trailer","Fuel Surcharge","Hazmat","Inside Delivery","Inside Pickup","Layover","Liftgate Delivery","Liftgate Pickup","Lumper","Notify Before Delivery","Over-Dimensional","Overweight","Pallet Exchange","Reefer","Residential Delivery","Residential Pickup","Reweigh","Scale Ticket","Sorting & Segregating","Stop-off","TONU (Truck Order Not Used)","Tanker Endorsement","Team Driver","Toll Charges","Unloading","Wait Time",
+  "Detention",
+  "Driver Assist",
+  "Drop Trailer",
+  "Fuel Surcharge",
+  "Hazmat",
+  "Inside Delivery",
+  "Inside Pickup",
+  "Layover",
+  "Liftgate Delivery",
+  "Liftgate Pickup",
+  "Lumper",
+  "Notify Before Delivery",
+  "Over-Dimensional",
+  "Overweight",
+  "Pallet Exchange",
+  "Reefer",
+  "Residential Delivery",
+  "Residential Pickup",
+  "Reweigh",
+  "Scale Ticket",
+  "Sorting & Segregating",
+  "Stop-off",
+  "TONU (Truck Order Not Used)",
+  "Tanker Endorsement",
+  "Team Driver",
+  "Toll Charges",
+  "Unloading",
+  "Wait Time",
 ];
 
-function AccessorialsField({ initial, error }: { initial: string | null; error?: string[] }) {
+function AccessorialsField({
+  initial,
+  error,
+}: {
+  initial: string | null;
+  error?: string[];
+}) {
   const [selected, setSelected] = useState<string[]>(() => {
-    try { return initial ? JSON.parse(initial) : []; } catch { return []; }
+    try {
+      return initial ? JSON.parse(initial) : [];
+    } catch {
+      return [];
+    }
   });
   const toggle = (item: string) =>
-    setSelected((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]);
+    setSelected((prev) =>
+      prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item],
+    );
   return (
     <div>
       <label className="mb-2 block text-sm font-medium">Accessorials</label>
-      <input type="hidden" name="accessorials" value={JSON.stringify(selected)} />
+      <input
+        type="hidden"
+        name="accessorials"
+        value={JSON.stringify(selected)}
+      />
       <div className="flex flex-wrap gap-2">
         {ACCESSORIALS.map((a) => (
           <button
@@ -673,7 +716,10 @@ export function LoadForm({
             </Select>
           </Field>
         </div>
-        <AccessorialsField initial={initial?.accessorials ?? null} error={e.accessorials} />
+        <AccessorialsField
+          initial={initial?.accessorials ?? null}
+          error={e.accessorials}
+        />
       </section>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">

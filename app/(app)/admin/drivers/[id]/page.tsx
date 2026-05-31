@@ -72,7 +72,7 @@ export default async function DriverDetailPage({
 }) {
   const me = await requirePermission("drivers:read");
   const { id } = await params;
-  const { period = "month" } = await searchParams;
+  const { period = "week" } = await searchParams;
   const companyCurrency = await getCompanyCurrency(me.companyId);
 
   const driver = await prisma.driverProfile.findFirst({

@@ -41,7 +41,7 @@ export default async function DriverReportPage({
 }) {
   const me = await requirePermission("drivers:read");
   const { id } = await params;
-  const { period = "month" } = await searchParams;
+  const { period = "week" } = await searchParams;
 
   const driver = await prisma.driverProfile.findFirst({
     where: { id, companyId: me.companyId ?? undefined },
@@ -400,32 +400,36 @@ export default async function DriverReportPage({
                   />
                 ))}
               <R label="GROSS salary" value={fmt(data.brutSalary)} bold />
-              {(data.taxRates.cas > 0 || data.taxRates.cass > 0 || data.taxRates.impozit > 0) && (<>
-              <tr>
-                <td colSpan={2} className="py-1 border-b border-border" />
-              </tr>
-              <R
-                label={`Employee pension (${data.taxRates.cas}%)`}
-                value={`- ${fmt(data.taxes.cas)}`}
-                neg
-              />
-              <R
-                label={`Employee health ins. (${data.taxRates.cass}%)`}
-                value={`- ${fmt(data.taxes.cass)}`}
-                neg
-              />
-              <R
-                label={`Income tax (${data.taxRates.impozit}%)`}
-                value={`- ${fmt(data.taxes.impozit)}`}
-                neg
-              />
-              <R
-                label="Total taxes"
-                value={`- ${fmt(data.taxes.total)}`}
-                neg
-                bold
-              />
-              </>)}
+              {(data.taxRates.cas > 0 ||
+                data.taxRates.cass > 0 ||
+                data.taxRates.impozit > 0) && (
+                <>
+                  <tr>
+                    <td colSpan={2} className="py-1 border-b border-border" />
+                  </tr>
+                  <R
+                    label={`Employee pension (${data.taxRates.cas}%)`}
+                    value={`- ${fmt(data.taxes.cas)}`}
+                    neg
+                  />
+                  <R
+                    label={`Employee health ins. (${data.taxRates.cass}%)`}
+                    value={`- ${fmt(data.taxes.cass)}`}
+                    neg
+                  />
+                  <R
+                    label={`Income tax (${data.taxRates.impozit}%)`}
+                    value={`- ${fmt(data.taxes.impozit)}`}
+                    neg
+                  />
+                  <R
+                    label="Total taxes"
+                    value={`- ${fmt(data.taxes.total)}`}
+                    neg
+                    bold
+                  />
+                </>
+              )}
               <tr>
                 <td colSpan={2} className="py-1" />
               </tr>
