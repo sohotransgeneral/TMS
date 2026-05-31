@@ -437,9 +437,12 @@ export function DriverFormDialog({
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const tid = e.target.value;
                   setSelectedTruckId(tid);
-                  const truck = trucks.find((t) => t.id === tid);
-                  if (truck?.pairedTrailerId)
-                    setSelectedTrailerId(truck.pairedTrailerId);
+                  if (!tid) {
+                    setSelectedTrailerId("");
+                  } else {
+                    const truck = trucks.find((t) => t.id === tid);
+                    if (truck?.pairedTrailerId) setSelectedTrailerId(truck.pairedTrailerId);
+                  }
                 }}
               >
                 <option value="">— none —</option>
@@ -462,9 +465,12 @@ export function DriverFormDialog({
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const tid = e.target.value;
                   setSelectedTrailerId(tid);
-                  const trailer = trailers.find((t) => t.id === tid);
-                  if (trailer?.pairedTruckId)
-                    setSelectedTruckId(trailer.pairedTruckId);
+                  if (!tid) {
+                    setSelectedTruckId("");
+                  } else {
+                    const trailer = trailers.find((t) => t.id === tid);
+                    if (trailer?.pairedTruckId) setSelectedTruckId(trailer.pairedTruckId);
+                  }
                 }}
               >
                 <option value="">— none —</option>
