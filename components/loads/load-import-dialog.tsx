@@ -90,6 +90,7 @@ export function LoadImportDialog({
   const [extracted, setExtracted] = useState<ExtractedData | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -157,6 +158,20 @@ export function LoadImportDialog({
         throw new Error(json.error ?? "Extraction failed");
       setExtracted(json.data);
       setStep("review");
+      // Auto-match AI detected customer name
+      const detectedName: string | null = json.data?.customerName ?? null;
+      if (detectedName) {
+        const norm = (s: string) => s.toLowerCase().trim();
+        const match = customers.find(
+          (c) =>
+            norm(c.label) === norm(detectedName) ||
+            norm(c.label).includes(norm(detectedName)) ||
+            norm(detectedName).includes(norm(c.label)),
+        );
+        setSelectedCustomerId(match?.id ?? "");
+      } else {
+        setSelectedCustomerId("");
+      }
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : "Extraction failed");
     } finally {
@@ -310,7 +325,11 @@ export function LoadImportDialog({
                     — select from list if available
                   </p>
                 )}
-                <Select name="customerId" defaultValue="">
+                <Select
+                  name="customerId"
+                  value={selectedCustomerId}
+                  onChange={(e) => setSelectedCustomerId(e.target.value)}
+                >
                   <option value="">— spot / no customer —</option>
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
