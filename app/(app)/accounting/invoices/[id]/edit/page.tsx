@@ -39,7 +39,7 @@ export default async function EditInvoicePage({
         companyId,
         OR: [{ invoice: null }, { id: invoice.loadId ?? "__none__" }],
       },
-      select: { id: true, referenceNumber: true, status: true },
+      select: { id: true, referenceNumber: true, status: true, pickupCity: true, deliveryCity: true, price: true, accessorialAmount: true },
       take: 100,
     }),
     prisma.company.findUnique({
@@ -76,6 +76,13 @@ export default async function EditInvoicePage({
         loads={loads.map((l) => ({
           id: l.id,
           label: `${l.referenceNumber} · ${l.status}`,
+        }))}
+        loadsData={loads.map((l) => ({
+          id: l.id,
+          pickupCity: l.pickupCity,
+          deliveryCity: l.deliveryCity,
+          price: l.price,
+          accessorialAmount: l.accessorialAmount,
         }))}
         defaultVatRate={company?.vatRate ?? 19}
         defaultCurrency={invoice.currency}

@@ -290,11 +290,9 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   doc.setTextColor(...sc.fg);
   doc.text(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1.6, { align: "center" });
 
-  // Meta items (issue / due / currency) — share space left of badge
+  // Meta items — only issue date
   const metaItems = [
     { label: "ISSUE DATE", value: fmtDate(inv.issueDate) },
-    { label: "DUE DATE",   value: fmtDate(inv.dueDate) },
-    { label: "CURRENCY",   value: inv.currency },
   ];
   const metaAvail = badgeX - ML - 6;
   const metaColW  = metaAvail / metaItems.length;
@@ -366,25 +364,7 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   drawPartyBox(ML, "FROM", inv.company.name, supplierLines);
   drawPartyBox(ML + halfW + boxGap, "BILL TO", inv.customer.name, customerLines);
 
-  // ── LOAD REFERENCE (optional) ─────────────────────────────────────────────
   let cursorY = boxTop + boxH + 10;
-
-  if (inv.load) {
-    const refH = 10;
-    doc.setFillColor(...LIGHT);
-    doc.setDrawColor(196, 181, 253);
-    doc.setLineWidth(0.25);
-    doc.roundedRect(ML, cursorY, W - ML - MR, refH, 2, 2, "FD");
-
-    doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...BRAND);
-    doc.text("TRANSPORT REF.", ML + 5, cursorY + 6.5);
-
-    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...DARK);
-    const refLabel = `${sanitize(inv.load.referenceNumber)}   .   ${sanitize(inv.load.pickupCity ?? "?")} > ${sanitize(inv.load.deliveryCity ?? "?")}`;
-    doc.text(truncate(doc, refLabel, W - ML - MR - 50), ML + 42, cursorY + 6.5);
-
-    cursorY += refH + 8;
-  }
 
   // ── LINE ITEMS TABLE ──────────────────────────────────────────────────────
   doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(...BRAND_LT);
@@ -395,15 +375,13 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   const rows = items.map((it, i) => [
     String(i + 1),
     sanitize(it.description),
-    it.quantity % 1 === 0 ? String(it.quantity) : it.quantity.toFixed(2),
-    fmtMoney(it.unitPrice, inv.currency),
     fmtMoney(it.quantity * it.unitPrice, inv.currency),
   ]);
 
   autoTable(doc, {
     startY: cursorY,
-    head: [["#", "Description", "Qty", "Unit Price", "Amount"]],
-    body: rows.length ? rows : [["", "No items listed", "", "", ""]],
+    head: [["#", "Description", "Amount"]],
+    body: rows.length ? rows : [["", "No items listed", ""]],
     theme: "plain",
     styles: {
       fontSize: 9,
@@ -426,12 +404,9 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
     columnStyles: {
       0: { halign: "center", cellWidth: 10, textColor: GRAY },
       1: { cellWidth: "auto" },
-      2: { halign: "right",  cellWidth: 16 },
-      3: { halign: "right",  cellWidth: 32 },
-      4: { halign: "right",  cellWidth: 32, fontStyle: "bold" },
+      2: { halign: "right",  cellWidth: 40, fontStyle: "bold" },
     },
     margin: { left: ML, right: MR },
-    // Force page break headroom so footer never overlaps
     pageBreak: "auto",
     rowPageBreak: "avoid",
     bodyStyles: { minCellHeight: 9 },

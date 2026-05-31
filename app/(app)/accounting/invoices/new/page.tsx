@@ -31,8 +31,8 @@ export default async function NewInvoicePage({
         />
         <div className="rounded-lg border bg-card p-8 text-center space-y-3">
           <p className="text-muted-foreground">
-            No company is registered in the system. Please register a
-            company first.
+            No company is registered in the system. Please register a company
+            first.
           </p>
           <Link href="/register">
             <Button>Register company</Button>
@@ -58,7 +58,7 @@ export default async function NewInvoicePage({
           ...(loadIdFromUrl ? [{ id: loadIdFromUrl }] : []),
         ],
       },
-      select: { id: true, referenceNumber: true, status: true },
+      select: { id: true, referenceNumber: true, status: true, pickupCity: true, deliveryCity: true, price: true, accessorialAmount: true },
       take: 100,
     }),
     prisma.company.findUnique({
@@ -67,17 +67,15 @@ export default async function NewInvoicePage({
     }),
   ]);
 
-  // Pre-fill invoice line from load price
-  const priceFromUrl = sp.price ? Number(sp.price) : null;
+  // Pre-fill invoice line from load (city names + price)
+  const loadFromUrl = loadIdFromUrl ? loads.find((l) => l.id === loadIdFromUrl) : null;
+  const priceFromUrl = sp.price ? Number(sp.price) : (loadFromUrl ? loadFromUrl.price + (loadFromUrl.accessorialAmount ?? 0) : null);
+  const descFromUrl = loadFromUrl
+    ? [loadFromUrl.pickupCity, loadFromUrl.deliveryCity].filter(Boolean).join(" > ") || "Freight transport"
+    : "Freight transport";
   const defaultItems =
     priceFromUrl && priceFromUrl > 0
-      ? [
-          {
-            description: "Freight transport",
-            quantity: 1,
-            unitPrice: priceFromUrl,
-          },
-        ]
+      ? [{ description: descFromUrl, quantity: 1, unitPrice: priceFromUrl }]
       : undefined;
 
   return (
@@ -91,6 +89,13 @@ export default async function NewInvoicePage({
         loads={loads.map((l) => ({
           id: l.id,
           label: `${l.referenceNumber} · ${l.status}`,
+        }))}
+        loadsData={loads.map((l) => ({
+          id: l.id,
+          pickupCity: l.pickupCity,
+          deliveryCity: l.deliveryCity,
+          price: l.price,
+          accessorialAmount: l.accessorialAmount,
         }))}
         defaultVatRate={company?.vatRate ?? 19}
         defaultCurrency={sp.currency ?? "USD"}

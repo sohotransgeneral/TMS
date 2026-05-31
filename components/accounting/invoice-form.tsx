@@ -15,6 +15,13 @@ import { Plus, Trash2 } from "lucide-react";
 
 type Opt = { id: string; label: string };
 type ItemRow = { description: string; quantity: number; unitPrice: number };
+type LoadData = {
+  id: string;
+  pickupCity?: string | null;
+  deliveryCity?: string | null;
+  price?: number | null;
+  accessorialAmount?: number | null;
+};
 
 export type InvoiceInitial = {
   id: string;
@@ -40,6 +47,7 @@ export function InvoiceForm({
   initial,
   customers,
   loads,
+  loadsData = [],
   defaultVatRate,
   defaultCurrency,
   defaultLoadId,
@@ -49,6 +57,7 @@ export function InvoiceForm({
   initial?: InvoiceInitial;
   customers: Opt[];
   loads: Opt[];
+  loadsData?: LoadData[];
   defaultVatRate: number;
   defaultCurrency: string;
   defaultLoadId?: string | null;
@@ -74,6 +83,27 @@ export function InvoiceForm({
     initial?.vatRate ?? defaultVatRate,
   );
   const currency = initial?.currency ?? defaultCurrency;
+
+  const [selectedLoadId, setSelectedLoadId] = useState<string>(
+    initial?.loadId ?? defaultLoadId ?? "",
+  );
+
+  // Auto-fill description and amount from load when selection changes
+  useEffect(() => {
+    if (!selectedLoadId) return;
+    const ld = loadsData.find((l) => l.id === selectedLoadId);
+    if (!ld) return;
+    const pickup = ld.pickupCity ?? "";
+    const delivery = ld.deliveryCity ?? "";
+    const desc = [pickup, delivery].filter(Boolean).join(" > ") || "Freight transport";
+    const amount = (ld.price ?? 0) + (ld.accessorialAmount ?? 0);
+    setItems((prev) => {
+      const updated = [...prev];
+      updated[0] = { ...updated[0], description: desc, unitPrice: amount, quantity: 1 };
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLoadId]);
 
   useEffect(() => {
     if (!state) return;
@@ -109,10 +139,10 @@ export function InvoiceForm({
         | null;
       fd.append(f, el?.value ?? "");
     }
-    // item rows from state
+    // item rows from state — quantity is always 1, unitPrice = amount
     for (const it of items) {
       fd.append("itemDescription", it.description);
-      fd.append("itemQuantity", String(it.quantity));
+      fd.append("itemQuantity", "1");
       fd.append("itemUnitPrice", String(it.unitPrice));
     }
     startTransition(async () => {
@@ -142,6 +172,9 @@ export function InvoiceForm({
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="grid gap-6">
       {editing && <input type="hidden" name="id" value={initial!.id} />}
+      {/* Hidden fields for backend compatibility */}
+      <input type="hidden" name="dueDate" value={toDateInput(initial?.dueDate ?? new Date(Date.now() + 30 * 86400_000))} />
+      <input type="hidden" name="currency" value={currency} />
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -173,7 +206,8 @@ export function InvoiceForm({
             <Select
               id="loadId"
               name="loadId"
-              defaultValue={initial?.loadId ?? defaultLoadId ?? ""}
+              value={selectedLoadId}
+              onChange={(ev) => setSelectedLoadId(ev.target.value)}
             >
               <option value="">— no load —</option>
               {loads.map((l) => (
@@ -184,7 +218,7 @@ export function InvoiceForm({
             </Select>
           </Field>
         </div>
-        <div className="grid gap-4 sm:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field name="series" label="Series" error={e.series}>
             <Input
               id="series"
@@ -207,26 +241,6 @@ export function InvoiceForm({
               required
             />
           </Field>
-          <Field name="dueDate" label="Due Date" required error={e.dueDate}>
-            <Input
-              id="dueDate"
-              name="dueDate"
-              type="date"
-              defaultValue={toDateInput(
-                initial?.dueDate ?? new Date(Date.now() + 30 * 86400_000),
-              )}
-              required
-            />
-          </Field>
-          <Field name="currency" label="Currency" error={e.currency}>
-            <Select id="currency" name="currency" defaultValue={currency}>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="RON">RON</option>
-              <option value="MDL">MDL</option>
-              <option value="GBP">GBP</option>
-            </Select>
-          </Field>
         </div>
       </section>
 
@@ -240,11 +254,11 @@ export function InvoiceForm({
 
         <div className="space-y-2">
           {items.map((it, idx) => (
-            <div key={idx} className="grid grid-cols-12 gap-2">
-              <div className="col-span-6">
+            <div key={idx} className="flex gap-2">
+              <div className="flex-1">
                 <Input
                   name="itemDescription"
-                  placeholder="Description"
+                  placeholder="Description (e.g. Pickup City > Delivery City)"
                   value={it.description}
                   onChange={(ev) =>
                     updateItem(idx, { description: ev.target.value })
@@ -252,33 +266,20 @@ export function InvoiceForm({
                   required={idx === 0}
                 />
               </div>
-              <div className="col-span-2">
-                <Input
-                  name="itemQuantity"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  placeholder="Qty."
-                  value={it.quantity}
-                  onChange={(ev) =>
-                    updateItem(idx, { quantity: Number(ev.target.value) })
-                  }
-                />
-              </div>
-              <div className="col-span-3">
+              <div className="w-36">
                 <Input
                   name="itemUnitPrice"
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="Unit Price"
+                  placeholder="Amount ($)"
                   value={it.unitPrice}
                   onChange={(ev) =>
                     updateItem(idx, { unitPrice: Number(ev.target.value) })
                   }
                 />
               </div>
-              <div className="col-span-1 flex items-center justify-end">
+              <div className="flex items-center">
                 {items.length > 1 && (
                   <button
                     type="button"
