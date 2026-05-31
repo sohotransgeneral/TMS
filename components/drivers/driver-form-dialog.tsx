@@ -79,8 +79,12 @@ export function DriverFormDialog({
     FormData
   >(action, null);
 
-  const [selectedTruckId, setSelectedTruckId] = useState(initial?.truckId ?? "");
-  const [selectedTrailerId, setSelectedTrailerId] = useState(initial?.trailerId ?? "");
+  const [selectedTruckId, setSelectedTruckId] = useState(
+    initial?.truckId ?? "",
+  );
+  const [selectedTrailerId, setSelectedTrailerId] = useState(
+    initial?.trailerId ?? "",
+  );
 
   // Reset when dialog opens/closes
   useEffect(() => {
@@ -430,11 +434,12 @@ export function DriverFormDialog({
                 id="truckId"
                 name="truckId"
                 value={selectedTruckId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const tid = e.target.value;
                   setSelectedTruckId(tid);
                   const truck = trucks.find((t) => t.id === tid);
-                  if (truck?.pairedTrailerId) setSelectedTrailerId(truck.pairedTrailerId);
+                  if (truck?.pairedTrailerId)
+                    setSelectedTrailerId(truck.pairedTrailerId);
                 }}
               >
                 <option value="">— none —</option>
@@ -458,7 +463,8 @@ export function DriverFormDialog({
                   const tid = e.target.value;
                   setSelectedTrailerId(tid);
                   const trailer = trailers.find((t) => t.id === tid);
-                  if (trailer?.pairedTruckId) setSelectedTruckId(trailer.pairedTruckId);
+                  if (trailer?.pairedTruckId)
+                    setSelectedTruckId(trailer.pairedTruckId);
                 }}
               >
                 <option value="">— none —</option>

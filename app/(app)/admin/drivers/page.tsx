@@ -85,12 +85,22 @@ export default async function DriversPage({
     prisma.truck.findMany({
       where: { companyId: me.companyId ?? undefined },
       orderBy: { fleetNumber: "asc" },
-      select: { id: true, plateNumber: true, fleetNumber: true, pairedTrailerId: true },
+      select: {
+        id: true,
+        plateNumber: true,
+        fleetNumber: true,
+        pairedTrailerId: true,
+      },
     }),
     prisma.trailer.findMany({
       where: { companyId: me.companyId ?? undefined },
       orderBy: { fleetNumber: "asc" },
-      select: { id: true, plateNumber: true, fleetNumber: true, pairedTruckId: true },
+      select: {
+        id: true,
+        plateNumber: true,
+        fleetNumber: true,
+        pairedTruckId: true,
+      },
     }),
   ]);
 
