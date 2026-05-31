@@ -348,16 +348,12 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   }
 
   const supplierLines = [
-    inv.company.taxId              ? `Tax ID: ${inv.company.taxId}` : null,
-    inv.company.registrationNumber ? `Reg No: ${inv.company.registrationNumber}` : null,
     ...addrBlock(inv.company),
     inv.company.bankAccount        ? `IBAN: ${inv.company.bankAccount}` : null,
     inv.company.bankName           ? `Bank: ${inv.company.bankName}` : null,
   ].filter(Boolean) as string[];
 
   const customerLines = [
-    inv.customer.taxId              ? `Tax ID: ${inv.customer.taxId}` : null,
-    inv.customer.registrationNumber ? `Reg No: ${inv.customer.registrationNumber}` : null,
     ...addrBlock(inv.customer),
   ].filter(Boolean) as string[];
 
