@@ -5,16 +5,20 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createInvoiceFromLoad } from "@/actions/invoices";
+import type { ActionResult } from "@/lib/action-helpers";
 
-export function CreateInvoiceButton({ loadId }: { loadId: string }) {
+export function CreateInvoiceButton({
+  action,
+}: {
+  action: () => Promise<ActionResult>;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
 
   function handleClick() {
     startTransition(async () => {
-      const res = await createInvoiceFromLoad(loadId);
+      const res = await action();
       if (res.ok) {
         setDone(true);
         toast.success(res.message ?? "Invoice created.");

@@ -225,6 +225,8 @@ export async function createInvoiceFromLoad(
     `Invoice ${number} created and load marked Invoiced.`,
   );
 }
+
+export async function updateInvoice(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
   if (!me.companyId) return failure("You are not assigned to a company.");
 

@@ -8,6 +8,7 @@ import { LoadStatusBadge } from "@/components/loads/load-status-badge";
 import { LoadStatusButton } from "@/components/loads/load-status-button";
 import { LoadAssignDialog } from "@/components/loads/load-assign-dialog";
 import { CreateInvoiceButton } from "@/components/loads/create-invoice-button";
+import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
@@ -136,7 +137,7 @@ export default async function LoadDetailPage({
               </Link>
             </Button>
             {!load.invoice && (
-              <CreateInvoiceButton loadId={load.id} />
+              <CreateInvoiceButton action={createInvoiceFromLoad.bind(null, load.id)} />
             )}
             {load.invoice && (
               <Button asChild variant="outline">
