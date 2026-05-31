@@ -59,7 +59,6 @@ export default async function NewInvoicePage({
         ],
       },
       select: { id: true, referenceNumber: true, status: true },
-      orderBy: { createdAt: "desc" },
       take: 100,
     }),
     prisma.company.findUnique({

@@ -40,7 +40,6 @@ export default async function EditInvoicePage({
         OR: [{ invoice: null }, { id: invoice.loadId ?? "__none__" }],
       },
       select: { id: true, referenceNumber: true, status: true },
-      orderBy: { createdAt: "desc" },
       take: 100,
     }),
     prisma.company.findUnique({
