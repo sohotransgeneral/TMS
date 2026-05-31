@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { parseListParams, buildSearch } from "@/lib/action-helpers";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { SearchInput } from "@/components/ui/search-input";
@@ -35,6 +36,7 @@ export default async function LoadsPage({
   searchParams: Promise<SP>;
 }) {
   const me = await requirePermission("loads:read");
+  const currentUser = await getCurrentUser();
   const sp = await searchParams;
   const { page, pageSize, q, skip } = parseListParams(sp);
   const status = typeof sp.status === "string" ? sp.status : undefined;
@@ -143,6 +145,8 @@ export default async function LoadsPage({
                 id: t.id,
                 label: t.plateNumber,
               }))}
+              userName={currentUser?.name ?? undefined}
+              companyName={currentUser?.company?.name ?? undefined}
             />
             <Button asChild>
               <Link href="/dispatch/loads/new">

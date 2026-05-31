@@ -83,11 +83,15 @@ export function LoadImportDialog({
   drivers,
   trucks,
   trailers,
+  userName,
+  companyName,
 }: {
   customers: Opt[];
   drivers: Opt[];
   trucks: Opt[];
   trailers: Opt[];
+  userName?: string;
+  companyName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"upload" | "review">("upload");
@@ -684,6 +688,12 @@ export function LoadImportDialog({
                   />
                 </Field>
               </section>
+
+              {/* Default billing/admin fields */}
+              <input type="hidden" name="enteredBy" value={userName ?? ""} />
+              <input type="hidden" name="invoicingCompany" value={companyName ?? ""} />
+              <input type="hidden" name="billingMethod" value="Collect" />
+              <input type="hidden" name="billingType" value="Factoring" />
 
               <DialogFooter className="gap-2">
                 <Button
