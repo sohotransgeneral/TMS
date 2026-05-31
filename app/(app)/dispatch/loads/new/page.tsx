@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LoadForm } from "@/components/loads/load-form";
 
@@ -7,6 +8,7 @@ export const metadata = { title: "New load" };
 
 export default async function NewLoadPage() {
   const me = await requirePermission("loads:write");
+  const currentUser = await getCurrentUser();
   const where = { companyId: me.companyId ?? undefined };
 
   const [customers, drivers, trucks, trailers] = await Promise.all([
@@ -76,6 +78,8 @@ export default async function NewLoadPage() {
           truckId: d.truckId,
           trailerId: d.trailerId,
         }))}
+        userName={currentUser?.name ?? undefined}
+        companyName={currentUser?.company?.name ?? undefined}
       />
     </div>
   );

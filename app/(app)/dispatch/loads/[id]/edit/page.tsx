@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LoadForm } from "@/components/loads/load-form";
 
@@ -12,6 +13,7 @@ export default async function EditLoadPage({
   params: Promise<{ id: string }>;
 }) {
   const me = await requirePermission("loads:write");
+  const currentUser = await getCurrentUser();
   const { id } = await params;
   const where = { companyId: me.companyId ?? undefined };
 
@@ -82,6 +84,8 @@ export default async function EditLoadPage({
           truckId: d.truckId,
           trailerId: d.trailerId,
         }))}
+        userName={currentUser?.name ?? undefined}
+        companyName={currentUser?.company?.name ?? undefined}
       />
     </div>
   );

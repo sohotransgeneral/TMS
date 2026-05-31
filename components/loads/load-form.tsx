@@ -175,6 +175,8 @@ export function LoadForm({
   trucks,
   trailers,
   driverAssignments = [],
+  userName,
+  companyName,
 }: {
   initial?: LoadFormInitial;
   customers: Opt[];
@@ -182,6 +184,8 @@ export function LoadForm({
   trucks: Opt[];
   trailers: Opt[];
   driverAssignments?: DriverAssignment[];
+  userName?: string;
+  companyName?: string;
 }) {
   const editing = Boolean(initial);
   const router = useRouter();
@@ -684,7 +688,7 @@ export function LoadForm({
             <Select
               id="equipment"
               name="equipment"
-              defaultValue={initial?.equipment ?? ""}
+              defaultValue={initial?.equipment ?? "Dry Van"}
             >
               <option value="">—</option>
               <option value="Dry Van">Dry Van</option>
@@ -710,11 +714,14 @@ export function LoadForm({
         <section className="grid content-start gap-3 rounded-lg border bg-card p-6">
           <h3 className="font-semibold">Groups and Billing</h3>
           <Field name="enteredBy" label="Entered By" error={e.enteredBy}>
-            <Input
-              id="enteredBy"
-              name="enteredBy"
-              defaultValue={initial?.enteredBy ?? ""}
-            />
+            <Select id="enteredBy" name="enteredBy" defaultValue={initial?.enteredBy ?? userName ?? ""}>
+              <option value="">—</option>
+              {userName && <option value={userName}>{userName}</option>}
+              <option value="Dispatcher">Dispatcher</option>
+              <option value="Accountant">Accountant</option>
+              <option value="Manager">Manager</option>
+              <option value="General">General</option>
+            </Select>
           </Field>
           <Field
             name="invoicingCompany"
@@ -724,7 +731,7 @@ export function LoadForm({
             <Input
               id="invoicingCompany"
               name="invoicingCompany"
-              defaultValue={initial?.invoicingCompany ?? ""}
+              defaultValue={initial?.invoicingCompany ?? companyName ?? ""}
             />
           </Field>
           <Field
@@ -753,7 +760,7 @@ export function LoadForm({
             <Select
               id="billingMethod"
               name="billingMethod"
-              defaultValue={initial?.billingMethod ?? ""}
+              defaultValue={initial?.billingMethod ?? "Collect"}
             >
               <option value="">—</option>
               <option value="Collect">Collect</option>
@@ -765,7 +772,7 @@ export function LoadForm({
             <Select
               id="billingType"
               name="billingType"
-              defaultValue={initial?.billingType ?? ""}
+              defaultValue={initial?.billingType ?? "Factoring"}
             >
               <option value="">—</option>
               <option value="Factoring">Factoring</option>
@@ -826,29 +833,10 @@ export function LoadForm({
               })}
             </span>
           </div>
-          <Field name="currency" label="Currency" error={e.currency}>
-            <Select
-              id="currency"
-              name="currency"
-              defaultValue={initial?.currency ?? "USD"}
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="RON">RON</option>
-              <option value="MDL">MDL</option>
-              <option value="GBP">GBP</option>
-            </Select>
-          </Field>
+          <input type="hidden" name="currency" value="USD" />
         </section>
       </div>
 
-      <section className="grid gap-4 rounded-lg border bg-card p-6">
-        <h3 className="font-semibold">Accessorials</h3>
-        <AccessorialsField
-          initial={initial?.accessorials ?? null}
-          error={e.accessorials}
-        />
-      </section>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Assignment (optional)</h3>
