@@ -532,6 +532,7 @@ model Load {
   loadType         String?   // FTL, LTL, PTL
   equipment        String?   // 53' Dry Van, Reefer, etc.
   commodity        String?   // e.g. Auto Parts, Beer, Produce…
+  accessorials     String?   // JSON array of selected accessorials
 
   // Pricing
   price            Float

@@ -52,6 +52,7 @@ export type LoadFormInitial = {
   loadType: string | null;
   equipment: string | null;
   commodity: string | null;
+  accessorials: string | null;
   cargoDescription: string | null;
   weightKg: number | null;
   volumeM3: number | null;
@@ -74,6 +75,37 @@ export type LoadFormInitial = {
   trailerId: string | null;
   internalNotes: string | null;
 };
+
+const ACCESSORIALS = [
+  "Detention","Driver Assist","Drop Trailer","Fuel Surcharge","Hazmat","Inside Delivery","Inside Pickup","Layover","Liftgate Delivery","Liftgate Pickup","Lumper","Notify Before Delivery","Over-Dimensional","Overweight","Pallet Exchange","Reefer","Residential Delivery","Residential Pickup","Reweigh","Scale Ticket","Sorting & Segregating","Stop-off","TONU (Truck Order Not Used)","Tanker Endorsement","Team Driver","Toll Charges","Unloading","Wait Time",
+];
+
+function AccessorialsField({ initial, error }: { initial: string | null; error?: string[] }) {
+  const [selected, setSelected] = useState<string[]>(() => {
+    try { return initial ? JSON.parse(initial) : []; } catch { return []; }
+  });
+  const toggle = (item: string) =>
+    setSelected((prev) => prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]);
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium">Accessorials</label>
+      <input type="hidden" name="accessorials" value={JSON.stringify(selected)} />
+      <div className="flex flex-wrap gap-2">
+        {ACCESSORIALS.map((a) => (
+          <button
+            key={a}
+            type="button"
+            onClick={() => toggle(a)}
+            className={`rounded-full border px-3 py-1 text-xs transition-colors ${selected.includes(a) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary hover:text-primary"}`}
+          >
+            {a}
+          </button>
+        ))}
+      </div>
+      {error && <p className="mt-1 text-xs text-destructive">{error[0]}</p>}
+    </div>
+  );
+}
 
 const toDateTimeInput = (d: Date | string | null | undefined) => {
   if (!d) return "";
@@ -538,13 +570,110 @@ export function LoadForm({
             >
               <option value="">—</option>
               {[
-                "A+ Slabs","Air Filtration Product","Aluminium Coils","Aluminum Cans","Aluminum Wheels","Appliances","Auto Parts","Baled Cardboard","Baled Paper","Batteries","Beer","Berries","Beverage Machinery","Beverages","Bolts","Books","Bottled Water","Bottles","Brackets","Brass","Brick","Building Materials","Cable Trays","Candies","Canned Goods","Car Parts","Carbon","Cardboard","Cargo Restraint Products","Chemicals","Clothing","Coffee","Computer Equipment","Construction Materials","Consumer Electronics","Copper","Cosmetics","Dairy Products","Dry Goods","Electronics","Fertilizer","Flooring","Food Products","Freight","Fresh Produce","Frozen Food","Furniture","Glass","Grain","Hardware","Heavy Machinery","Industrial Equipment","Iron","Landscaping Materials","Lumber","Machinery Parts","Medical Equipment","Medical Supplies","Metal Parts","Metal Scrap","Military Equipment","Motorcycle Parts","Packaging Materials","Paint","Paper Products","Pharmaceuticals","Pipes","Plastic","Plumbing Supplies","Poultry","Produce","Recycled Materials","Refrigerated Goods","Retail Goods","Rubber","Salt","Seafood","Seeds","Sheet Metal","Shoes","Soft Drinks","Solar Panels","Steel","Steel Coils","Steel Pipes","Stone","Textiles","Tires","Tools","Vegetables","Water","Wine","Wire","Wood","Wood Products",
+                "A+ Slabs",
+                "Air Filtration Product",
+                "Aluminium Coils",
+                "Aluminum Cans",
+                "Aluminum Wheels",
+                "Appliances",
+                "Auto Parts",
+                "Baled Cardboard",
+                "Baled Paper",
+                "Batteries",
+                "Beer",
+                "Berries",
+                "Beverage Machinery",
+                "Beverages",
+                "Bolts",
+                "Books",
+                "Bottled Water",
+                "Bottles",
+                "Brackets",
+                "Brass",
+                "Brick",
+                "Building Materials",
+                "Cable Trays",
+                "Candies",
+                "Canned Goods",
+                "Car Parts",
+                "Carbon",
+                "Cardboard",
+                "Cargo Restraint Products",
+                "Chemicals",
+                "Clothing",
+                "Coffee",
+                "Computer Equipment",
+                "Construction Materials",
+                "Consumer Electronics",
+                "Copper",
+                "Cosmetics",
+                "Dairy Products",
+                "Dry Goods",
+                "Electronics",
+                "Fertilizer",
+                "Flooring",
+                "Food Products",
+                "Freight",
+                "Fresh Produce",
+                "Frozen Food",
+                "Furniture",
+                "Glass",
+                "Grain",
+                "Hardware",
+                "Heavy Machinery",
+                "Industrial Equipment",
+                "Iron",
+                "Landscaping Materials",
+                "Lumber",
+                "Machinery Parts",
+                "Medical Equipment",
+                "Medical Supplies",
+                "Metal Parts",
+                "Metal Scrap",
+                "Military Equipment",
+                "Motorcycle Parts",
+                "Packaging Materials",
+                "Paint",
+                "Paper Products",
+                "Pharmaceuticals",
+                "Pipes",
+                "Plastic",
+                "Plumbing Supplies",
+                "Poultry",
+                "Produce",
+                "Recycled Materials",
+                "Refrigerated Goods",
+                "Retail Goods",
+                "Rubber",
+                "Salt",
+                "Seafood",
+                "Seeds",
+                "Sheet Metal",
+                "Shoes",
+                "Soft Drinks",
+                "Solar Panels",
+                "Steel",
+                "Steel Coils",
+                "Steel Pipes",
+                "Stone",
+                "Textiles",
+                "Tires",
+                "Tools",
+                "Vegetables",
+                "Water",
+                "Wine",
+                "Wire",
+                "Wood",
+                "Wood Products",
               ].map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </Select>
           </Field>
         </div>
+        <AccessorialsField initial={initial?.accessorials ?? null} error={e.accessorials} />
       </section>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">

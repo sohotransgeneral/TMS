@@ -114,6 +114,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       loadType: d.loadType,
       equipment: d.equipment,
       commodity: d.commodity,
+      accessorials: d.accessorials,
       cargoDescription: d.cargoDescription,
       weightKg: d.weightKg,
       volumeM3: d.volumeM3,
