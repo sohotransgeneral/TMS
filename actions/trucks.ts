@@ -73,6 +73,9 @@ export async function updateTruck(formData: FormData): Promise<ActionResult> {
     if (newPaired) {
       await prisma.trailer.update({ where: { id: newPaired }, data: { pairedTruckId: id } });
     }
+  } else if (newPaired) {
+    // Same value — still ensure the back-link exists (e.g. was never set)
+    await prisma.trailer.update({ where: { id: newPaired }, data: { pairedTruckId: id } });
   }
 
   await logAudit({
