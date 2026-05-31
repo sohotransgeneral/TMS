@@ -27,7 +27,6 @@ export default async function NewLoadPage() {
         trailerId: true,
         user: { select: { name: true } },
       },
-      orderBy: { createdAt: "desc" },
     }),
     prisma.truck.findMany({
       where,

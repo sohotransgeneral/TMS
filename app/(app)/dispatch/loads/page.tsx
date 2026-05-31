@@ -222,12 +222,12 @@ export default async function LoadsPage({
                 <TableHead className="w-14">ID</TableHead>
                 <TableHead>Shipper</TableHead>
                 <TableHead>City</TableHead>
-                <TableHead className="w-10">St.</TableHead>
+                <TableHead className="w-16">State</TableHead>
                 <TableHead className="w-10">Cty</TableHead>
                 <TableHead className="w-16">Zip</TableHead>
                 <TableHead>Receiver</TableHead>
                 <TableHead>City</TableHead>
-                <TableHead className="w-10">St.</TableHead>
+                <TableHead className="w-16">State</TableHead>
                 <TableHead className="w-10">Cty</TableHead>
                 <TableHead className="w-16">Zip</TableHead>
                 <TableHead>Status</TableHead>
