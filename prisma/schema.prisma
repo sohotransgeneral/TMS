@@ -531,6 +531,7 @@ model Load {
   // Load details
   loadType         String?   // FTL, LTL, PTL
   equipment        String?   // 53' Dry Van, Reefer, etc.
+  commodity        String?   // e.g. Auto Parts, Beer, Produce…
 
   // Pricing
   price            Float

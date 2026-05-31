@@ -85,6 +85,7 @@ export const loadCreateSchema = z.object({
 
   loadType: optionalString,
   equipment: optionalString,
+  commodity: optionalString,
 
   cargoDescription: optionalString,
   weightKg: optionalNumber,

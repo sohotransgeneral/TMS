@@ -51,6 +51,7 @@ export type LoadFormInitial = {
   deliveryNotes: string | null;
   loadType: string | null;
   equipment: string | null;
+  commodity: string | null;
   cargoDescription: string | null;
   weightKg: number | null;
   volumeM3: number | null;
@@ -528,6 +529,20 @@ export function LoadForm({
               placeholder="53' Dry Van, Reefer, Flatbed…"
               defaultValue={initial?.equipment ?? ""}
             />
+          </Field>
+          <Field name="commodity" label="Commodity" error={e.commodity}>
+            <Select
+              id="commodity"
+              name="commodity"
+              defaultValue={initial?.commodity ?? ""}
+            >
+              <option value="">—</option>
+              {[
+                "A+ Slabs","Air Filtration Product","Aluminium Coils","Aluminum Cans","Aluminum Wheels","Appliances","Auto Parts","Baled Cardboard","Baled Paper","Batteries","Beer","Berries","Beverage Machinery","Beverages","Bolts","Books","Bottled Water","Bottles","Brackets","Brass","Brick","Building Materials","Cable Trays","Candies","Canned Goods","Car Parts","Carbon","Cardboard","Cargo Restraint Products","Chemicals","Clothing","Coffee","Computer Equipment","Construction Materials","Consumer Electronics","Copper","Cosmetics","Dairy Products","Dry Goods","Electronics","Fertilizer","Flooring","Food Products","Freight","Fresh Produce","Frozen Food","Furniture","Glass","Grain","Hardware","Heavy Machinery","Industrial Equipment","Iron","Landscaping Materials","Lumber","Machinery Parts","Medical Equipment","Medical Supplies","Metal Parts","Metal Scrap","Military Equipment","Motorcycle Parts","Packaging Materials","Paint","Paper Products","Pharmaceuticals","Pipes","Plastic","Plumbing Supplies","Poultry","Produce","Recycled Materials","Refrigerated Goods","Retail Goods","Rubber","Salt","Seafood","Seeds","Sheet Metal","Shoes","Soft Drinks","Solar Panels","Steel","Steel Coils","Steel Pipes","Stone","Textiles","Tires","Tools","Vegetables","Water","Wine","Wire","Wood","Wood Products",
+              ].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </Select>
           </Field>
         </div>
       </section>
