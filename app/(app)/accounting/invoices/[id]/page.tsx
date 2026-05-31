@@ -45,7 +45,7 @@ export default async function InvoiceDetailPage({
     include: {
       company: { select: { name: true, logoUrl: true } },
       customer: true,
-      load: { select: { id: true, referenceNumber: true } },
+      load: { select: { id: true, referenceNumber: true, loadInvoiceNumber: true } },
       payments: { orderBy: { paidAt: "desc" } },
     },
   });
@@ -151,26 +151,32 @@ export default async function InvoiceDetailPage({
                   )}
                 </div>
               </div>
+              {invoice.series && (
+                <div>
+                  <div className="text-muted-foreground">Invoice #</div>
+                  <div className="font-medium">{invoice.series}</div>
+                </div>
+              )}
+              {(invoice.load as { loadInvoiceNumber?: string | null } | null)?.loadInvoiceNumber && (
+                <div>
+                  <div className="text-muted-foreground">Load Invoice #</div>
+                  <div className="font-medium">{(invoice.load as { loadInvoiceNumber?: string | null }).loadInvoiceNumber}</div>
+                </div>
+              )}
             </div>
 
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((it, i) => (
                   <TableRow key={i}>
                     <TableCell>{it.description}</TableCell>
-                    <TableCell className="text-right">{it.quantity}</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(it.unitPrice, invoice.currency)}
-                    </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right font-medium">
                       {formatCurrency(
                         it.total ?? it.quantity * it.unitPrice,
                         invoice.currency,
@@ -181,7 +187,7 @@ export default async function InvoiceDetailPage({
                 {items.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={2}
                       className="text-center text-muted-foreground"
                     >
                       No line items
@@ -192,20 +198,6 @@ export default async function InvoiceDetailPage({
             </Table>
 
             <div className="ml-auto w-full max-w-xs space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>
-                  {formatCurrency(invoice.subtotal, invoice.currency)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  VAT ({invoice.vatRate}%)
-                </span>
-                <span>
-                  {formatCurrency(invoice.vatAmount, invoice.currency)}
-                </span>
-              </div>
               <div className="flex justify-between border-t pt-1 font-semibold">
                 <span>Total</span>
                 <span>{formatCurrency(invoice.total, invoice.currency)}</span>

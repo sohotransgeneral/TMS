@@ -100,7 +100,11 @@ export function InvoiceForm({
       { description: desc, quantity: 1, unitPrice: ld.price ?? 0 },
     ];
     if ((ld.accessorialAmount ?? 0) > 0) {
-      newItems.push({ description: "Accessorial", quantity: 1, unitPrice: ld.accessorialAmount! });
+      newItems.push({
+        description: "Accessorial",
+        quantity: 1,
+        unitPrice: ld.accessorialAmount!,
+      });
     }
     setItems(newItems);
     if (ld.loadInvoiceNumber) setSeries(ld.loadInvoiceNumber);
