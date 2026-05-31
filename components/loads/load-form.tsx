@@ -258,12 +258,13 @@ export function LoadForm({
         </Field>
       </section>
 
-      <section className="grid gap-4 rounded-lg border bg-card p-6">
-        <h3 className="font-semibold">Pickup</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* ── SHIPPER ── */}
+        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Shipper</h3>
           <Field
             name="pickupCompanyName"
-            label="Shipper Company"
+            label="Company"
             error={e.pickupCompanyName}
           >
             <Input
@@ -286,46 +287,23 @@ export function LoadForm({
               required
             />
           </Field>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-4">
-          <Field name="pickupCity" label="City" error={e.pickupCity}>
-            <Input
-              id="pickupCity"
-              name="pickupCity"
-              defaultValue={initial?.pickupCity ?? ""}
-            />
-          </Field>
-          <Field name="pickupState" label="State" error={e.pickupState}>
-            <Input
-              id="pickupState"
-              name="pickupState"
-              placeholder="TX"
-              maxLength={10}
-              defaultValue={initial?.pickupState ?? ""}
-            />
-          </Field>
-          <Field name="pickupZip" label="ZIP" error={e.pickupZip}>
-            <Input
-              id="pickupZip"
-              name="pickupZip"
-              defaultValue={initial?.pickupZip ?? ""}
-            />
-          </Field>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="col-span-2">
+              <Field name="pickupCity" label="City" error={e.pickupCity}>
+                <Input id="pickupCity" name="pickupCity" defaultValue={initial?.pickupCity ?? ""} />
+              </Field>
+            </div>
+            <Field name="pickupState" label="St." error={e.pickupState}>
+              <Input id="pickupState" name="pickupState" placeholder="TX" maxLength={10} defaultValue={initial?.pickupState ?? ""} />
+            </Field>
+            <Field name="pickupZip" label="ZIP" error={e.pickupZip}>
+              <Input id="pickupZip" name="pickupZip" defaultValue={initial?.pickupZip ?? ""} />
+            </Field>
+          </div>
           <Field name="pickupCountry" label="Country" error={e.pickupCountry}>
-            <Input
-              id="pickupCountry"
-              name="pickupCountry"
-              defaultValue={initial?.pickupCountry ?? "US"}
-            />
+            <Input id="pickupCountry" name="pickupCountry" defaultValue={initial?.pickupCountry ?? "US"} />
           </Field>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            name="pickupDate"
-            label="Date & Time"
-            required
-            error={e.pickupDate}
-          >
+          <Field name="pickupDate" label="Date & Time" required error={e.pickupDate}>
             <Input
               id="pickupDate"
               name="pickupDate"
@@ -334,69 +312,28 @@ export function LoadForm({
               required
             />
           </Field>
-        </div>
-        <Field name="pickupWindow" label="Pickup Window" error={e.pickupWindow}>
-          <Input
-            id="pickupWindow"
-            name="pickupWindow"
-            placeholder="FCFS 08:00-15:00 / By Appt / ASAP"
-            defaultValue={initial?.pickupWindow ?? ""}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            name="pickupContact"
-            label="Contact Person"
-            error={e.pickupContact}
-          >
-            <Input
-              id="pickupContact"
-              name="pickupContact"
-              defaultValue={initial?.pickupContact ?? ""}
-            />
+          <Field name="pickupWindow" label="Pickup Window" error={e.pickupWindow}>
+            <Input id="pickupWindow" name="pickupWindow" placeholder="FCFS 08:00-15:00 / By Appt / ASAP" defaultValue={initial?.pickupWindow ?? ""} />
           </Field>
-          <Field name="pickupPhone" label="Phone" error={e.pickupPhone}>
-            <Input
-              id="pickupPhone"
-              name="pickupPhone"
-              defaultValue={initial?.pickupPhone ?? ""}
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <Field name="pickupContact" label="Contact" error={e.pickupContact}>
+              <Input id="pickupContact" name="pickupContact" defaultValue={initial?.pickupContact ?? ""} />
+            </Field>
+            <Field name="pickupPhone" label="Phone" error={e.pickupPhone}>
+              <Input id="pickupPhone" name="pickupPhone" defaultValue={initial?.pickupPhone ?? ""} />
+            </Field>
+          </div>
+          <Field name="pickupNotes" label="Notes" error={e.pickupNotes}>
+            <Textarea id="pickupNotes" name="pickupNotes" rows={2} defaultValue={initial?.pickupNotes ?? ""} />
           </Field>
-        </div>
-        <Field name="pickupNotes" label="Pickup Notes" error={e.pickupNotes}>
-          <Textarea
-            id="pickupNotes"
-            name="pickupNotes"
-            rows={2}
-            defaultValue={initial?.pickupNotes ?? ""}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="pickupLat" label="Lat (optional)">
-            <Input
-              id="pickupLat"
-              name="pickupLat"
-              type="number"
-              step="0.000001"
-            />
-          </Field>
-          <Field name="pickupLng" label="Lng (optional)">
-            <Input
-              id="pickupLng"
-              name="pickupLng"
-              type="number"
-              step="0.000001"
-            />
-          </Field>
-        </div>
-      </section>
+        </section>
 
-      <section className="grid gap-4 rounded-lg border bg-card p-6">
-        <h3 className="font-semibold">Delivery</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* ── RECEIVER ── */}
+        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Receiver</h3>
           <Field
             name="deliveryCompanyName"
-            label="Receiver Company"
+            label="Company"
             error={e.deliveryCompanyName}
           >
             <Input
@@ -419,50 +356,23 @@ export function LoadForm({
               required
             />
           </Field>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-4">
-          <Field name="deliveryCity" label="City" error={e.deliveryCity}>
-            <Input
-              id="deliveryCity"
-              name="deliveryCity"
-              defaultValue={initial?.deliveryCity ?? ""}
-            />
+          <div className="grid grid-cols-4 gap-2">
+            <div className="col-span-2">
+              <Field name="deliveryCity" label="City" error={e.deliveryCity}>
+                <Input id="deliveryCity" name="deliveryCity" defaultValue={initial?.deliveryCity ?? ""} />
+              </Field>
+            </div>
+            <Field name="deliveryState" label="St." error={e.deliveryState}>
+              <Input id="deliveryState" name="deliveryState" placeholder="CA" maxLength={10} defaultValue={initial?.deliveryState ?? ""} />
+            </Field>
+            <Field name="deliveryZip" label="ZIP" error={e.deliveryZip}>
+              <Input id="deliveryZip" name="deliveryZip" defaultValue={initial?.deliveryZip ?? ""} />
+            </Field>
+          </div>
+          <Field name="deliveryCountry" label="Country" error={e.deliveryCountry}>
+            <Input id="deliveryCountry" name="deliveryCountry" defaultValue={initial?.deliveryCountry ?? ""} />
           </Field>
-          <Field name="deliveryState" label="State" error={e.deliveryState}>
-            <Input
-              id="deliveryState"
-              name="deliveryState"
-              placeholder="CA"
-              maxLength={10}
-              defaultValue={initial?.deliveryState ?? ""}
-            />
-          </Field>
-          <Field name="deliveryZip" label="ZIP" error={e.deliveryZip}>
-            <Input
-              id="deliveryZip"
-              name="deliveryZip"
-              defaultValue={initial?.deliveryZip ?? ""}
-            />
-          </Field>
-          <Field
-            name="deliveryCountry"
-            label="Country"
-            error={e.deliveryCountry}
-          >
-            <Input
-              id="deliveryCountry"
-              name="deliveryCountry"
-              defaultValue={initial?.deliveryCountry ?? ""}
-            />
-          </Field>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            name="deliveryDate"
-            label="Date & Time"
-            required
-            error={e.deliveryDate}
-          >
+          <Field name="deliveryDate" label="Date & Time" required error={e.deliveryDate}>
             <Input
               id="deliveryDate"
               name="deliveryDate"
@@ -471,52 +381,22 @@ export function LoadForm({
               required
             />
           </Field>
-        </div>
-        <Field
-          name="deliveryWindow"
-          label="Delivery Window"
-          error={e.deliveryWindow}
-        >
-          <Input
-            id="deliveryWindow"
-            name="deliveryWindow"
-            placeholder="FCFS 08:00-15:00 / By Appt / ASAP"
-            defaultValue={initial?.deliveryWindow ?? ""}
-          />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            name="deliveryContact"
-            label="Contact Person"
-            error={e.deliveryContact}
-          >
-            <Input
-              id="deliveryContact"
-              name="deliveryContact"
-              defaultValue={initial?.deliveryContact ?? ""}
-            />
+          <Field name="deliveryWindow" label="Delivery Window" error={e.deliveryWindow}>
+            <Input id="deliveryWindow" name="deliveryWindow" placeholder="FCFS 08:00-15:00 / By Appt / ASAP" defaultValue={initial?.deliveryWindow ?? ""} />
           </Field>
-          <Field name="deliveryPhone" label="Phone" error={e.deliveryPhone}>
-            <Input
-              id="deliveryPhone"
-              name="deliveryPhone"
-              defaultValue={initial?.deliveryPhone ?? ""}
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <Field name="deliveryContact" label="Contact" error={e.deliveryContact}>
+              <Input id="deliveryContact" name="deliveryContact" defaultValue={initial?.deliveryContact ?? ""} />
+            </Field>
+            <Field name="deliveryPhone" label="Phone" error={e.deliveryPhone}>
+              <Input id="deliveryPhone" name="deliveryPhone" defaultValue={initial?.deliveryPhone ?? ""} />
+            </Field>
+          </div>
+          <Field name="deliveryNotes" label="Notes" error={e.deliveryNotes}>
+            <Textarea id="deliveryNotes" name="deliveryNotes" rows={2} defaultValue={initial?.deliveryNotes ?? ""} />
           </Field>
-        </div>
-        <Field
-          name="deliveryNotes"
-          label="Delivery Notes"
-          error={e.deliveryNotes}
-        >
-          <Textarea
-            id="deliveryNotes"
-            name="deliveryNotes"
-            rows={2}
-            defaultValue={initial?.deliveryNotes ?? ""}
-          />
-        </Field>
-      </section>
+        </section>
+      </div>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Cargo</h3>
