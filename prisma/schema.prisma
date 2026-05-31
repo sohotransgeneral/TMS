@@ -486,6 +486,9 @@ model Load {
   company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   referenceNumber String     // human-readable, e.g. L-2026-00001
+  loadNumber        String?   // broker/order load number
+  pickupNumber      String?   // PU# / shipment reference
+  deliveryNumber    String?   // delivery order number
 
   customerId      String?    @db.ObjectId
   customer        Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -533,6 +536,12 @@ model Load {
   equipment        String?   // 53' Dry Van, Reefer, etc.
   commodity        String?   // e.g. Auto Parts, Beer, Produce…
   accessorials     String?   // JSON array of selected accessorials
+  enteredBy         String?
+  invoicingCompany  String?
+  billingMethod     String?   // Collect, Prepaid, 3rd Party
+  billingType       String?   // Factoring, Direct, Broker
+  loadInvoiceNumber String?
+  accessorialAmount Float?    // accessorial charge $
 
   // Pricing
   price            Float

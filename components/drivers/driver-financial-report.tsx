@@ -530,7 +530,9 @@ export async function DriverFinancialReport({
             <Row label="GROSS salary" value={fmt(brutSalary, currency)} big />
           </Section>
 
-          {((taxCas != null && taxCas > 0) || (taxCass != null && taxCass > 0) || (taxImpozit != null && taxImpozit > 0)) && (
+          {((taxCas != null && taxCas > 0) ||
+            (taxCass != null && taxCass > 0) ||
+            (taxImpozit != null && taxImpozit > 0)) && (
             <Section title="Taxes (RO)" icon={Receipt}>
               <Row
                 label={`Employee pension (${taxCas ?? 25}%)`}
