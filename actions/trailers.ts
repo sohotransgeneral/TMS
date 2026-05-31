@@ -53,13 +53,15 @@ export async function updateTrailer(formData: FormData): Promise<ActionResult> {
     return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const { id, ...data } = parsed.data;
+  // Explicitly null-out pairedTruckId when cleared
+  const cleanData = { ...data, pairedTruckId: data.pairedTruckId ?? null };
 
   const target = await prisma.trailer.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) {
     return failure("Trailer not found.");
   }
 
-  const updated = await prisma.trailer.update({ where: { id }, data, select: { pairedTruckId: true } });
+  const updated = await prisma.trailer.update({ where: { id }, data: cleanData, select: { pairedTruckId: true } });
 
   // Bidirectional sync: update the paired truck's pairedTrailerId
   const newPaired = updated.pairedTruckId ?? null;
