@@ -34,6 +34,7 @@ export type LoadFormInitial = {
   pickupZip: string | null;
   pickupCountry: string | null;
   pickupDate: Date | string;
+  pickupTimezone: string | null;
   pickupWindow: string | null;
   pickupContact: string | null;
   pickupPhone: string | null;
@@ -45,6 +46,7 @@ export type LoadFormInitial = {
   deliveryZip: string | null;
   deliveryCountry: string | null;
   deliveryDate: Date | string;
+  deliveryTimezone: string | null;
   deliveryWindow: string | null;
   deliveryContact: string | null;
   deliveryPhone: string | null;
@@ -193,7 +195,9 @@ export function LoadForm({
   const [truckId, setTruckId] = useState(initial?.truckId ?? "");
   const [trailerId, setTrailerId] = useState(initial?.trailerId ?? "");
   const [price, setPrice] = useState(initial?.price ?? 0);
-  const [accessorialAmount, setAccessorialAmount] = useState(initial?.accessorialAmount ?? 0);
+  const [accessorialAmount, setAccessorialAmount] = useState(
+    initial?.accessorialAmount ?? 0,
+  );
 
   function handleDriverChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
@@ -250,8 +254,6 @@ export function LoadForm({
   return (
     <form action={formAction} className="grid gap-6">
       {editing && <input type="hidden" name="id" value={initial!.id} />}
-
-
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── SHIPPER ── */}
@@ -316,7 +318,9 @@ export function LoadForm({
               defaultValue={initial?.pickupCountry ?? "US"}
             />
           </Field>
-          <Field
+          <div className="grid grid-cols-3 gap-2 items-end">
+            <div className="col-span-2">
+            <Field
             name="pickupDate"
             label="Date & Time"
             required
@@ -330,6 +334,20 @@ export function LoadForm({
               required
             />
           </Field>
+            </div>
+            <Field name="pickupTimezone" label="TZ" error={e.pickupTimezone}>
+              <Select id="pickupTimezone" name="pickupTimezone" defaultValue={initial?.pickupTimezone ?? ""}>
+                <option value="">—</option>
+                <option value="ET">ET</option>
+                <option value="CT">CT</option>
+                <option value="MT">MT</option>
+                <option value="PT">PT</option>
+                <option value="AKT">AKT</option>
+                <option value="HT">HT</option>
+                <option value="UTC">UTC</option>
+              </Select>
+            </Field>
+          </div>
           <Field
             name="pickupWindow"
             label="Pickup Window"
@@ -434,7 +452,9 @@ export function LoadForm({
               defaultValue={initial?.deliveryCountry ?? ""}
             />
           </Field>
-          <Field
+          <div className="grid grid-cols-3 gap-2 items-end">
+            <div className="col-span-2">
+            <Field
             name="deliveryDate"
             label="Date & Time"
             required
@@ -448,6 +468,20 @@ export function LoadForm({
               required
             />
           </Field>
+            </div>
+            <Field name="deliveryTimezone" label="TZ" error={e.deliveryTimezone}>
+              <Select id="deliveryTimezone" name="deliveryTimezone" defaultValue={initial?.deliveryTimezone ?? ""}>
+                <option value="">—</option>
+                <option value="ET">ET</option>
+                <option value="CT">CT</option>
+                <option value="MT">MT</option>
+                <option value="PT">PT</option>
+                <option value="AKT">AKT</option>
+                <option value="HT">HT</option>
+                <option value="UTC">UTC</option>
+              </Select>
+            </Field>
+          </div>
           <Field
             name="deliveryWindow"
             label="Delivery Window"
@@ -493,32 +527,165 @@ export function LoadForm({
 
       {/* ── 3-COLUMN: Load/Equipment | Groups/Billing | Financials ── */}
       <div className="grid gap-4 xl:grid-cols-3 lg:grid-cols-2">
-
         {/* Col 1 – Load and Equipment */}
         <section className="grid content-start gap-3 rounded-lg border bg-card p-6">
           <h3 className="font-semibold">Load and Equipment</h3>
           <Field name="loadNumber" label="Load Number" error={e.loadNumber}>
-            <Input id="loadNumber" name="loadNumber" defaultValue={initial?.loadNumber ?? ""} />
+            <Input
+              id="loadNumber"
+              name="loadNumber"
+              defaultValue={initial?.loadNumber ?? ""}
+            />
           </Field>
-          <Field name="pickupNumber" label="Pickup Number" error={e.pickupNumber}>
-            <Input id="pickupNumber" name="pickupNumber" defaultValue={initial?.pickupNumber ?? ""} />
+          <Field
+            name="pickupNumber"
+            label="Pickup Number"
+            error={e.pickupNumber}
+          >
+            <Input
+              id="pickupNumber"
+              name="pickupNumber"
+              defaultValue={initial?.pickupNumber ?? ""}
+            />
           </Field>
-          <Field name="deliveryNumber" label="Delivery Number" error={e.deliveryNumber}>
-            <Input id="deliveryNumber" name="deliveryNumber" defaultValue={initial?.deliveryNumber ?? ""} />
+          <Field
+            name="deliveryNumber"
+            label="Delivery Number"
+            error={e.deliveryNumber}
+          >
+            <Input
+              id="deliveryNumber"
+              name="deliveryNumber"
+              defaultValue={initial?.deliveryNumber ?? ""}
+            />
           </Field>
           <Field name="commodity" label="Commodity" error={e.commodity}>
-            <Select id="commodity" name="commodity" defaultValue={initial?.commodity ?? ""}>
+            <Select
+              id="commodity"
+              name="commodity"
+              defaultValue={initial?.commodity ?? ""}
+            >
               <option value="">—</option>
-              {["A+ Slabs","Air Filtration Product","Aluminium Coils","Aluminum Cans","Aluminum Wheels","Appliances","Auto Parts","Baled Cardboard","Baled Paper","Batteries","Beer","Berries","Beverage Machinery","Beverages","Bolts","Books","Bottled Water","Bottles","Brackets","Brass","Brick","Building Materials","Cable Trays","Candies","Canned Goods","Car Parts","Carbon","Cardboard","Cargo Restraint Products","Chemicals","Clothing","Coffee","Computer Equipment","Construction Materials","Consumer Electronics","Copper","Cosmetics","Dairy Products","Dry Goods","Electronics","Fertilizer","Flooring","Food Products","Freight","Fresh Produce","Frozen Food","Furniture","Glass","Grain","Hardware","Heavy Machinery","Industrial Equipment","Iron","Landscaping Materials","Lumber","Machinery Parts","Medical Equipment","Medical Supplies","Metal Parts","Metal Scrap","Military Equipment","Motorcycle Parts","Packaging Materials","Paint","Paper Products","Pharmaceuticals","Pipes","Plastic","Plumbing Supplies","Plastics (Tubing, PVC Pipes, etc.)","Poultry","Produce","Recycled Materials","Refrigerated Goods","Retail Goods","Rubber","Salt","Seafood","Seeds","Sheet Metal","Shoes","Soft Drinks","Solar Panels","Steel","Steel Coils","Steel Pipes","Stone","Textiles","Tires","Tools","Vegetables","Water","Wine","Wire","Wood","Wood Products"].map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {[
+                "A+ Slabs",
+                "Air Filtration Product",
+                "Aluminium Coils",
+                "Aluminum Cans",
+                "Aluminum Wheels",
+                "Appliances",
+                "Auto Parts",
+                "Baled Cardboard",
+                "Baled Paper",
+                "Batteries",
+                "Beer",
+                "Berries",
+                "Beverage Machinery",
+                "Beverages",
+                "Bolts",
+                "Books",
+                "Bottled Water",
+                "Bottles",
+                "Brackets",
+                "Brass",
+                "Brick",
+                "Building Materials",
+                "Cable Trays",
+                "Candies",
+                "Canned Goods",
+                "Car Parts",
+                "Carbon",
+                "Cardboard",
+                "Cargo Restraint Products",
+                "Chemicals",
+                "Clothing",
+                "Coffee",
+                "Computer Equipment",
+                "Construction Materials",
+                "Consumer Electronics",
+                "Copper",
+                "Cosmetics",
+                "Dairy Products",
+                "Dry Goods",
+                "Electronics",
+                "Fertilizer",
+                "Flooring",
+                "Food Products",
+                "Freight",
+                "Fresh Produce",
+                "Frozen Food",
+                "Furniture",
+                "Glass",
+                "Grain",
+                "Hardware",
+                "Heavy Machinery",
+                "Industrial Equipment",
+                "Iron",
+                "Landscaping Materials",
+                "Lumber",
+                "Machinery Parts",
+                "Medical Equipment",
+                "Medical Supplies",
+                "Metal Parts",
+                "Metal Scrap",
+                "Military Equipment",
+                "Motorcycle Parts",
+                "Packaging Materials",
+                "Paint",
+                "Paper Products",
+                "Pharmaceuticals",
+                "Pipes",
+                "Plastic",
+                "Plumbing Supplies",
+                "Plastics (Tubing, PVC Pipes, etc.)",
+                "Poultry",
+                "Produce",
+                "Recycled Materials",
+                "Refrigerated Goods",
+                "Retail Goods",
+                "Rubber",
+                "Salt",
+                "Seafood",
+                "Seeds",
+                "Sheet Metal",
+                "Shoes",
+                "Soft Drinks",
+                "Solar Panels",
+                "Steel",
+                "Steel Coils",
+                "Steel Pipes",
+                "Stone",
+                "Textiles",
+                "Tires",
+                "Tools",
+                "Vegetables",
+                "Water",
+                "Wine",
+                "Wire",
+                "Wood",
+                "Wood Products",
+              ].map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </Select>
           </Field>
           <Field name="weightKg" label="Weight (lbs)" error={e.weightKg}>
-            <Input id="weightKg" name="weightKg" type="number" step="any" min="0" defaultValue={initial?.weightKg ?? ""} />
+            <Input
+              id="weightKg"
+              name="weightKg"
+              type="number"
+              step="any"
+              min="0"
+              defaultValue={initial?.weightKg ?? ""}
+            />
           </Field>
           <Field name="equipment" label="Equipment Type" error={e.equipment}>
-            <Select id="equipment" name="equipment" defaultValue={initial?.equipment ?? ""}>
+            <Select
+              id="equipment"
+              name="equipment"
+              defaultValue={initial?.equipment ?? ""}
+            >
               <option value="">—</option>
               <option value="Dry Van">Dry Van</option>
               <option value="Reefer">Reefer</option>
@@ -543,21 +710,51 @@ export function LoadForm({
         <section className="grid content-start gap-3 rounded-lg border bg-card p-6">
           <h3 className="font-semibold">Groups and Billing</h3>
           <Field name="enteredBy" label="Entered By" error={e.enteredBy}>
-            <Input id="enteredBy" name="enteredBy" defaultValue={initial?.enteredBy ?? ""} />
+            <Input
+              id="enteredBy"
+              name="enteredBy"
+              defaultValue={initial?.enteredBy ?? ""}
+            />
           </Field>
-          <Field name="invoicingCompany" label="Invoicing Company" error={e.invoicingCompany}>
-            <Input id="invoicingCompany" name="invoicingCompany" defaultValue={initial?.invoicingCompany ?? ""} />
+          <Field
+            name="invoicingCompany"
+            label="Invoicing Company"
+            error={e.invoicingCompany}
+          >
+            <Input
+              id="invoicingCompany"
+              name="invoicingCompany"
+              defaultValue={initial?.invoicingCompany ?? ""}
+            />
           </Field>
-          <Field name="customerId" label="Bill-to Customer" error={e.customerId}>
-            <Select id="customerId" name="customerId" defaultValue={initial?.customerId ?? ""}>
+          <Field
+            name="customerId"
+            label="Bill-to Customer"
+            error={e.customerId}
+          >
+            <Select
+              id="customerId"
+              name="customerId"
+              defaultValue={initial?.customerId ?? ""}
+            >
               <option value="">— spot / no customer —</option>
               {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
               ))}
             </Select>
           </Field>
-          <Field name="billingMethod" label="Billing Method" error={e.billingMethod}>
-            <Select id="billingMethod" name="billingMethod" defaultValue={initial?.billingMethod ?? ""}>
+          <Field
+            name="billingMethod"
+            label="Billing Method"
+            error={e.billingMethod}
+          >
+            <Select
+              id="billingMethod"
+              name="billingMethod"
+              defaultValue={initial?.billingMethod ?? ""}
+            >
               <option value="">—</option>
               <option value="Collect">Collect</option>
               <option value="Prepaid">Prepaid</option>
@@ -565,15 +762,27 @@ export function LoadForm({
             </Select>
           </Field>
           <Field name="billingType" label="Billing Type" error={e.billingType}>
-            <Select id="billingType" name="billingType" defaultValue={initial?.billingType ?? ""}>
+            <Select
+              id="billingType"
+              name="billingType"
+              defaultValue={initial?.billingType ?? ""}
+            >
               <option value="">—</option>
               <option value="Factoring">Factoring</option>
               <option value="Direct">Direct</option>
               <option value="Broker">Broker</option>
             </Select>
           </Field>
-          <Field name="loadInvoiceNumber" label="Invoice #" error={e.loadInvoiceNumber}>
-            <Input id="loadInvoiceNumber" name="loadInvoiceNumber" defaultValue={initial?.loadInvoiceNumber ?? ""} />
+          <Field
+            name="loadInvoiceNumber"
+            label="Invoice #"
+            error={e.loadInvoiceNumber}
+          >
+            <Input
+              id="loadInvoiceNumber"
+              name="loadInvoiceNumber"
+              defaultValue={initial?.loadInvoiceNumber ?? ""}
+            />
           </Field>
         </section>
 
@@ -592,7 +801,11 @@ export function LoadForm({
               required
             />
           </Field>
-          <Field name="accessorialAmount" label="Accessorial ($)" error={e.accessorialAmount}>
+          <Field
+            name="accessorialAmount"
+            label="Accessorial ($)"
+            error={e.accessorialAmount}
+          >
             <Input
               id="accessorialAmount"
               name="accessorialAmount"
@@ -606,11 +819,19 @@ export function LoadForm({
           <div className="flex items-center justify-between rounded border bg-muted/40 px-3 py-2">
             <span className="text-sm font-medium">Total</span>
             <span className="font-mono text-sm font-semibold">
-              ${(price + accessorialAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              $
+              {(price + accessorialAmount).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           <Field name="currency" label="Currency" error={e.currency}>
-            <Select id="currency" name="currency" defaultValue={initial?.currency ?? "USD"}>
+            <Select
+              id="currency"
+              name="currency"
+              defaultValue={initial?.currency ?? "USD"}
+            >
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
               <option value="RON">RON</option>
@@ -623,7 +844,10 @@ export function LoadForm({
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Accessorials</h3>
-        <AccessorialsField initial={initial?.accessorials ?? null} error={e.accessorials} />
+        <AccessorialsField
+          initial={initial?.accessorials ?? null}
+          error={e.accessorials}
+        />
       </section>
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">

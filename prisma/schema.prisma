@@ -503,6 +503,7 @@ model Load {
   pickupLat       Float?
   pickupLng       Float?
   pickupDate      DateTime
+  pickupTimezone  String?   // e.g. ET, CT, MT, PT
   pickupWindow    String?   // e.g. FCFS 08:00-15:00
   pickupContact   String?   // contact person
   pickupPhone     String?
@@ -518,6 +519,7 @@ model Load {
   deliveryLat     Float?
   deliveryLng     Float?
   deliveryDate    DateTime
+  deliveryTimezone String?  // e.g. ET, CT, MT, PT
   deliveryWindow  String?   // e.g. FCFS 08:00-15:00
   deliveryContact String?
   deliveryPhone   String?
