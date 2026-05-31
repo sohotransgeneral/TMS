@@ -90,7 +90,7 @@ export default async function DriversPage({
     prisma.trailer.findMany({
       where: { companyId: me.companyId ?? undefined },
       orderBy: { fleetNumber: "asc" },
-      select: { id: true, plateNumber: true, fleetNumber: true },
+      select: { id: true, plateNumber: true, fleetNumber: true, pairedTruckId: true },
     }),
   ]);
 
@@ -102,6 +102,7 @@ export default async function DriversPage({
   const trailerOpts = trailers.map((t) => ({
     id: t.id,
     label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+    pairedTruckId: t.pairedTruckId ?? null,
   }));
 
   return (

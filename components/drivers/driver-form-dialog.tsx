@@ -430,14 +430,11 @@ export function DriverFormDialog({
                 id="truckId"
                 name="truckId"
                 value={selectedTruckId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   const tid = e.target.value;
                   setSelectedTruckId(tid);
-                  // Auto-fill trailer from truck's paired trailer
                   const truck = trucks.find((t) => t.id === tid);
-                  if (truck?.pairedTrailerId) {
-                    setSelectedTrailerId(truck.pairedTrailerId);
-                  }
+                  if (truck?.pairedTrailerId) setSelectedTrailerId(truck.pairedTrailerId);
                 }}
               >
                 <option value="">— none —</option>
@@ -457,9 +454,12 @@ export function DriverFormDialog({
                 id="trailerId"
                 name="trailerId"
                 value={selectedTrailerId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setSelectedTrailerId(e.target.value)
-                }
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const tid = e.target.value;
+                  setSelectedTrailerId(tid);
+                  const trailer = trailers.find((t) => t.id === tid);
+                  if (trailer?.pairedTruckId) setSelectedTruckId(trailer.pairedTruckId);
+                }}
               >
                 <option value="">— none —</option>
                 {trailers.map((t) => (
@@ -494,7 +494,7 @@ export function NewDriverButton({
   trailers = [],
 }: {
   trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
-  trailers?: { id: string; label: string }[];
+  trailers?: { id: string; label: string; pairedTruckId?: string | null }[];
 }) {
   return (
     <DriverFormDialog
@@ -516,7 +516,7 @@ export function DriverRowActions({
 }: {
   driver: DriverRow;
   trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
-  trailers?: { id: string; label: string }[];
+  trailers?: { id: string; label: string; pairedTruckId?: string | null }[];
 }) {
   return (
     <div className="flex items-center justify-end gap-1">
