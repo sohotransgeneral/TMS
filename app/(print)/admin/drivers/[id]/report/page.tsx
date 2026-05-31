@@ -400,6 +400,7 @@ export default async function DriverReportPage({
                   />
                 ))}
               <R label="GROSS salary" value={fmt(data.brutSalary)} bold />
+              {(data.taxRates.cas > 0 || data.taxRates.cass > 0 || data.taxRates.impozit > 0) && (<>
               <tr>
                 <td colSpan={2} className="py-1 border-b border-border" />
               </tr>
@@ -424,6 +425,7 @@ export default async function DriverReportPage({
                 neg
                 bold
               />
+              </>)}
               <tr>
                 <td colSpan={2} className="py-1" />
               </tr>

@@ -530,6 +530,7 @@ export async function DriverFinancialReport({
             <Row label="GROSS salary" value={fmt(brutSalary, currency)} big />
           </Section>
 
+          {(taxCas != null || taxCass != null || taxImpozit != null) && (
           <Section title="Taxes (RO)" icon={Receipt}>
             <Row
               label={`Employee pension (${taxCas ?? 25}%)`}
@@ -553,6 +554,7 @@ export async function DriverFinancialReport({
               negative
             />
           </Section>
+          )}
 
           <div className="rounded-lg border-2 border-green-500/30 bg-green-500/5 px-4 py-3">
             <div className="flex items-baseline justify-between">
