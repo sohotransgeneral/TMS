@@ -225,7 +225,7 @@ export default async function LoadsPage({
                 <TableHead className="w-10">St.</TableHead>
                 <TableHead className="w-10">Cty</TableHead>
                 <TableHead className="w-16">Zip</TableHead>
-                <TableHead>Consignee</TableHead>
+                <TableHead>Receiver</TableHead>
                 <TableHead>City</TableHead>
                 <TableHead className="w-10">St.</TableHead>
                 <TableHead className="w-10">Cty</TableHead>
