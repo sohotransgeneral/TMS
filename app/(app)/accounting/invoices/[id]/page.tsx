@@ -45,7 +45,9 @@ export default async function InvoiceDetailPage({
     include: {
       company: { select: { name: true, logoUrl: true } },
       customer: true,
-      load: { select: { id: true, referenceNumber: true, loadInvoiceNumber: true } },
+      load: {
+        select: { id: true, referenceNumber: true, loadInvoiceNumber: true },
+      },
       payments: { orderBy: { paidAt: "desc" } },
     },
   });
@@ -157,10 +159,16 @@ export default async function InvoiceDetailPage({
                   <div className="font-medium">{invoice.series}</div>
                 </div>
               )}
-              {(invoice.load as { loadInvoiceNumber?: string | null } | null)?.loadInvoiceNumber && (
+              {(invoice.load as { loadInvoiceNumber?: string | null } | null)
+                ?.loadInvoiceNumber && (
                 <div>
                   <div className="text-muted-foreground">Load Invoice #</div>
-                  <div className="font-medium">{(invoice.load as { loadInvoiceNumber?: string | null }).loadInvoiceNumber}</div>
+                  <div className="font-medium">
+                    {
+                      (invoice.load as { loadInvoiceNumber?: string | null })
+                        .loadInvoiceNumber
+                    }
+                  </div>
                 </div>
               )}
             </div>

@@ -87,7 +87,9 @@ export function InvoiceForm({
   const [selectedLoadId, setSelectedLoadId] = useState<string>(
     initial?.loadId ?? defaultLoadId ?? "",
   );
-  const [series, setSeries] = useState<string>(initial?.series ?? defaultSeries ?? "");
+  const [series, setSeries] = useState<string>(
+    initial?.series ?? defaultSeries ?? "",
+  );
 
   // Auto-fill from load when selection changes
   useEffect(() => {

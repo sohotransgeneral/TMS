@@ -349,8 +349,6 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
 
   const supplierLines = [
     ...addrBlock(inv.company),
-    inv.company.bankAccount        ? `IBAN: ${inv.company.bankAccount}` : null,
-    inv.company.bankName           ? `Bank: ${inv.company.bankName}` : null,
   ].filter(Boolean) as string[];
 
   const customerLines = [

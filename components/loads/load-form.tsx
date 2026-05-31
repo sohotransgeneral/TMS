@@ -209,12 +209,13 @@ export function LoadForm({
   function handleDriverChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
     setDriverId(id);
-    if (id) {
+    if (!id) {
+      setTruckId("");
+      setTrailerId("");
+    } else {
       const assignment = driverAssignments.find((a) => a.id === id);
-      if (assignment) {
-        setTruckId(assignment.truckId ?? "");
-        setTrailerId(assignment.trailerId ?? "");
-      }
+      setTruckId(assignment?.truckId ?? "");
+      setTrailerId(assignment?.trailerId ?? "");
     }
   }
 
