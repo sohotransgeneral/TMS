@@ -441,7 +441,8 @@ export function DriverFormDialog({
                     setSelectedTrailerId("");
                   } else {
                     const truck = trucks.find((t) => t.id === tid);
-                    if (truck?.pairedTrailerId) setSelectedTrailerId(truck.pairedTrailerId);
+                    if (truck?.pairedTrailerId)
+                      setSelectedTrailerId(truck.pairedTrailerId);
                   }
                 }}
               >
@@ -469,7 +470,8 @@ export function DriverFormDialog({
                     setSelectedTruckId("");
                   } else {
                     const trailer = trailers.find((t) => t.id === tid);
-                    if (trailer?.pairedTruckId) setSelectedTruckId(trailer.pairedTruckId);
+                    if (trailer?.pairedTruckId)
+                      setSelectedTruckId(trailer.pairedTruckId);
                   }
                 }}
               >

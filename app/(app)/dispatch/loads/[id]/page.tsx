@@ -71,12 +71,22 @@ export default async function LoadDetailPage({
     prisma.truck.findMany({
       where,
       orderBy: { plateNumber: "asc" },
-      select: { id: true, plateNumber: true, fleetNumber: true, pairedTrailerId: true },
+      select: {
+        id: true,
+        plateNumber: true,
+        fleetNumber: true,
+        pairedTrailerId: true,
+      },
     }),
     prisma.trailer.findMany({
       where,
       orderBy: { plateNumber: "asc" },
-      select: { id: true, plateNumber: true, fleetNumber: true, pairedTruckId: true },
+      select: {
+        id: true,
+        plateNumber: true,
+        fleetNumber: true,
+        pairedTruckId: true,
+      },
     }),
   ]);
 

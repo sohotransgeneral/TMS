@@ -12,7 +12,12 @@ import { createLoad, updateLoad } from "@/actions/loads";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 
-type Opt = { id: string; label: string; pairedTrailerId?: string | null; pairedTruckId?: string | null };
+type Opt = {
+  id: string;
+  label: string;
+  pairedTrailerId?: string | null;
+  pairedTruckId?: string | null;
+};
 type DriverAssignment = {
   id: string;
   truckId: string | null;
@@ -120,9 +125,12 @@ export function LoadForm({
     setTruckId(id);
     if (!id) {
       setTrailerId("");
+      setDriverId("");
     } else {
       const truck = trucks.find((t) => t.id === id);
       if (truck?.pairedTrailerId) setTrailerId(truck.pairedTrailerId);
+      const assignment = driverAssignments.find((a) => a.truckId === id);
+      if (assignment) setDriverId(assignment.id);
     }
   }
 
@@ -131,9 +139,12 @@ export function LoadForm({
     setTrailerId(id);
     if (!id) {
       setTruckId("");
+      setDriverId("");
     } else {
       const trailer = trailers.find((t) => t.id === id);
       if (trailer?.pairedTruckId) setTruckId(trailer.pairedTruckId);
+      const assignment = driverAssignments.find((a) => a.trailerId === id);
+      if (assignment) setDriverId(assignment.id);
     }
   }
 
