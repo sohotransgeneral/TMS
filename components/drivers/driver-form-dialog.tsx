@@ -254,32 +254,6 @@ export function DriverFormDialog({
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              name="tachoCardNumber"
-              label="Tachograph Card"
-              error={errors.tachoCardNumber}
-            >
-              <Input
-                id="tachoCardNumber"
-                name="tachoCardNumber"
-                defaultValue={initial?.tachoCardNumber ?? ""}
-              />
-            </Field>
-            <Field
-              name="tachoCardExpiresAt"
-              label="Tachograph Expires"
-              error={errors.tachoCardExpiresAt}
-            >
-              <Input
-                id="tachoCardExpiresAt"
-                name="tachoCardExpiresAt"
-                type="date"
-                defaultValue={toDateInput(initial?.tachoCardExpiresAt)}
-              />
-            </Field>
-          </div>
-
           <div className="grid gap-4 sm:grid-cols-3">
             <Field
               name="medicalCardNumber"
