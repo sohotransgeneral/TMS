@@ -177,6 +177,7 @@ export function LoadForm({
   driverAssignments = [],
   userName,
   companyName,
+  enteredByUsers = [],
 }: {
   initial?: LoadFormInitial;
   customers: Opt[];
@@ -186,6 +187,7 @@ export function LoadForm({
   driverAssignments?: DriverAssignment[];
   userName?: string;
   companyName?: string;
+  enteredByUsers?: string[];
 }) {
   const editing = Boolean(initial);
   const router = useRouter();
@@ -732,11 +734,9 @@ export function LoadForm({
               defaultValue={initial?.enteredBy ?? userName ?? ""}
             >
               <option value="">—</option>
-              {userName && <option value={userName}>{userName}</option>}
-              <option value="Dispatcher">Dispatcher</option>
-              <option value="Accountant">Accountant</option>
-              <option value="Manager">Manager</option>
-              <option value="General">General</option>
+              {enteredByUsers.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
             </Select>
           </Field>
           <Field

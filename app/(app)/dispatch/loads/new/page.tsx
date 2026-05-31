@@ -11,7 +11,9 @@ export default async function NewLoadPage() {
   const currentUser = await getCurrentUser();
   const where = { companyId: me.companyId ?? undefined };
 
-  const [customers, drivers, trucks, trailers] = await Promise.all([
+  const LOADS_WRITE_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"];
+
+  const [customers, drivers, trucks, trailers, loadUsers] = await Promise.all([
     prisma.customer.findMany({
       where,
       orderBy: { name: "asc" },
@@ -49,6 +51,11 @@ export default async function NewLoadPage() {
         pairedTruckId: true,
       },
     }),
+    prisma.user.findMany({
+      where: { companyId: me.companyId ?? undefined, role: { in: LOADS_WRITE_ROLES as never[] } },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return (
@@ -80,6 +87,7 @@ export default async function NewLoadPage() {
         }))}
         userName={currentUser?.name ?? undefined}
         companyName={currentUser?.company?.name ?? undefined}
+        enteredByUsers={loadUsers.map((u) => u.name).filter((n): n is string => n != null)}
       />
     </div>
   );
