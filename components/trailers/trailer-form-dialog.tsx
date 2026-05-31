@@ -139,7 +139,11 @@ export function TrailerFormDialog({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="capacityKg" label="Capacity (lbs)" error={e.capacityKg}>
+            <Field
+              name="capacityKg"
+              label="Capacity (lbs)"
+              error={e.capacityKg}
+            >
               <Input
                 id="capacityKg"
                 name="capacityKg"

@@ -67,7 +67,7 @@ export function DriverFormDialog({
   trigger,
 }: {
   initial?: DriverRow;
-  trucks?: { id: string; label: string }[];
+  trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
   trailers?: { id: string; label: string }[];
   trigger: React.ReactNode;
 }) {
@@ -78,6 +78,17 @@ export function DriverFormDialog({
     ActionResult | null,
     FormData
   >(action, null);
+
+  const [selectedTruckId, setSelectedTruckId] = useState(initial?.truckId ?? "");
+  const [selectedTrailerId, setSelectedTrailerId] = useState(initial?.trailerId ?? "");
+
+  // Reset when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setSelectedTruckId(initial?.truckId ?? "");
+      setSelectedTrailerId(initial?.trailerId ?? "");
+    }
+  }, [open, initial?.truckId, initial?.trailerId]);
 
   useEffect(() => {
     if (!state) return;
@@ -418,7 +429,16 @@ export function DriverFormDialog({
               <Select
                 id="truckId"
                 name="truckId"
-                defaultValue={initial?.truckId ?? ""}
+                value={selectedTruckId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const tid = e.target.value;
+                  setSelectedTruckId(tid);
+                  // Auto-fill trailer from truck's paired trailer
+                  const truck = trucks.find((t) => t.id === tid);
+                  if (truck?.pairedTrailerId) {
+                    setSelectedTrailerId(truck.pairedTrailerId);
+                  }
+                }}
               >
                 <option value="">— none —</option>
                 {trucks.map((t) => (
@@ -436,7 +456,10 @@ export function DriverFormDialog({
               <Select
                 id="trailerId"
                 name="trailerId"
-                defaultValue={initial?.trailerId ?? ""}
+                value={selectedTrailerId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setSelectedTrailerId(e.target.value)
+                }
               >
                 <option value="">— none —</option>
                 {trailers.map((t) => (
@@ -470,7 +493,7 @@ export function NewDriverButton({
   trucks = [],
   trailers = [],
 }: {
-  trucks?: { id: string; label: string }[];
+  trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
   trailers?: { id: string; label: string }[];
 }) {
   return (
@@ -492,7 +515,7 @@ export function DriverRowActions({
   trailers = [],
 }: {
   driver: DriverRow;
-  trucks?: { id: string; label: string }[];
+  trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
   trailers?: { id: string; label: string }[];
 }) {
   return (
