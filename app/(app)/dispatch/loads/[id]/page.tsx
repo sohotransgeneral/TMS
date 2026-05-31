@@ -12,21 +12,27 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   Pencil,
   MapPin,
-  Package,
   User as UserIcon,
   Truck as TruckIcon,
   History,
   FileText,
   Building2,
   Phone,
-  Mail,
-  Hash,
   AlertTriangle,
-  DollarSign,
+  MessageSquare,
 } from "lucide-react";
 import { DocumentSection } from "@/components/documents/document-section";
 
 export const metadata = { title: "Load Details" };
+
+function Row({ label, value }: { label: string; value?: string | number | null }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium">{value ?? "—"}</span>
+    </div>
+  );
+}
 
 export default async function LoadDetailPage({
   params,
@@ -92,6 +98,24 @@ export default async function LoadDetailPage({
 
   const canForce = me.role === "COMPANY_ADMIN" || me.role === "SUPER_ADMIN";
 
+  const l = load as typeof load & {
+    loadNumber?: string | null;
+    pickupNumber?: string | null;
+    deliveryNumber?: string | null;
+    commodity?: string | null;
+    enteredBy?: string | null;
+    invoicingCompany?: string | null;
+    billingMethod?: string | null;
+    billingType?: string | null;
+    loadInvoiceNumber?: string | null;
+    accessorialAmount?: number | null;
+    pickupTimezone?: string | null;
+    deliveryTimezone?: string | null;
+    dispatchNotes?: string | null;
+  };
+
+  const totalRate = (l.price ?? 0) + (l.accessorialAmount ?? 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -116,22 +140,14 @@ export default async function LoadDetailPage({
             {load.invoice && (
               <Button asChild variant="outline">
                 <Link href={`/accounting/invoices/${load.invoice.id}`}>
-                  <FileText className="mr-2 h-4 w-4" /> Invoice{" "}
-                  {load.invoice.number}
+                  <FileText className="mr-2 h-4 w-4" /> Invoice {load.invoice.number}
                 </Link>
               </Button>
             )}
             <LoadAssignDialog
               loadId={load.id}
-              current={{
-                driverId: load.driverId,
-                truckId: load.truckId,
-                trailerId: load.trailerId,
-              }}
-              drivers={drivers.map((d) => ({
-                id: d.id,
-                label: d.user?.name ?? "Driver",
-              }))}
+              current={{ driverId: load.driverId, truckId: load.truckId, trailerId: load.trailerId }}
+              drivers={drivers.map((d) => ({ id: d.id, label: d.user?.name ?? "Driver" }))}
               trucks={trucks.map((t) => ({
                 id: t.id,
                 label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
@@ -142,57 +158,141 @@ export default async function LoadDetailPage({
                 label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
                 pairedTruckId: t.pairedTruckId ?? null,
               }))}
-              driverAssignments={drivers.map((d) => ({
-                id: d.id,
-                truckId: d.truckId,
-                trailerId: d.trailerId,
-              }))}
+              driverAssignments={drivers.map((d) => ({ id: d.id, truckId: d.truckId, trailerId: d.trailerId }))}
               trigger={
                 <Button variant="outline">
                   <UserIcon className="mr-2 h-4 w-4" /> Assign
                 </Button>
               }
             />
-            <LoadStatusButton
-              loadId={load.id}
-              current={load.status}
-              canForce={canForce}
-            />
+            <LoadStatusButton loadId={load.id} current={load.status} canForce={canForce} />
           </div>
         }
       />
 
-      {/* Summary bar */}
+      {/* Status bar */}
       <div className="flex flex-wrap items-center gap-4 rounded-lg border bg-card p-4">
         <LoadStatusBadge status={load.status} className="text-sm" />
         <div className="text-2xl font-semibold tabular-nums">
-          {formatCurrency(load.price, load.currency)}
+          {formatCurrency(totalRate, load.currency)}
         </div>
         {load.customer && (
           <div className="text-sm text-muted-foreground">
-            Customer:{" "}
-            <span className="font-medium text-foreground">
-              {load.customer.name}
-            </span>
+            Bill-to:{" "}
+            <span className="font-medium text-foreground">{load.customer.name}</span>
           </div>
         )}
-        {(load.loadType || load.equipment) && (
-          <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
-            {load.loadType && (
-              <span className="rounded bg-muted px-2 py-0.5 font-medium text-foreground">
-                {load.loadType}
-              </span>
-            )}
-            {load.equipment && <span>{load.equipment}</span>}
+        {load.equipment && (
+          <div className="ml-auto rounded bg-muted px-2 py-0.5 text-sm font-medium">
+            {load.equipment}
           </div>
         )}
       </div>
 
-      {/* Pickup + Delivery */}
+      {/* 3-column grid */}
+      <div className="grid gap-6 xl:grid-cols-3 lg:grid-cols-2">
+        {/* Col 1 – Load & Equipment */}
+        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Load and Equipment</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Row label="Load #" value={l.loadNumber} />
+            <Row label="Pickup #" value={l.pickupNumber} />
+            <Row label="Delivery #" value={l.deliveryNumber} />
+            <Row label="Commodity" value={l.commodity} />
+            <Row label="Weight" value={load.weightKg ? `${load.weightKg.toLocaleString()} lbs` : null} />
+            <Row label="Equipment Type" value={load.equipment} />
+          </div>
+          {load.isHazardous && (
+            <div className="flex items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+              <AlertTriangle className="h-4 w-4" /> Hazardous / ADR
+            </div>
+          )}
+        </section>
+
+        {/* Col 2 – Groups & Billing */}
+        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Groups and Billing</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <Row label="Entered By" value={l.enteredBy} />
+            <Row label="Invoicing Company" value={l.invoicingCompany} />
+            <Row label="Bill-to Customer" value={load.customer?.name} />
+            <Row label="Billing Method" value={l.billingMethod} />
+            <Row label="Billing Type" value={l.billingType} />
+            <Row label="Invoice #" value={l.loadInvoiceNumber} />
+          </div>
+          <div className="border-t pt-3 space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <UserIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Driver:</span>
+              <span className="font-medium">{load.driver?.user?.name ?? "—"}</span>
+              {load.driver?.user?.phone && (
+                <span className="text-muted-foreground text-xs">· {load.driver.user.phone}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <TruckIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-muted-foreground">Truck:</span>
+                <span className="font-medium">{load.truck?.plateNumber ?? "—"}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">Trailer:</span>
+                <span className="font-medium">{load.trailer?.plateNumber ?? "—"}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Col 3 – Financials */}
+        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+          <h3 className="font-semibold">Financials</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Rate</span>
+              <span className="font-medium tabular-nums">{formatCurrency(load.price, load.currency)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Accessorial</span>
+              <span className="font-medium tabular-nums">
+                {l.accessorialAmount ? formatCurrency(l.accessorialAmount, load.currency) : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-2 font-semibold text-sm">
+              <span>Total</span>
+              <span className="tabular-nums">{formatCurrency(totalRate, load.currency)}</span>
+            </div>
+          </div>
+          {(load.poNumber || load.soNumber) && (
+            <div className="grid grid-cols-2 gap-3 border-t pt-3">
+              <Row label="PO #" value={load.poNumber} />
+              <Row label="SO #" value={load.soNumber} />
+            </div>
+          )}
+          {(load.brokerName || load.brokerPhone) && (
+            <div className="border-t pt-3 space-y-1.5 text-sm">
+              <span className="text-xs text-muted-foreground">Broker</span>
+              {load.brokerName && (
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-medium">{load.brokerName}</span>
+                </div>
+              )}
+              {load.brokerPhone && (
+                <div className="flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <a href={`tel:${load.brokerPhone}`} className="hover:underline">{load.brokerPhone}</a>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Shipper + Receiver */}
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-lg border bg-card p-6">
           <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <MapPin className="h-4 w-4 text-emerald-600" /> Pickup
+            <MapPin className="h-4 w-4 text-emerald-600" /> Shipper
           </h3>
           <div className="space-y-2 text-sm">
             {load.pickupCompanyName && (
@@ -201,20 +301,16 @@ export default async function LoadDetailPage({
                 {load.pickupCompanyName}
               </div>
             )}
-            <div className="font-medium">{load.pickupAddress}</div>
+            <div className="font-medium">{load.pickupAddress || "—"}</div>
             <div className="text-muted-foreground">
-              {[load.pickupCity, load.pickupCountry]
-                .filter(Boolean)
-                .join(", ") || "—"}
+              {[load.pickupCity, load.pickupState, load.pickupZip, load.pickupCountry].filter(Boolean).join(", ") || "—"}
             </div>
             <div className="mt-1 font-medium">
               {formatDate(load.pickupDate, true)}
+              {l.pickupTimezone && (
+                <span className="ml-1 text-xs text-muted-foreground">{l.pickupTimezone}</span>
+              )}
             </div>
-            {(load as { pickupWindow?: string | null }).pickupWindow && (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                🕐 {(load as { pickupWindow?: string | null }).pickupWindow}
-              </div>
-            )}
             {(load.pickupContact || load.pickupPhone) && (
               <div className="mt-2 space-y-1 border-t pt-2">
                 {load.pickupContact && (
@@ -225,10 +321,7 @@ export default async function LoadDetailPage({
                 {load.pickupPhone && (
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Phone className="h-3.5 w-3.5" />
-                    <a
-                      href={`tel:${load.pickupPhone}`}
-                      className="hover:underline"
-                    >
+                    <a href={`tel:${load.pickupPhone}`} className="hover:underline">
                       {load.pickupPhone}
                     </a>
                   </div>
@@ -245,7 +338,7 @@ export default async function LoadDetailPage({
 
         <section className="rounded-lg border bg-card p-6">
           <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <MapPin className="h-4 w-4 text-rose-600" /> Delivery
+            <MapPin className="h-4 w-4 text-rose-600" /> Receiver
           </h3>
           <div className="space-y-2 text-sm">
             {load.deliveryCompanyName && (
@@ -254,20 +347,16 @@ export default async function LoadDetailPage({
                 {load.deliveryCompanyName}
               </div>
             )}
-            <div className="font-medium">{load.deliveryAddress}</div>
+            <div className="font-medium">{load.deliveryAddress || "—"}</div>
             <div className="text-muted-foreground">
-              {[load.deliveryCity, load.deliveryCountry]
-                .filter(Boolean)
-                .join(", ") || "—"}
+              {[load.deliveryCity, load.deliveryState, load.deliveryZip, load.deliveryCountry].filter(Boolean).join(", ") || "—"}
             </div>
             <div className="mt-1 font-medium">
               {formatDate(load.deliveryDate, true)}
+              {l.deliveryTimezone && (
+                <span className="ml-1 text-xs text-muted-foreground">{l.deliveryTimezone}</span>
+              )}
             </div>
-            {(load as { deliveryWindow?: string | null }).deliveryWindow && (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                🕐 {(load as { deliveryWindow?: string | null }).deliveryWindow}
-              </div>
-            )}
             {(load.deliveryContact || load.deliveryPhone) && (
               <div className="mt-2 space-y-1 border-t pt-2">
                 {load.deliveryContact && (
@@ -278,10 +367,7 @@ export default async function LoadDetailPage({
                 {load.deliveryPhone && (
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Phone className="h-3.5 w-3.5" />
-                    <a
-                      href={`tel:${load.deliveryPhone}`}
-                      className="hover:underline"
-                    >
+                    <a href={`tel:${load.deliveryPhone}`} className="hover:underline">
                       {load.deliveryPhone}
                     </a>
                   </div>
@@ -295,189 +381,9 @@ export default async function LoadDetailPage({
             )}
           </div>
         </section>
-
-        {/* Cargo */}
-        <section className="rounded-lg border bg-card p-6">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <Package className="h-4 w-4" /> Cargo
-          </h3>
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div className="col-span-2">
-              <dt className="text-muted-foreground">Description</dt>
-              <dd>{load.cargoDescription ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Weight</dt>
-              <dd>
-                {load.weightKg ? `${load.weightKg.toLocaleString()} lbs` : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Volume</dt>
-              <dd>{load.volumeM3 ? `${load.volumeM3} m³` : "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Packages</dt>
-              <dd>{load.packages ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Temperature</dt>
-              <dd>{load.temperature ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">ADR / Hazmat</dt>
-              <dd>{load.isHazardous ? "Yes" : "No"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Miles</dt>
-              <dd>
-                {load.estimatedDistanceKm
-                  ? `${load.estimatedDistanceKm.toLocaleString()} mi`
-                  : "—"}
-              </dd>
-            </div>
-            {load.actualDistanceKm && (
-              <div>
-                <dt className="text-muted-foreground">Actual Miles</dt>
-                <dd>{load.actualDistanceKm.toLocaleString()} mi</dd>
-              </div>
-            )}
-          </dl>
-        </section>
-
-        {/* Pay breakdown + References */}
-        <section className="rounded-lg border bg-card p-6">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <DollarSign className="h-4 w-4" /> Pay & References
-          </h3>
-          <div className="space-y-4 text-sm">
-            {/* Pay breakdown */}
-            <div className="rounded-md bg-muted p-3 space-y-1.5">
-              {load.lineHaulRate != null && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Line Haul</span>
-                  <span className="tabular-nums font-medium">
-                    {formatCurrency(load.lineHaulRate, load.currency)}
-                  </span>
-                </div>
-              )}
-              {load.fuelSurcharge != null && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fuel Surcharge</span>
-                  <span className="tabular-nums font-medium">
-                    {formatCurrency(load.fuelSurcharge, load.currency)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between border-t pt-1.5 font-semibold">
-                <span>Total Pay</span>
-                <span className="tabular-nums">
-                  {formatCurrency(load.price, load.currency)}
-                </span>
-              </div>
-            </div>
-
-            {/* References */}
-            {(load.poNumber || load.soNumber) && (
-              <div className="flex flex-wrap gap-4">
-                {load.poNumber && (
-                  <div className="flex items-center gap-1.5">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-muted-foreground">PO:</span>
-                    <span className="font-medium">{load.poNumber}</span>
-                  </div>
-                )}
-                {load.soNumber && (
-                  <div className="flex items-center gap-1.5">
-                    <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-muted-foreground">SO:</span>
-                    <span className="font-medium">{load.soNumber}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
       </div>
 
-      {/* Assigned Resources */}
-      <section className="rounded-lg border bg-card p-6">
-        <h3 className="mb-4 flex items-center gap-2 font-semibold">
-          <TruckIcon className="h-4 w-4" /> Assigned Resources
-        </h3>
-        <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div>
-            <dt className="text-muted-foreground">Driver</dt>
-            <dd>
-              {load.driver?.user?.name ?? "—"}
-              {load.driver?.user?.phone && (
-                <div className="text-xs text-muted-foreground">
-                  {load.driver.user.phone}
-                </div>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Truck</dt>
-            <dd>
-              {load.truck?.plateNumber ?? "—"}
-              {load.truck?.make && (
-                <div className="text-xs text-muted-foreground">
-                  {[load.truck.make, load.truck.model]
-                    .filter(Boolean)
-                    .join(" ")}
-                </div>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Trailer</dt>
-            <dd>{load.trailer?.plateNumber ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Dispatcher</dt>
-            <dd>{load.dispatcher?.name ?? "—"}</dd>
-          </div>
-        </dl>
-      </section>
-
-      {/* Broker */}
-      {(load.brokerName || load.brokerPhone || load.brokerEmail) && (
-        <section className="rounded-lg border bg-card p-6">
-          <h3 className="mb-4 flex items-center gap-2 font-semibold">
-            <Building2 className="h-4 w-4" /> Broker Contact
-          </h3>
-          <div className="flex flex-wrap gap-6 text-sm">
-            {load.brokerName && (
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{load.brokerName}</span>
-              </div>
-            )}
-            {load.brokerPhone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${load.brokerPhone}`} className="hover:underline">
-                  {load.brokerPhone}
-                </a>
-              </div>
-            )}
-            {load.brokerEmail && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <a
-                  href={`mailto:${load.brokerEmail}`}
-                  className="hover:underline"
-                >
-                  {load.brokerEmail}
-                </a>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Special Instructions */}
+      {/* Notes */}
       {load.specialInstructions && (
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950/30">
           <h3 className="mb-3 flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-300">
@@ -489,16 +395,25 @@ export default async function LoadDetailPage({
         </section>
       )}
 
-      {/* Internal Notes */}
-      {load.internalNotes && (
-        <section className="rounded-lg border bg-card p-6">
-          <h3 className="mb-3 flex items-center gap-2 font-semibold">
-            <FileText className="h-4 w-4" /> Internal Notes
-          </h3>
-          <div className="whitespace-pre-wrap text-sm text-muted-foreground">
-            {load.internalNotes}
-          </div>
-        </section>
+      {(l.dispatchNotes || load.internalNotes) && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {l.dispatchNotes && (
+            <section className="rounded-lg border bg-card p-6">
+              <h3 className="mb-3 flex items-center gap-2 font-semibold">
+                <MessageSquare className="h-4 w-4" /> Dispatch Notes
+              </h3>
+              <div className="whitespace-pre-wrap text-sm text-muted-foreground">{l.dispatchNotes}</div>
+            </section>
+          )}
+          {load.internalNotes && (
+            <section className="rounded-lg border bg-card p-6">
+              <h3 className="mb-3 flex items-center gap-2 font-semibold">
+                <FileText className="h-4 w-4" /> Internal Notes
+              </h3>
+              <div className="whitespace-pre-wrap text-sm text-muted-foreground">{load.internalNotes}</div>
+            </section>
+          )}
+        </div>
       )}
 
       {/* Status History */}
@@ -511,24 +426,15 @@ export default async function LoadDetailPage({
         ) : (
           <ol className="space-y-3">
             {load.statusHistory.map((h) => (
-              <li
-                key={h.id}
-                className="flex gap-3 border-l-2 border-primary/40 pl-4"
-              >
+              <li key={h.id} className="flex gap-3 border-l-2 border-primary/40 pl-4">
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <LoadStatusBadge status={h.status} />
                     <span className="text-xs text-muted-foreground">
-                      {formatDate(h.createdAt, true)} ·{" "}
-                      {h.changedBy?.name ?? "System"}
+                      {formatDate(h.createdAt, true)} · {h.changedBy?.name ?? "System"}
                     </span>
                   </div>
                   {h.note && <p className="mt-1 text-sm">{h.note}</p>}
-                  {h.lat != null && h.lng != null && (
-                    <p className="text-xs text-muted-foreground">
-                      📍 {h.lat.toFixed(5)}, {h.lng.toFixed(5)}
-                    </p>
-                  )}
                 </div>
               </li>
             ))}
@@ -537,9 +443,7 @@ export default async function LoadDetailPage({
       </section>
 
       <section className="rounded-lg border bg-card p-6">
-        <h3 className="mb-4 font-semibold">
-          Documents ({load.documents.length})
-        </h3>
+        <h3 className="mb-4 font-semibold">Documents ({load.documents.length})</h3>
         <DocumentSection
           initialDocuments={load.documents.map((d) => ({
             ...d,
