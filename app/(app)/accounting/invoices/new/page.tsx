@@ -58,7 +58,15 @@ export default async function NewInvoicePage({
           ...(loadIdFromUrl ? [{ id: loadIdFromUrl }] : []),
         ],
       },
-      select: { id: true, referenceNumber: true, status: true, pickupCity: true, deliveryCity: true, price: true, accessorialAmount: true },
+      select: {
+        id: true,
+        referenceNumber: true,
+        status: true,
+        pickupCity: true,
+        deliveryCity: true,
+        price: true,
+        accessorialAmount: true,
+      },
       take: 100,
     }),
     prisma.company.findUnique({
@@ -68,10 +76,18 @@ export default async function NewInvoicePage({
   ]);
 
   // Pre-fill invoice line from load (city names + price)
-  const loadFromUrl = loadIdFromUrl ? loads.find((l) => l.id === loadIdFromUrl) : null;
-  const priceFromUrl = sp.price ? Number(sp.price) : (loadFromUrl ? loadFromUrl.price + (loadFromUrl.accessorialAmount ?? 0) : null);
+  const loadFromUrl = loadIdFromUrl
+    ? loads.find((l) => l.id === loadIdFromUrl)
+    : null;
+  const priceFromUrl = sp.price
+    ? Number(sp.price)
+    : loadFromUrl
+      ? loadFromUrl.price + (loadFromUrl.accessorialAmount ?? 0)
+      : null;
   const descFromUrl = loadFromUrl
-    ? [loadFromUrl.pickupCity, loadFromUrl.deliveryCity].filter(Boolean).join(" > ") || "Freight transport"
+    ? [loadFromUrl.pickupCity, loadFromUrl.deliveryCity]
+        .filter(Boolean)
+        .join(" > ") || "Freight transport"
     : "Freight transport";
   const defaultItems =
     priceFromUrl && priceFromUrl > 0
@@ -96,6 +112,7 @@ export default async function NewInvoicePage({
           deliveryCity: l.deliveryCity,
           price: l.price,
           accessorialAmount: l.accessorialAmount,
+          loadInvoiceNumber: l.loadInvoiceNumber,
         }))}
         defaultVatRate={company?.vatRate ?? 19}
         defaultCurrency={sp.currency ?? "USD"}

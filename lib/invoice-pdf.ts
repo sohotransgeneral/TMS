@@ -425,8 +425,6 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   const tbX = W - MR - tbW;
 
   const totalsRows: { label: string; value: string; bold?: boolean; hl?: boolean }[] = [
-    { label: "Subtotal",              value: fmtMoney(inv.subtotal,   inv.currency) },
-    { label: `VAT (${inv.vatRate}%)`, value: fmtMoney(inv.vatAmount,  inv.currency) },
     { label: "Total",                 value: fmtMoney(inv.total,      inv.currency), bold: true },
     { label: "Paid",                  value: fmtMoney(inv.paidAmount, inv.currency) },
     { label: "Balance Due",           value: fmtMoney(remaining,       inv.currency), hl: true },

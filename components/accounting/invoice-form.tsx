@@ -21,6 +21,7 @@ type LoadData = {
   deliveryCity?: string | null;
   price?: number | null;
   accessorialAmount?: number | null;
+  loadInvoiceNumber?: string | null;
 };
 
 export type InvoiceInitial = {
@@ -79,30 +80,31 @@ export function InvoiceForm({
     return [{ description: "", quantity: 1, unitPrice: 0 }];
   })();
   const [items, setItems] = useState<ItemRow[]>(initialItems);
-  const [vatRate, setVatRate] = useState<number>(
-    initial?.vatRate ?? defaultVatRate,
-  );
   const currency = initial?.currency ?? defaultCurrency;
 
   const [selectedLoadId, setSelectedLoadId] = useState<string>(
     initial?.loadId ?? defaultLoadId ?? "",
   );
+  const [series, setSeries] = useState<string>(initial?.series ?? "");
 
-  // Auto-fill description and amount from load when selection changes
+  // Auto-fill from load when selection changes
   useEffect(() => {
     if (!selectedLoadId) return;
     const ld = loadsData.find((l) => l.id === selectedLoadId);
     if (!ld) return;
     const pickup = ld.pickupCity ?? "";
     const delivery = ld.deliveryCity ?? "";
-    const desc = [pickup, delivery].filter(Boolean).join(" > ") || "Freight transport";
-    const amount = (ld.price ?? 0) + (ld.accessorialAmount ?? 0);
-    setItems((prev) => {
-      const updated = [...prev];
-      updated[0] = { ...updated[0], description: desc, unitPrice: amount, quantity: 1 };
-      return updated;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const desc =
+      [pickup, delivery].filter(Boolean).join(" > ") || "Freight transport";
+    const newItems: ItemRow[] = [
+      { description: desc, quantity: 1, unitPrice: ld.price ?? 0 },
+    ];
+    if ((ld.accessorialAmount ?? 0) > 0) {
+      newItems.push({ description: "Accessorial", quantity: 1, unitPrice: ld.accessorialAmount! });
+    }
+    setItems(newItems);
+    if (ld.loadInvoiceNumber) setSeries(ld.loadInvoiceNumber);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLoadId]);
 
   useEffect(() => {
@@ -127,9 +129,9 @@ export function InvoiceForm({
       "issueDate",
       "dueDate",
       "currency",
-      "vatRate",
       "notes",
     ];
+    fd.append("vatRate", "0");
     if (editing) fd.append("id", initial!.id);
     for (const f of fields) {
       const el = form.elements.namedItem(f) as
@@ -153,12 +155,10 @@ export function InvoiceForm({
 
   const e = state && !state.ok ? (state.fieldErrors ?? {}) : {};
 
-  const subtotal = items.reduce(
+  const total = items.reduce(
     (s, it) => s + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
     0,
   );
-  const vatAmount = +(subtotal * (vatRate / 100)).toFixed(2);
-  const total = +(subtotal + vatAmount).toFixed(2);
 
   const addItem = () =>
     setItems((arr) => [...arr, { description: "", quantity: 1, unitPrice: 0 }]);
@@ -173,7 +173,13 @@ export function InvoiceForm({
     <form ref={formRef} onSubmit={handleSubmit} className="grid gap-6">
       {editing && <input type="hidden" name="id" value={initial!.id} />}
       {/* Hidden fields for backend compatibility */}
-      <input type="hidden" name="dueDate" value={toDateInput(initial?.dueDate ?? new Date(Date.now() + 30 * 86400_000))} />
+      <input
+        type="hidden"
+        name="dueDate"
+        value={toDateInput(
+          initial?.dueDate ?? new Date(Date.now() + 30 * 86400_000),
+        )}
+      />
       <input type="hidden" name="currency" value={currency} />
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
@@ -219,12 +225,13 @@ export function InvoiceForm({
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field name="series" label="Series" error={e.series}>
+          <Field name="series" label="Invoice #" error={e.series}>
             <Input
               id="series"
               name="series"
-              defaultValue={initial?.series ?? ""}
-              placeholder="e.g.: INV"
+              value={series}
+              onChange={(ev) => setSeries(ev.target.value)}
+              placeholder="e.g.: STL-2026-00022"
             />
           </Field>
           <Field
@@ -295,36 +302,9 @@ export function InvoiceForm({
           ))}
         </div>
 
-        <div className="mt-3 grid gap-2 border-t pt-3 text-sm sm:grid-cols-2">
-          <div className="flex items-center gap-2">
-            <label className="text-muted-foreground">VAT %</label>
-            <Input
-              name="vatRate"
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              value={vatRate}
-              onChange={(ev) => setVatRate(Number(ev.target.value))}
-              className="w-24"
-            />
-          </div>
-          <div className="space-y-1 text-right">
-            <div className="text-muted-foreground">
-              Subtotal:{" "}
-              <span className="font-medium text-foreground">
-                {formatCurrency(subtotal, currency)}
-              </span>
-            </div>
-            <div className="text-muted-foreground">
-              VAT:{" "}
-              <span className="font-medium text-foreground">
-                {formatCurrency(vatAmount, currency)}
-              </span>
-            </div>
-            <div className="text-lg font-semibold">
-              Total: {formatCurrency(total, currency)}
-            </div>
+        <div className="mt-3 border-t pt-3 text-right text-sm">
+          <div className="text-lg font-semibold">
+            Total: {formatCurrency(total, currency)}
           </div>
         </div>
       </section>
