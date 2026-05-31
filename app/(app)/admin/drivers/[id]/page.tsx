@@ -127,7 +127,6 @@ export default async function DriverDetailPage({
     prisma.load.findMany({
       where: { companyId: me.companyId ?? undefined },
       select: { id: true, referenceNumber: true },
-      orderBy: { createdAt: "desc" },
       take: 100,
     }),
     prisma.truck.findMany({

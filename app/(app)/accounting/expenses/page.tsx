@@ -80,7 +80,6 @@ export default async function ExpensesPage({
     prisma.load.findMany({
       where: me.companyId ? { companyId: me.companyId } : {},
       select: { id: true, referenceNumber: true },
-      orderBy: { createdAt: "desc" },
       take: 100,
     }),
     prisma.truck.findMany({
