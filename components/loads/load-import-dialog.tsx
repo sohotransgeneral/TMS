@@ -101,6 +101,8 @@ export function LoadImportDialog({
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [editCommodity, setEditCommodity] = useState("");
+  const [editEquipment, setEditEquipment] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -168,6 +170,8 @@ export function LoadImportDialog({
         throw new Error(json.error ?? "Extraction failed");
       setExtracted(json.data);
       setStep("review");
+      setEditCommodity(json.data?.commodity ?? "");
+      setEditEquipment(json.data?.equipmentType ?? "");
       // Auto-match AI detected customer name
       const detectedName: string | null = json.data?.customerName ?? null;
       if (detectedName) {
@@ -439,7 +443,7 @@ export function LoadImportDialog({
                 <input
                   type="hidden"
                   name="pickupTimezone"
-                  defaultValue={d.pickupTimezone ?? ""}
+                  value={d.pickupTimezone ?? ""}
                 />
                 <Field name="pickupNotes" label="Pickup Notes">
                   <Textarea
@@ -531,7 +535,7 @@ export function LoadImportDialog({
                 <input
                   type="hidden"
                   name="deliveryTimezone"
-                  defaultValue={d.deliveryTimezone ?? ""}
+                  value={d.deliveryTimezone ?? ""}
                 />
                 <Field name="deliveryNotes" label="Delivery Notes">
                   <Textarea
@@ -549,14 +553,16 @@ export function LoadImportDialog({
                   <Field name="commodity" label="Commodity">
                     <Input
                       name="commodity"
-                      defaultValue={d.commodity ?? ""}
+                      value={editCommodity}
+                      onChange={(e) => setEditCommodity(e.target.value)}
                       placeholder="Steel / Produce / General freight"
                     />
                   </Field>
                   <Field name="equipment" label="Equipment">
                     <Input
                       name="equipment"
-                      defaultValue={d.equipmentType ?? ""}
+                      value={editEquipment}
+                      onChange={(e) => setEditEquipment(e.target.value)}
                       placeholder="Dry Van / Reefer / Flatbed"
                     />
                   </Field>
