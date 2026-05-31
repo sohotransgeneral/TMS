@@ -12,7 +12,7 @@ import { createLoad, updateLoad } from "@/actions/loads";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 
-type Opt = { id: string; label: string };
+type Opt = { id: string; label: string; pairedTrailerId?: string | null; pairedTruckId?: string | null };
 type DriverAssignment = {
   id: string;
   truckId: string | null;
@@ -112,6 +112,28 @@ export function LoadForm({
         setTruckId(assignment.truckId ?? "");
         setTrailerId(assignment.trailerId ?? "");
       }
+    }
+  }
+
+  function handleTruckChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    setTruckId(id);
+    if (!id) {
+      setTrailerId("");
+    } else {
+      const truck = trucks.find((t) => t.id === id);
+      if (truck?.pairedTrailerId) setTrailerId(truck.pairedTrailerId);
+    }
+  }
+
+  function handleTrailerChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    setTrailerId(id);
+    if (!id) {
+      setTruckId("");
+    } else {
+      const trailer = trailers.find((t) => t.id === id);
+      if (trailer?.pairedTruckId) setTruckId(trailer.pairedTruckId);
     }
   }
 
@@ -637,9 +659,7 @@ export function LoadForm({
               id="truckId"
               name="truckId"
               value={truckId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setTruckId(e.target.value)
-              }
+              onChange={handleTruckChange}
             >
               <option value="">—</option>
               {trucks.map((t) => (
@@ -654,9 +674,7 @@ export function LoadForm({
               id="trailerId"
               name="trailerId"
               value={trailerId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setTrailerId(e.target.value)
-              }
+              onChange={handleTrailerChange}
             >
               <option value="">—</option>
               {trailers.map((t) => (

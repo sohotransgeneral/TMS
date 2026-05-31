@@ -34,12 +34,13 @@ export default async function NewLoadPage() {
         make: true,
         model: true,
         fleetNumber: true,
+        pairedTrailerId: true,
       },
     }),
     prisma.trailer.findMany({
       where,
       orderBy: { fleetNumber: "asc" },
-      select: { id: true, plateNumber: true, fleetNumber: true },
+      select: { id: true, plateNumber: true, fleetNumber: true, pairedTruckId: true },
     }),
   ]);
 
@@ -58,10 +59,12 @@ export default async function NewLoadPage() {
         trucks={trucks.map((t) => ({
           id: t.id,
           label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}${t.make ? " · " + t.make : ""}${t.model ? " " + t.model : ""}`,
+          pairedTrailerId: t.pairedTrailerId ?? null,
         }))}
         trailers={trailers.map((t) => ({
           id: t.id,
           label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+          pairedTruckId: t.pairedTruckId ?? null,
         }))}
         driverAssignments={drivers.map((d) => ({
           id: d.id,

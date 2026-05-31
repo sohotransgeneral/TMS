@@ -17,7 +17,7 @@ import { assignLoad } from "@/actions/loads";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 
-type Opt = { id: string; label: string };
+type Opt = { id: string; label: string; pairedTrailerId?: string | null; pairedTruckId?: string | null };
 type DriverAssignment = {
   id: string;
   truckId: string | null;
@@ -84,6 +84,28 @@ export function LoadAssignDialog({
     }
   }
 
+  function handleTruckChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    setTruckId(id);
+    if (!id) {
+      setTrailerId("");
+    } else {
+      const truck = trucks.find((t) => t.id === id);
+      if (truck?.pairedTrailerId) setTrailerId(truck.pairedTrailerId);
+    }
+  }
+
+  function handleTrailerChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const id = e.target.value;
+    setTrailerId(id);
+    if (!id) {
+      setTruckId("");
+    } else {
+      const trailer = trailers.find((t) => t.id === id);
+      if (trailer?.pairedTruckId) setTruckId(trailer.pairedTruckId);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <div onClick={() => setOpen(true)}>{trigger}</div>
@@ -116,9 +138,7 @@ export function LoadAssignDialog({
               id="truckId"
               name="truckId"
               value={truckId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setTruckId(e.target.value)
-              }
+              onChange={handleTruckChange}
             >
               <option value="">— no truck —</option>
               {trucks.map((t) => (
@@ -133,9 +153,7 @@ export function LoadAssignDialog({
               id="trailerId"
               name="trailerId"
               value={trailerId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setTrailerId(e.target.value)
-              }
+              onChange={handleTrailerChange}
             >
               <option value="">— no trailer —</option>
               {trailers.map((t) => (
