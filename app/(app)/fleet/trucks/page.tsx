@@ -99,6 +99,15 @@ export default async function TrucksPage({
     }),
   ]);
 
+  const truckOpts = trucks.map((t) => ({
+    id: t.id,
+    label: `${t.fleetNumber != null ? `#${t.fleetNumber} · ` : ""}${t.plateNumber}`,
+  }));
+  const trailerOpts = trailers.map((tr) => ({
+    id: tr.id,
+    label: `${tr.fleetNumber != null ? `#${tr.fleetNumber} · ` : ""}${tr.plateNumber}`,
+  }));
+
   return (
     <div className="space-y-8">
       <PageHeader
