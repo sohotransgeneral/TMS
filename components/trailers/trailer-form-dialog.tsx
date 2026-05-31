@@ -97,7 +97,11 @@ export function TrailerFormDialog({
           {editing && <input type="hidden" name="id" value={initial!.id} />}
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field name="fleetNumber" label="Fleet # (ID)" error={e.fleetNumber}>
+            <Field
+              name="fleetNumber"
+              label="Fleet # (ID)"
+              error={e.fleetNumber}
+            >
               <Input
                 id="fleetNumber"
                 name="fleetNumber"
@@ -135,7 +139,7 @@ export function TrailerFormDialog({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="capacityKg" label="Capacity (kg)" error={e.capacityKg}>
+            <Field name="capacityKg" label="Capacity (lbs)" error={e.capacityKg}>
               <Input
                 id="capacityKg"
                 name="capacityKg"
@@ -195,7 +199,11 @@ export function TrailerFormDialog({
             </Select>
           </Field>
 
-          <Field name="pairedTruckId" label="Paired Truck" error={e.pairedTruckId}>
+          <Field
+            name="pairedTruckId"
+            label="Paired Truck"
+            error={e.pairedTruckId}
+          >
             <Select
               id="pairedTruckId"
               name="pairedTruckId"
@@ -228,7 +236,11 @@ export function TrailerFormDialog({
   );
 }
 
-export function NewTrailerButton({ trucks = [] }: { trucks?: { id: string; label: string }[] }) {
+export function NewTrailerButton({
+  trucks = [],
+}: {
+  trucks?: { id: string; label: string }[];
+}) {
   return (
     <TrailerFormDialog
       trucks={trucks}
@@ -241,7 +253,13 @@ export function NewTrailerButton({ trucks = [] }: { trucks?: { id: string; label
   );
 }
 
-export function TrailerRowActions({ trailer, trucks = [] }: { trailer: TrailerRow; trucks?: { id: string; label: string }[] }) {
+export function TrailerRowActions({
+  trailer,
+  trucks = [],
+}: {
+  trailer: TrailerRow;
+  trucks?: { id: string; label: string }[];
+}) {
   return (
     <div className="flex items-center justify-end gap-1">
       <TrailerFormDialog

@@ -61,6 +61,20 @@ export async function updateTruck(formData: FormData): Promise<ActionResult> {
 
   await prisma.truck.update({ where: { id }, data });
 
+  // Bidirectional sync: update the paired trailer's pairedTruckId
+  const newPaired = data.pairedTrailerId ?? null;
+  const oldPaired = target.pairedTrailerId ?? null;
+  if (newPaired !== oldPaired) {
+    // Clear old trailer's back-link
+    if (oldPaired) {
+      await prisma.trailer.update({ where: { id: oldPaired }, data: { pairedTruckId: null } });
+    }
+    // Set new trailer's back-link
+    if (newPaired) {
+      await prisma.trailer.update({ where: { id: newPaired }, data: { pairedTruckId: id } });
+    }
+  }
+
   await logAudit({
     action: "truck.update",
     userId: me.id,

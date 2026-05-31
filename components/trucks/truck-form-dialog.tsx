@@ -92,7 +92,11 @@ export function TruckFormDialog({
           {editing && <input type="hidden" name="id" value={initial!.id} />}
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field name="fleetNumber" label="Fleet # (ID)" error={e.fleetNumber}>
+            <Field
+              name="fleetNumber"
+              label="Fleet # (ID)"
+              error={e.fleetNumber}
+            >
               <Input
                 id="fleetNumber"
                 name="fleetNumber"
@@ -202,30 +206,6 @@ export function TruckFormDialog({
                 defaultValue={toDateInput(initial?.insuranceExpiresAt)}
               />
             </Field>
-            <Field
-              name="vignetteExpiresAt"
-              label="Vignette Expires"
-              error={e.vignetteExpiresAt}
-            >
-              <Input
-                id="vignetteExpiresAt"
-                name="vignetteExpiresAt"
-                type="date"
-                defaultValue={toDateInput(initial?.vignetteExpiresAt)}
-              />
-            </Field>
-            <Field
-              name="tachographExpiresAt"
-              label="Tachograph Expires"
-              error={e.tachographExpiresAt}
-            >
-              <Input
-                id="tachographExpiresAt"
-                name="tachographExpiresAt"
-                type="date"
-                defaultValue={toDateInput(initial?.tachographExpiresAt)}
-              />
-            </Field>
           </div>
 
           <Field name="notes" label="Notes" error={e.notes}>
@@ -237,7 +217,11 @@ export function TruckFormDialog({
             />
           </Field>
 
-          <Field name="pairedTrailerId" label="Paired Trailer" error={e.pairedTrailerId}>
+          <Field
+            name="pairedTrailerId"
+            label="Paired Trailer"
+            error={e.pairedTrailerId}
+          >
             <Select
               id="pairedTrailerId"
               name="pairedTrailerId"
@@ -270,7 +254,11 @@ export function TruckFormDialog({
   );
 }
 
-export function NewTruckButton({ trailers = [] }: { trailers?: { id: string; label: string }[] }) {
+export function NewTruckButton({
+  trailers = [],
+}: {
+  trailers?: { id: string; label: string }[];
+}) {
   return (
     <TruckFormDialog
       trailers={trailers}
@@ -283,7 +271,13 @@ export function NewTruckButton({ trailers = [] }: { trailers?: { id: string; lab
   );
 }
 
-export function TruckRowActions({ truck, trailers = [] }: { truck: TruckRow; trailers?: { id: string; label: string }[] }) {
+export function TruckRowActions({
+  truck,
+  trailers = [],
+}: {
+  truck: TruckRow;
+  trailers?: { id: string; label: string }[];
+}) {
   return (
     <div className="flex items-center justify-end gap-1">
       <TruckFormDialog
