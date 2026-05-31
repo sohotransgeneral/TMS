@@ -52,7 +52,10 @@ export default async function NewLoadPage() {
       },
     }),
     prisma.user.findMany({
-      where: { companyId: me.companyId ?? undefined, role: { in: LOADS_WRITE_ROLES as never[] } },
+      where: {
+        companyId: me.companyId ?? undefined,
+        role: { in: LOADS_WRITE_ROLES as never[] },
+      },
       select: { name: true },
       orderBy: { name: "asc" },
     }),
@@ -87,7 +90,9 @@ export default async function NewLoadPage() {
         }))}
         userName={currentUser?.name ?? undefined}
         companyName={currentUser?.company?.name ?? undefined}
-        enteredByUsers={loadUsers.map((u) => u.name).filter((n): n is string => n != null)}
+        enteredByUsers={loadUsers
+          .map((u) => u.name)
+          .filter((n): n is string => n != null)}
       />
     </div>
   );

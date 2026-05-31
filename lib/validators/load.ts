@@ -125,6 +125,7 @@ export const loadCreateSchema = z.object({
   truckId: optionalString,
   trailerId: optionalString,
   internalNotes: optionalString,
+  dispatchNotes: optionalString,
 });
 
 export const loadUpdateSchema = loadCreateSchema.partial().extend({

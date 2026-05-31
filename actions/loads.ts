@@ -147,6 +147,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       truckId: d.truckId || null,
       trailerId: d.trailerId || null,
       internalNotes: d.internalNotes,
+      dispatchNotes: d.dispatchNotes,
       status,
       dispatcherId: me.id,
       createdById: me.id,

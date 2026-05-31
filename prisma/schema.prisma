@@ -585,8 +585,7 @@ model Load {
   createdBy        User?     @relation("CreatedLoads", fields: [createdById], references: [id], onDelete: SetNull)
 
   internalNotes    String?
-
-  createdAt        DateTime  @default(now())
+  dispatchNotes    String?
   updatedAt        DateTime  @updatedAt
 
   statusHistory    LoadStatusHistory[]

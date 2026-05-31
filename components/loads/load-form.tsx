@@ -85,6 +85,7 @@ export type LoadFormInitial = {
   truckId: string | null;
   trailerId: string | null;
   internalNotes: string | null;
+  dispatchNotes: string | null;
 };
 
 const ACCESSORIALS = [
@@ -702,7 +703,7 @@ export function LoadForm({
             <Select
               id="equipment"
               name="equipment"
-              defaultValue={initial?.equipment ?? "Dry Van"}
+              defaultValue={initial?.equipment ?? "Flatbed or Step Deck"}
             >
               <option value="">—</option>
               <option value="Dry Van">Dry Van</option>
@@ -735,7 +736,9 @@ export function LoadForm({
             >
               <option value="">—</option>
               {enteredByUsers.map((name) => (
-                <option key={name} value={name}>{name}</option>
+                <option key={name} value={name}>
+                  {name}
+                </option>
               ))}
             </Select>
           </Field>
@@ -925,6 +928,18 @@ export function LoadForm({
             name="internalNotes"
             rows={2}
             defaultValue={initial?.internalNotes ?? ""}
+          />
+        </Field>
+        <Field
+          name="dispatchNotes"
+          label="Dispatch Notes"
+          error={e.dispatchNotes}
+        >
+          <Textarea
+            id="dispatchNotes"
+            name="dispatchNotes"
+            rows={2}
+            defaultValue={initial?.dispatchNotes ?? ""}
           />
         </Field>
       </section>
