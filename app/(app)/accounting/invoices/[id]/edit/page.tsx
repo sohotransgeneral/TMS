@@ -71,7 +71,7 @@ export default async function EditInvoicePage({
           series: invoice.series,
           issueDate: invoice.issueDate,
           dueDate: invoice.dueDate,
-          customerId: invoice.customerId,
+          customerId: invoice.customerId ?? null,
           loadId: invoice.loadId,
           currency: invoice.currency,
           vatRate: invoice.vatRate,

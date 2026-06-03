@@ -32,7 +32,8 @@ type LoadData = {
 
 export type InvoiceInitial = {
   id: string;
-  customerId: string;
+  customerId: string | null;
+  customerName?: string | null;
   loadId: string | null;
   series: string | null;
   issueDate: Date | string;
@@ -105,7 +106,7 @@ export function InvoiceForm({
     initial?.customerId ?? defaultCustomerId ?? "",
   );
   const [customerText, setCustomerText] = useState(
-    initialCustomer?.label ?? defaultCustomerName ?? "",
+    initialCustomer?.label ?? initial?.customerName ?? defaultCustomerName ?? "",
   );
 
   // Auto-fill from load when selection changes
