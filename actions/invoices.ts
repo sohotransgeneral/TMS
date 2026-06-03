@@ -60,7 +60,8 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
       series: d.series ?? series,
       issueDate: d.issueDate,
       dueDate: d.dueDate,
-      customerId: d.customerId,
+      customerId: d.customerId || null,
+      customerName: d.customerName || null,
       loadId: d.loadId || null,
       subtotal,
       vatRate: d.vatRate,
@@ -84,7 +85,9 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
 
   // Fetch customer + optional load context for rich notification
   const [invCustomer, invLoad] = await Promise.all([
-    prisma.customer.findUnique({ where: { id: d.customerId }, select: { name: true } }),
+    d.customerId
+      ? prisma.customer.findUnique({ where: { id: d.customerId }, select: { name: true } })
+      : null,
     d.loadId
       ? prisma.load.findUnique({
           where: { id: d.loadId },
@@ -99,7 +102,7 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
   ]);
 
   const invBodyLines: string[] = [
-    `Customer: ${invCustomer?.name ?? d.customerId}`,
+    `Customer: ${invCustomer?.name ?? d.customerName ?? d.customerId ?? "Unknown"}`,
   ];
   if (invLoad) {
     invBodyLines.push(
@@ -149,7 +152,7 @@ export async function createInvoiceFromLoad(
   });
   if (!load) return failure("Load not found.");
   if (load.invoice) return failure("This load already has an invoice.");
-  if (!load.customerId)
+  if (!load.customerId && !load.brokerName)
     return failure("Assign a Bill-to customer to the load before invoicing.");
 
   // Build line items from the load.
@@ -202,7 +205,8 @@ export async function createInvoiceFromLoad(
       series: load.loadInvoiceNumber ?? series,
       issueDate,
       dueDate,
-      customerId: load.customerId,
+      customerId: load.customerId ?? null,
+      customerName: load.customerId ? null : (load.brokerName ?? null),
       loadId: load.id,
       subtotal,
       vatRate: 0,

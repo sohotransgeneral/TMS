@@ -73,6 +73,8 @@ export default async function NewInvoicePage({
         price: true,
         accessorialAmount: true,
         loadInvoiceNumber: true,
+        brokerName: true,
+        customerId: true,
       },
       take: 100,
     }),
@@ -153,7 +155,8 @@ export default async function NewInvoicePage({
         defaultVatRate={company?.vatRate ?? 19}
         defaultCurrency={sp.currency ?? "USD"}
         defaultLoadId={loadIdFromUrl}
-        defaultCustomerId={sp.customerId ?? null}
+        defaultCustomerId={sp.customerId ?? loadFromUrl?.customerId ?? null}
+        defaultCustomerName={loadFromUrl?.brokerName ?? null}
         defaultItems={defaultItems}
         defaultSeries={(() => {
           const prefix = company?.invoicePrefix || "INV";

@@ -70,6 +70,7 @@ export function InvoiceForm({
   defaultCurrency: string;
   defaultLoadId?: string | null;
   defaultCustomerId?: string | null;
+  defaultCustomerName?: string | null;
   defaultItems?: ItemRow[];
   defaultSeries?: string;
 }) {
@@ -95,6 +96,16 @@ export function InvoiceForm({
   );
   const [series, setSeries] = useState<string>(
     initial?.series ?? defaultSeries ?? "",
+  );
+
+  const initialCustomer = customers.find(
+    (c) => c.id === (initial?.customerId ?? defaultCustomerId ?? ""),
+  );
+  const [customerIdState, setCustomerIdState] = useState(
+    initial?.customerId ?? defaultCustomerId ?? "",
+  );
+  const [customerText, setCustomerText] = useState(
+    initialCustomer?.label ?? defaultCustomerName ?? "",
   );
 
   // Auto-fill from load when selection changes
@@ -162,6 +173,7 @@ export function InvoiceForm({
     // scalar fields
     const fields = [
       "customerId",
+      "customerName",
       "loadId",
       "series",
       "issueDate",
@@ -225,22 +237,32 @@ export function InvoiceForm({
           <Field
             name="customerId"
             label="Customer"
-            required
             error={e.customerId}
           >
-            <Select
-              id="customerId"
-              name="customerId"
-              defaultValue={initial?.customerId ?? defaultCustomerId ?? ""}
-              required
-            >
-              <option value="">— select customer —</option>
+            {/* hidden fields so handleSubmit picks them up */}
+            <input type="hidden" name="customerId" value={customerIdState} />
+            <input
+              type="hidden"
+              name="customerName"
+              value={customerIdState ? "" : customerText}
+            />
+            <input
+              list="invoice-customer-list"
+              value={customerText}
+              onChange={(ev) => {
+                const txt = ev.target.value;
+                setCustomerText(txt);
+                const match = customers.find((c) => c.label === txt);
+                setCustomerIdState(match?.id ?? "");
+              }}
+              placeholder="Type or select customer…"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <datalist id="invoice-customer-list">
               {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
+                <option key={c.id} value={c.label} />
               ))}
-            </Select>
+            </datalist>
           </Field>
           <Field
             name="loadId"

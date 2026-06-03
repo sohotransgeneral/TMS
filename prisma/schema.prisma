@@ -669,8 +669,9 @@ model Invoice {
   issueDate      DateTime      @default(now())
   dueDate        DateTime
 
-  customerId     String        @db.ObjectId
-  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerId     String?       @db.ObjectId
+  customer       Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName   String?
 
   loadId         String?       @unique @db.ObjectId
   load           Load?         @relation(fields: [loadId], references: [id], onDelete: SetNull)

@@ -24,7 +24,8 @@ export type InvoiceItem = z.infer<typeof invoiceItemSchema>;
  *   items.description[], items.quantity[], items.unitPrice[]
  */
 export const invoiceCreateSchema = z.object({
-  customerId: z.string().min(1, "Select a customer"),
+  customerId: optionalString,
+  customerName: optionalString,
   loadId: optionalString,
   series: optionalString,
   issueDate: z.coerce.date({ message: "Invalid issue date" }),
