@@ -43,6 +43,18 @@ export const driverCreateSchema = z.object({
   truckId: fields.optionalString,
   trailerId: fields.optionalString,
 
+  telegramChatId: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(
+      z
+        .string()
+        .regex(/^-?\d+$/u, "Telegram chat id must be a numeric id")
+        .optional(),
+    )
+    .optional(),
+
   status: z.enum(statusValues).default("AVAILABLE"),
   internalNotes: fields.optionalString,
 });

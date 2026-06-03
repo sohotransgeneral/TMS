@@ -46,7 +46,7 @@ export type DriverRow = {
   internalNotes: string | null;
   truckId?: string | null;
   trailerId?: string | null;
-  user: { id: string; email: string; phone: string | null };
+  user: { id: string; email: string; phone: string | null; telegramChatId?: string | null };
 };
 
 const STATUSES = ["AVAILABLE", "ON_TRIP", "OFF_DUTY", "UNAVAILABLE"] as const;
@@ -180,6 +180,19 @@ export function DriverFormDialog({
               />
             </Field>
           </div>
+
+          <Field
+            name="telegramChatId"
+            label="Telegram Chat ID (optional)"
+            error={errors.telegramChatId}
+          >
+            <Input
+              id="telegramChatId"
+              name="telegramChatId"
+              defaultValue={initial?.user.telegramChatId ?? ""}
+              placeholder="e.g. 123456789 — get yours from @userinfobot on Telegram"
+            />
+          </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field name="cnp" label="CNP" error={errors.cnp}>

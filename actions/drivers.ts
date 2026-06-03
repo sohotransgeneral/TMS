@@ -37,6 +37,7 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
         active: true,
         password: hashed,
         companyId: me.companyId,
+        telegramChatId: d.telegramChatId ?? null,
       },
     });
 
@@ -150,6 +151,7 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
     name: `${d.firstName ?? target.firstName} ${d.lastName ?? target.lastName}`,
   };
   if (d.phone !== undefined) userUpdate.phone = d.phone ?? null;
+  if (d.telegramChatId !== undefined) userUpdate.telegramChatId = d.telegramChatId ?? null;
   if (d.email && d.email.toLowerCase() !== target.user.email) {
     userUpdate.email = d.email.toLowerCase();
   }

@@ -18,9 +18,14 @@ export const userCreateSchema = z.object({
   telegramChatId: z
     .string()
     .trim()
-    .regex(/^-?\d+$/u, "Telegram chat id must be a numeric id")
-    .optional()
-    .or(z.literal("").transform(() => undefined)),
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(
+      z
+        .string()
+        .regex(/^-?\d+$/u, "Telegram chat id must be a numeric id (e.g. 123456789)")
+        .optional(),
+    )
+    .optional(),
   role: z.enum(ROLE_VALUES),
   password: z
     .string()
