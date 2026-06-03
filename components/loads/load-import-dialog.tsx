@@ -21,8 +21,17 @@ import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 import { Upload, Sparkles, FileText, X, AlertCircle } from "lucide-react";
 
-type Opt = { id: string; label: string; pairedTrailerId?: string | null; pairedTruckId?: string | null };
-type DriverAssignment = { id: string; truckId: string | null; trailerId: string | null };
+type Opt = {
+  id: string;
+  label: string;
+  pairedTrailerId?: string | null;
+  pairedTruckId?: string | null;
+};
+type DriverAssignment = {
+  id: string;
+  truckId: string | null;
+  trailerId: string | null;
+};
 
 type ExtractedData = {
   referenceNumber?: string | null;
@@ -307,7 +316,11 @@ export function LoadImportDialog({
 
   function handleDriverChange(id: string) {
     setSelDriverId(id);
-    if (!id) { setSelTruckId(""); setSelTrailerId(""); return; }
+    if (!id) {
+      setSelTruckId("");
+      setSelTrailerId("");
+      return;
+    }
     const a = driverAssignments.find((x) => x.id === id);
     setSelTruckId(a?.truckId ?? "");
     setSelTrailerId(a?.trailerId ?? "");
@@ -315,7 +328,11 @@ export function LoadImportDialog({
 
   function handleTruckChange(id: string) {
     setSelTruckId(id);
-    if (!id) { setSelDriverId(""); setSelTrailerId(""); return; }
+    if (!id) {
+      setSelDriverId("");
+      setSelTrailerId("");
+      return;
+    }
     const t = trucks.find((x) => x.id === id);
     if (t?.pairedTrailerId) setSelTrailerId(t.pairedTrailerId);
     const a = driverAssignments.find((x) => x.truckId === id);
@@ -324,7 +341,11 @@ export function LoadImportDialog({
 
   function handleTrailerChange(id: string) {
     setSelTrailerId(id);
-    if (!id) { setSelDriverId(""); setSelTruckId(""); return; }
+    if (!id) {
+      setSelDriverId("");
+      setSelTruckId("");
+      return;
+    }
     const t = trailers.find((x) => x.id === id);
     if (t?.pairedTruckId) setSelTruckId(t.pairedTruckId);
     const a = driverAssignments.find((x) => x.trailerId === id);
@@ -542,7 +563,11 @@ export function LoadImportDialog({
                   </p>
                 )}
                 {/* Hidden real customerId submitted to action */}
-                <input type="hidden" name="customerId" value={selectedCustomerId} />
+                <input
+                  type="hidden"
+                  name="customerId"
+                  value={selectedCustomerId}
+                />
                 {/* Combobox: text shows AI name or selected customer label */}
                 <div className="relative">
                   <Input
@@ -551,14 +576,14 @@ export function LoadImportDialog({
                     value={
                       selectedCustomerId
                         ? (customers.find((c) => c.id === selectedCustomerId)
-                            ?.label ?? d.customerName ?? "")
+                            ?.label ??
+                          d.customerName ??
+                          "")
                         : (d.customerName ?? "")
                     }
                     onChange={(e) => {
                       const val = e.target.value;
-                      const match = customers.find(
-                        (c) => c.label === val,
-                      );
+                      const match = customers.find((c) => c.label === val);
                       setSelectedCustomerId(match?.id ?? "");
                     }}
                   />
@@ -573,7 +598,10 @@ export function LoadImportDialog({
                   <p className="text-xs text-green-600 dark:text-green-400">
                     ✓ Linked to:{" "}
                     <span className="font-medium">
-                      {customers.find((c) => c.id === selectedCustomerId)?.label}
+                      {
+                        customers.find((c) => c.id === selectedCustomerId)
+                          ?.label
+                      }
                     </span>{" "}
                     <button
                       type="button"
@@ -921,7 +949,9 @@ export function LoadImportDialog({
                     >
                       <option value="">—</option>
                       {drivers.map((d) => (
-                        <option key={d.id} value={d.id}>{d.label}</option>
+                        <option key={d.id} value={d.id}>
+                          {d.label}
+                        </option>
                       ))}
                     </Select>
                   </Field>
@@ -933,7 +963,9 @@ export function LoadImportDialog({
                     >
                       <option value="">—</option>
                       {trucks.map((t) => (
-                        <option key={t.id} value={t.id}>{t.label}</option>
+                        <option key={t.id} value={t.id}>
+                          {t.label}
+                        </option>
                       ))}
                     </Select>
                   </Field>
@@ -945,7 +977,9 @@ export function LoadImportDialog({
                     >
                       <option value="">—</option>
                       {trailers.map((t) => (
-                        <option key={t.id} value={t.id}>{t.label}</option>
+                        <option key={t.id} value={t.id}>
+                          {t.label}
+                        </option>
                       ))}
                     </Select>
                   </Field>

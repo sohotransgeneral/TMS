@@ -226,6 +226,10 @@ model User {
   resetToken        String?
   resetTokenExpires DateTime?
 
+  // Magic link (dispatcher sends auto-login link to driver via Telegram)
+  magicToken           String?
+  magicTokenExpiresAt  DateTime?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

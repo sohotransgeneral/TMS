@@ -37,7 +37,7 @@ export const LOAD_STATUS_LABELS: Record<string, string> = {
 
 /** Allowed transitions from current status — used to validate updates. */
 export const LOAD_NEXT_STATUSES: Record<string, readonly string[]> = {
-  DRAFT: ["ASSIGNED", "CANCELLED"],
+  DRAFT: ["DRIVER_ACCEPTED", "ASSIGNED", "CANCELLED"],
   ASSIGNED: ["DRIVER_ACCEPTED", "ON_WAY_TO_PICKUP", "CANCELLED"],
   DRIVER_ACCEPTED: ["ON_WAY_TO_PICKUP", "CANCELLED"],
   ON_WAY_TO_PICKUP: ["AT_PICKUP", "CANCELLED"],

@@ -15,6 +15,8 @@ import {
 import { nextLoadReference } from "@/lib/load-reference";
 import { geocodeAddress } from "@/lib/geocode";
 import { notifyEvent } from "@/lib/notifications";
+import { sendTelegramMessage } from "@/lib/telegram";
+import { randomUUID } from "crypto";
 
 /** Build a clean multi-line notification body for load events. */
 function loadNotifyBody(args: {
@@ -64,7 +66,8 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   const d = parsed.data;
 
   const referenceNumber = await nextLoadReference(me.companyId);
-  const status = d.driverId ? "ASSIGNED" : "DRAFT";
+  // Dispatcher creates with driver → auto-accepted, no manual confirmation needed
+  const status = d.driverId ? "DRIVER_ACCEPTED" : "DRAFT";
 
   // Geocode pickup/delivery if coords not provided
   if (!d.pickupLat || !d.pickupLng) {
@@ -182,9 +185,9 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   await notifyEvent({
     companyId: me.companyId,
     topic: "loads",
-    type: status === "ASSIGNED" ? "LOAD_ASSIGNED" : "LOAD_CREATED",
+    type: status === "DRIVER_ACCEPTED" ? "LOAD_ASSIGNED" : "LOAD_CREATED",
     title:
-      status === "ASSIGNED"
+      status === "DRIVER_ACCEPTED"
         ? `Load ${referenceNumber} assigned`
         : `Load ${referenceNumber} created`,
     body: loadNotifyBody({
@@ -274,8 +277,10 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const target = await prisma.load.findUnique({ where: { id } });
   if (!target || target.companyId !== me.companyId) return failure("Load not found.");
 
-  const shouldFlip = target.status === "DRAFT" && driverId;
-  const newStatus = shouldFlip ? "ASSIGNED" : target.status;
+  // When a dispatcher assigns a driver, the load is auto-accepted —
+  // drivers don't need to manually confirm loads given to them.
+  const wasUnassigned = ["DRAFT", "ASSIGNED"].includes(target.status) && !!driverId;
+  const newStatus = wasUnassigned ? "DRIVER_ACCEPTED" : target.status;
 
   await prisma.load.update({
     where: { id },
@@ -285,9 +290,14 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
       trailerId: trailerId || null,
       status: newStatus,
       dispatcherId: target.dispatcherId ?? me.id,
-      ...(shouldFlip && {
+      ...(wasUnassigned && {
         statusHistory: {
-          create: { status: "ASSIGNED", changedById: me.id, note: "Load assigned" },
+          createMany: {
+            data: [
+              { status: "ASSIGNED", changedById: me.id, note: "Load assigned by dispatcher" },
+              { status: "DRIVER_ACCEPTED", changedById: me.id, note: "Auto-accepted (dispatcher assigned)" },
+            ],
+          },
         },
       }),
     },
@@ -302,12 +312,13 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
     meta: { driverId, truckId, trailerId },
   });
 
-  if (driverId && shouldFlip) {
+  if (driverId && wasUnassigned) {
     const [assignDriver, assignTruck, assignCustomer] = await Promise.all([
       prisma.driverProfile.findUnique({ where: { id: driverId }, select: { userId: true, firstName: true, lastName: true } }),
       truckId ? prisma.truck.findUnique({ where: { id: truckId }, select: { plateNumber: true } }) : null,
       target.customerId ? prisma.customer.findUnique({ where: { id: target.customerId }, select: { name: true } }) : null,
     ]);
+
     await notifyEvent({
       companyId: me.companyId,
       topic: "loads",
@@ -328,10 +339,46 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
       roles: ["COMPANY_ADMIN", "DISPATCHER"],
       userIds: assignDriver?.userId ? [assignDriver.userId] : undefined,
     });
+
+    // Send magic link to driver's personal Telegram if configured
+    if (assignDriver?.userId) {
+      const driverUser = await prisma.user.findUnique({
+        where: { id: assignDriver.userId },
+        select: { telegramChatId: true },
+      });
+      if (driverUser?.telegramChatId) {
+        const magicToken = randomUUID();
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        await prisma.user.update({
+          where: { id: assignDriver.userId },
+          data: { magicToken, magicTokenExpiresAt: expiresAt },
+        });
+        const appUrl = process.env.NEXTAUTH_URL ?? process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : "http://localhost:3000";
+        const magicLink = `${appUrl}/api/auth/magic?token=${magicToken}`;
+        const driverName = `${assignDriver.firstName} ${assignDriver.lastName}`;
+        await sendTelegramMessage({
+          chatId: driverUser.telegramChatId,
+          text: [
+            `🚛 <b>Load assigned: ${target.referenceNumber}</b>`,
+            ``,
+            `📍 <b>Pickup:</b> ${target.pickupCity ?? target.pickupAddress}`,
+            `📍 <b>Delivery:</b> ${target.deliveryCity ?? target.deliveryAddress}`,
+            assignTruck ? `🚚 <b>Truck:</b> ${assignTruck.plateNumber}` : null,
+            ``,
+            `👇 <b>Open app (auto login):</b>`,
+            `<a href="${magicLink}">${magicLink}</a>`,
+          ].filter(Boolean).join("\n"),
+          disableLinkPreview: false,
+        });
+      }
+    }
   }
 
   revalidatePath("/dispatch/loads");
   revalidatePath(`/dispatch/loads/${id}`);
+  revalidatePath("/driver/dashboard");
   return success(undefined, "Assignment saved.");
 }
 

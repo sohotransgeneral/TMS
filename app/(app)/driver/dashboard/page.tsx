@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LoadStatusBadge } from "@/components/loads/load-status-badge";
 import { LoadStatusButton } from "@/components/loads/load-status-button";
-import { AcceptLoadButton } from "@/components/driver/accept-load-button";
 import { GpsTracker } from "@/components/driver/gps-tracker";
 import { DriverZoneMap } from "@/components/driver/driver-zone-map";
 import { NavigateButton } from "@/components/driver/navigate-button";
@@ -26,6 +25,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 export const metadata = { title: "My Loads" };
 
 const ACTIVE_STATUSES = [
+  "ASSIGNED",
   "DRIVER_ACCEPTED",
   "ON_WAY_TO_PICKUP",
   "AT_PICKUP",
@@ -54,18 +54,13 @@ export default async function DriverDashboardPage() {
     );
   }
 
-  const [activeLoads, assigned, history] = await Promise.all([
+  const [activeLoads, history] = await Promise.all([
     prisma.load.findMany({
       where: { driverId: driver.id, status: { in: ACTIVE_STATUSES as never } },
       orderBy: { pickupDate: "asc" },
       include: {
         customer: { select: { name: true, contactPerson: true, phone: true } },
       },
-    }),
-    prisma.load.findMany({
-      where: { driverId: driver.id, status: "ASSIGNED" },
-      orderBy: { pickupDate: "asc" },
-      include: { customer: { select: { name: true } } },
     }),
     prisma.load.findMany({
       where: {
@@ -108,10 +103,10 @@ export default async function DriverDashboardPage() {
           tone="info"
         />
         <StatCard
-          label="To Accept"
-          value={assigned.length}
+          label="Loads Done"
+          value={history.length}
           icon={Truck}
-          tone="warning"
+          tone="success"
         />
       </div>
 
@@ -201,39 +196,6 @@ export default async function DriverDashboardPage() {
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
             No active load in progress.
-          </CardContent>
-        </Card>
-      )}
-
-      {assigned.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>To Accept</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {assigned.map((l) => (
-              <div key={l.id} className="rounded-lg border p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{l.referenceNumber}</p>
-                    <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {l.pickupCity ?? l.pickupAddress} →{" "}
-                      {l.deliveryCity ?? l.deliveryAddress}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(l.pickupDate, true)}
-                    </p>
-                  </div>
-                  <span className="text-sm font-medium tabular-nums">
-                    {formatCurrency(l.price, l.currency)}
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <AcceptLoadButton loadId={l.id} />
-                </div>
-              </div>
-            ))}
           </CardContent>
         </Card>
       )}
