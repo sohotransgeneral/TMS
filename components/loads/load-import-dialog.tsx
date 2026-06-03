@@ -21,7 +21,8 @@ import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 import { Upload, Sparkles, FileText, X, AlertCircle } from "lucide-react";
 
-type Opt = { id: string; label: string };
+type Opt = { id: string; label: string; pairedTrailerId?: string | null; pairedTruckId?: string | null };
+type DriverAssignment = { id: string; truckId: string | null; trailerId: string | null };
 
 type ExtractedData = {
   referenceNumber?: string | null;
@@ -67,28 +68,120 @@ type ExtractedData = {
 };
 
 const COMMODITIES = [
-  "A+ Slabs","Air Filtration Product","Aluminium Coils","Aluminum Cans","Aluminum Wheels",
-  "Appliances","Auto Parts","Baled Cardboard","Baled Paper","Batteries","Beer","Berries",
-  "Beverage Machinery","Beverages","Bolts","Books","Bottled Water","Bottles","Brackets",
-  "Brass","Brick","Building Materials","Cable Trays","Candies","Canned Goods","Car Parts",
-  "Carbon","Cardboard","Cargo Restraint Products","Chemicals","Clothing","Coffee",
-  "Computer Equipment","Construction Materials","Consumer Electronics","Copper","Cosmetics",
-  "Dairy Products","Dry Goods","Electronics","Fertilizer","Flooring","Food Products",
-  "Freight","Fresh Produce","Frozen Food","Furniture","Glass","Grain","Hardware",
-  "Heavy Machinery","Industrial Equipment","Iron","Landscaping Materials","Lumber",
-  "Machinery Parts","Medical Equipment","Medical Supplies","Metal Parts","Metal Scrap",
-  "Military Equipment","Motorcycle Parts","Packaging Materials","Paint","Paper Products",
-  "Pharmaceuticals","Pipes","Plastic","Plumbing Supplies","Plastics (Tubing, PVC Pipes, etc.)",
-  "Poultry","Produce","Recycled Materials","Refrigerated Goods","Retail Goods","Rubber",
-  "Salt","Seafood","Seeds","Sheet Metal","Shoes","Soft Drinks","Solar Panels","Steel",
-  "Steel Coils","Steel Pipes","Stone","Textiles","Tires","Tools","Vegetables","Water",
-  "Wine","Wire","Wood","Wood Products",
+  "A+ Slabs",
+  "Air Filtration Product",
+  "Aluminium Coils",
+  "Aluminum Cans",
+  "Aluminum Wheels",
+  "Appliances",
+  "Auto Parts",
+  "Baled Cardboard",
+  "Baled Paper",
+  "Batteries",
+  "Beer",
+  "Berries",
+  "Beverage Machinery",
+  "Beverages",
+  "Bolts",
+  "Books",
+  "Bottled Water",
+  "Bottles",
+  "Brackets",
+  "Brass",
+  "Brick",
+  "Building Materials",
+  "Cable Trays",
+  "Candies",
+  "Canned Goods",
+  "Car Parts",
+  "Carbon",
+  "Cardboard",
+  "Cargo Restraint Products",
+  "Chemicals",
+  "Clothing",
+  "Coffee",
+  "Computer Equipment",
+  "Construction Materials",
+  "Consumer Electronics",
+  "Copper",
+  "Cosmetics",
+  "Dairy Products",
+  "Dry Goods",
+  "Electronics",
+  "Fertilizer",
+  "Flooring",
+  "Food Products",
+  "Freight",
+  "Fresh Produce",
+  "Frozen Food",
+  "Furniture",
+  "Glass",
+  "Grain",
+  "Hardware",
+  "Heavy Machinery",
+  "Industrial Equipment",
+  "Iron",
+  "Landscaping Materials",
+  "Lumber",
+  "Machinery Parts",
+  "Medical Equipment",
+  "Medical Supplies",
+  "Metal Parts",
+  "Metal Scrap",
+  "Military Equipment",
+  "Motorcycle Parts",
+  "Packaging Materials",
+  "Paint",
+  "Paper Products",
+  "Pharmaceuticals",
+  "Pipes",
+  "Plastic",
+  "Plumbing Supplies",
+  "Plastics (Tubing, PVC Pipes, etc.)",
+  "Poultry",
+  "Produce",
+  "Recycled Materials",
+  "Refrigerated Goods",
+  "Retail Goods",
+  "Rubber",
+  "Salt",
+  "Seafood",
+  "Seeds",
+  "Sheet Metal",
+  "Shoes",
+  "Soft Drinks",
+  "Solar Panels",
+  "Steel",
+  "Steel Coils",
+  "Steel Pipes",
+  "Stone",
+  "Textiles",
+  "Tires",
+  "Tools",
+  "Vegetables",
+  "Water",
+  "Wine",
+  "Wire",
+  "Wood",
+  "Wood Products",
 ];
 
 const EQUIPMENT_TYPES = [
-  "Dry Van","Reefer","Flatbed","Step Deck","Flatbed or Step Deck","Conestoga",
-  "Power Only","RGN","Lowboy","Tanker","Auto Carrier","Double Drop","Hotshot",
-  "Sprinter Van","Box Truck",
+  "Dry Van",
+  "Reefer",
+  "Flatbed",
+  "Step Deck",
+  "Flatbed or Step Deck",
+  "Conestoga",
+  "Power Only",
+  "RGN",
+  "Lowboy",
+  "Tanker",
+  "Auto Carrier",
+  "Double Drop",
+  "Hotshot",
+  "Sprinter Van",
+  "Box Truck",
 ];
 
 function bestMatch(list: string[], ai: string | null | undefined): string {
@@ -146,6 +239,7 @@ export function LoadImportDialog({
   drivers,
   trucks,
   trailers,
+  driverAssignments = [],
   userName,
   companyName,
 }: {
@@ -153,6 +247,7 @@ export function LoadImportDialog({
   drivers: Opt[];
   trucks: Opt[];
   trailers: Opt[];
+  driverAssignments?: DriverAssignment[];
   userName?: string;
   companyName?: string;
 }) {
@@ -168,6 +263,9 @@ export function LoadImportDialog({
   const [editEquipment, setEditEquipment] = useState("");
   const [editPickupTz, setEditPickupTz] = useState("");
   const [editDeliveryTz, setEditDeliveryTz] = useState("");
+  const [selDriverId, setSelDriverId] = useState("");
+  const [selTruckId, setSelTruckId] = useState("");
+  const [selTrailerId, setSelTrailerId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -207,6 +305,32 @@ export function LoadImportDialog({
     setOpen(false);
   }
 
+  function handleDriverChange(id: string) {
+    setSelDriverId(id);
+    if (!id) { setSelTruckId(""); setSelTrailerId(""); return; }
+    const a = driverAssignments.find((x) => x.id === id);
+    setSelTruckId(a?.truckId ?? "");
+    setSelTrailerId(a?.trailerId ?? "");
+  }
+
+  function handleTruckChange(id: string) {
+    setSelTruckId(id);
+    if (!id) { setSelDriverId(""); setSelTrailerId(""); return; }
+    const t = trucks.find((x) => x.id === id);
+    if (t?.pairedTrailerId) setSelTrailerId(t.pairedTrailerId);
+    const a = driverAssignments.find((x) => x.truckId === id);
+    if (a) setSelDriverId(a.id);
+  }
+
+  function handleTrailerChange(id: string) {
+    setSelTrailerId(id);
+    if (!id) { setSelDriverId(""); setSelTruckId(""); return; }
+    const t = trailers.find((x) => x.id === id);
+    if (t?.pairedTruckId) setSelTruckId(t.pairedTruckId);
+    const a = driverAssignments.find((x) => x.trailerId === id);
+    if (a) setSelDriverId(a.id);
+  }
+
   function handleFile(f: File) {
     setFile(f);
     setExtractError(null);
@@ -235,7 +359,12 @@ export function LoadImportDialog({
         throw new Error(json.error ?? "Extraction failed");
       setExtracted(json.data);
       setStep("review");
-      setEditCommodity(bestMatch(COMMODITIES, json.data?.commodity ?? json.data?.cargoDescription));
+      setEditCommodity(
+        bestMatch(
+          COMMODITIES,
+          json.data?.commodity ?? json.data?.cargoDescription,
+        ),
+      );
       setEditEquipment(bestMatch(EQUIPMENT_TYPES, json.data?.equipmentType));
       setEditPickupTz(ianaToShort(json.data?.pickupTimezone));
       setEditDeliveryTz(ianaToShort(json.data?.deliveryTimezone));
@@ -406,27 +535,55 @@ export function LoadImportDialog({
               {/* Customer */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Customer</h3>
-                {d.customerName && (
-                  <p className="text-xs text-muted-foreground">
-                    AI detected:{" "}
-                    <span className="font-medium text-foreground">
-                      {d.customerName}
-                    </span>{" "}
-                    — select from list if available
+                {d.customerName && !selectedCustomerId && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    AI detected &quot;{d.customerName}&quot; — not found in your
+                    customer list. Select below or leave as spot load.
                   </p>
                 )}
-                <Select
-                  name="customerId"
-                  value={selectedCustomerId}
-                  onChange={(e) => setSelectedCustomerId(e.target.value)}
-                >
-                  <option value="">— spot / no customer —</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </Select>
+                {/* Hidden real customerId submitted to action */}
+                <input type="hidden" name="customerId" value={selectedCustomerId} />
+                {/* Combobox: text shows AI name or selected customer label */}
+                <div className="relative">
+                  <Input
+                    list="customer-datalist"
+                    placeholder={d.customerName ?? "Search customer…"}
+                    value={
+                      selectedCustomerId
+                        ? (customers.find((c) => c.id === selectedCustomerId)
+                            ?.label ?? d.customerName ?? "")
+                        : (d.customerName ?? "")
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const match = customers.find(
+                        (c) => c.label === val,
+                      );
+                      setSelectedCustomerId(match?.id ?? "");
+                    }}
+                  />
+                  <datalist id="customer-datalist">
+                    <option value="">— spot / no customer —</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.label} />
+                    ))}
+                  </datalist>
+                </div>
+                {selectedCustomerId && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    ✓ Linked to:{" "}
+                    <span className="font-medium">
+                      {customers.find((c) => c.id === selectedCustomerId)?.label}
+                    </span>{" "}
+                    <button
+                      type="button"
+                      className="underline"
+                      onClick={() => setSelectedCustomerId("")}
+                    >
+                      clear
+                    </button>
+                  </p>
+                )}
               </section>
 
               {/* Pickup */}
@@ -647,7 +804,9 @@ export function LoadImportDialog({
                     >
                       <option value="">—</option>
                       {COMMODITIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
                     </Select>
                   </Field>
@@ -659,7 +818,9 @@ export function LoadImportDialog({
                     >
                       <option value="">—</option>
                       {EQUIPMENT_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
                       ))}
                     </Select>
                   </Field>
@@ -753,32 +914,38 @@ export function LoadImportDialog({
                 <h3 className="text-sm font-semibold">Assignment (optional)</h3>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <Field name="driverId" label="Driver">
-                    <Select name="driverId" defaultValue="">
+                    <Select
+                      name="driverId"
+                      value={selDriverId}
+                      onChange={(e) => handleDriverChange(e.target.value)}
+                    >
                       <option value="">—</option>
                       {drivers.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.label}
-                        </option>
+                        <option key={d.id} value={d.id}>{d.label}</option>
                       ))}
                     </Select>
                   </Field>
                   <Field name="truckId" label="Truck">
-                    <Select name="truckId" defaultValue="">
+                    <Select
+                      name="truckId"
+                      value={selTruckId}
+                      onChange={(e) => handleTruckChange(e.target.value)}
+                    >
                       <option value="">—</option>
                       {trucks.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.label}
-                        </option>
+                        <option key={t.id} value={t.id}>{t.label}</option>
                       ))}
                     </Select>
                   </Field>
                   <Field name="trailerId" label="Trailer">
-                    <Select name="trailerId" defaultValue="">
+                    <Select
+                      name="trailerId"
+                      value={selTrailerId}
+                      onChange={(e) => handleTrailerChange(e.target.value)}
+                    >
                       <option value="">—</option>
                       {trailers.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.label}
-                        </option>
+                        <option key={t.id} value={t.id}>{t.label}</option>
                       ))}
                     </Select>
                   </Field>
