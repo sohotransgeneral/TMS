@@ -204,7 +204,11 @@ export function LoadForm({
   const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
   const [customerText, setCustomerText] = useState(() => {
     if (initial?.customerId) {
-      return customers.find((c) => c.id === initial.customerId)?.label ?? initial.brokerName ?? "";
+      return (
+        customers.find((c) => c.id === initial.customerId)?.label ??
+        initial.brokerName ??
+        ""
+      );
     }
     return initial?.brokerName ?? "";
   });
@@ -779,7 +783,8 @@ export function LoadForm({
               placeholder="Search or type customer name…"
               value={
                 customerId
-                  ? (customers.find((c) => c.id === customerId)?.label ?? customerText)
+                  ? (customers.find((c) => c.id === customerId)?.label ??
+                    customerText)
                   : customerText
               }
               onChange={(e) => {

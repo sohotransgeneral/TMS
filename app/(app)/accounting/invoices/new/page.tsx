@@ -62,8 +62,14 @@ export default async function NewInvoicePage({
         id: true,
         referenceNumber: true,
         status: true,
+        pickupAddress: true,
         pickupCity: true,
+        pickupState: true,
+        pickupZip: true,
+        deliveryAddress: true,
         deliveryCity: true,
+        deliveryState: true,
+        deliveryZip: true,
         price: true,
         accessorialAmount: true,
         loadInvoiceNumber: true,
@@ -76,7 +82,17 @@ export default async function NewInvoicePage({
     }),
   ]);
 
-  // Pre-fill invoice line from load (city names + price)
+  // Pre-fill invoice line from load (full address + price)
+  function fmtAddr(
+    address?: string | null,
+    city?: string | null,
+    state?: string | null,
+    zip?: string | null,
+  ) {
+    return [address, city, [state, zip].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", ");
+  }
   const loadFromUrl = loadIdFromUrl
     ? loads.find((l) => l.id === loadIdFromUrl)
     : null;
@@ -86,7 +102,10 @@ export default async function NewInvoicePage({
       ? loadFromUrl.price + (loadFromUrl.accessorialAmount ?? 0)
       : null;
   const descFromUrl = loadFromUrl
-    ? [loadFromUrl.pickupCity, loadFromUrl.deliveryCity]
+    ? [
+        fmtAddr(loadFromUrl.pickupAddress, loadFromUrl.pickupCity, loadFromUrl.pickupState, loadFromUrl.pickupZip),
+        fmtAddr(loadFromUrl.deliveryAddress, loadFromUrl.deliveryCity, loadFromUrl.deliveryState, loadFromUrl.deliveryZip),
+      ]
         .filter(Boolean)
         .join(" > ") || "Freight transport"
     : "Freight transport";
@@ -109,8 +128,14 @@ export default async function NewInvoicePage({
         }))}
         loadsData={loads.map((l) => ({
           id: l.id,
+          pickupAddress: l.pickupAddress,
           pickupCity: l.pickupCity,
+          pickupState: l.pickupState,
+          pickupZip: l.pickupZip,
+          deliveryAddress: l.deliveryAddress,
           deliveryCity: l.deliveryCity,
+          deliveryState: l.deliveryState,
+          deliveryZip: l.deliveryZip,
           price: l.price,
           accessorialAmount: l.accessorialAmount,
           loadInvoiceNumber: l.loadInvoiceNumber,

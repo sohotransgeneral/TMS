@@ -46,7 +46,12 @@ export type DriverRow = {
   internalNotes: string | null;
   truckId?: string | null;
   trailerId?: string | null;
-  user: { id: string; email: string; phone: string | null; telegramChatId?: string | null };
+  user: {
+    id: string;
+    email: string;
+    phone: string | null;
+    telegramChatId?: string | null;
+  };
 };
 
 const STATUSES = ["AVAILABLE", "ON_TRIP", "OFF_DUTY", "UNAVAILABLE"] as const;

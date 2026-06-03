@@ -17,8 +17,14 @@ type Opt = { id: string; label: string };
 type ItemRow = { description: string; quantity: number; unitPrice: number };
 type LoadData = {
   id: string;
+  pickupAddress?: string | null;
   pickupCity?: string | null;
+  pickupState?: string | null;
+  pickupZip?: string | null;
+  deliveryAddress?: string | null;
   deliveryCity?: string | null;
+  deliveryState?: string | null;
+  deliveryZip?: string | null;
   price?: number | null;
   accessorialAmount?: number | null;
   loadInvoiceNumber?: string | null;
@@ -96,10 +102,26 @@ export function InvoiceForm({
     if (!selectedLoadId) return;
     const ld = loadsData.find((l) => l.id === selectedLoadId);
     if (!ld) return;
-    const pickup = ld.pickupCity ?? "";
-    const delivery = ld.deliveryCity ?? "";
-    const desc =
-      [pickup, delivery].filter(Boolean).join(" > ") || "Freight transport";
+
+    function fmtAddr(
+      address?: string | null,
+      city?: string | null,
+      state?: string | null,
+      zip?: string | null,
+    ) {
+      return [
+        address,
+        city,
+        [state, zip].filter(Boolean).join(" "),
+      ]
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    const pickupFull = fmtAddr(ld.pickupAddress, ld.pickupCity, ld.pickupState, ld.pickupZip);
+    const deliveryFull = fmtAddr(ld.deliveryAddress, ld.deliveryCity, ld.deliveryState, ld.deliveryZip);
+    const desc = [pickupFull, deliveryFull].filter(Boolean).join(" > ") || "Freight transport";
+
     const newItems: ItemRow[] = [
       { description: desc, quantity: 1, unitPrice: ld.price ?? 0 },
     ];

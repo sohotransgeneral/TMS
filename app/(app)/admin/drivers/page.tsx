@@ -79,7 +79,11 @@ export default async function DriversPage({
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
-      include: { user: { select: { id: true, email: true, phone: true, telegramChatId: true } } },
+      include: {
+        user: {
+          select: { id: true, email: true, phone: true, telegramChatId: true },
+        },
+      },
     }),
     prisma.driverProfile.count({ where }),
     prisma.truck.findMany({
