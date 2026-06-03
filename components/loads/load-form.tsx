@@ -201,6 +201,13 @@ export function LoadForm({
   const [driverId, setDriverId] = useState(initial?.driverId ?? "");
   const [truckId, setTruckId] = useState(initial?.truckId ?? "");
   const [trailerId, setTrailerId] = useState(initial?.trailerId ?? "");
+  const [customerId, setCustomerId] = useState(initial?.customerId ?? "");
+  const [customerText, setCustomerText] = useState(() => {
+    if (initial?.customerId) {
+      return customers.find((c) => c.id === initial.customerId)?.label ?? initial.brokerName ?? "";
+    }
+    return initial?.brokerName ?? "";
+  });
   const [price, setPrice] = useState(initial?.price ?? 0);
   const [accessorialAmount, setAccessorialAmount] = useState(
     initial?.accessorialAmount ?? 0,
@@ -759,18 +766,44 @@ export function LoadForm({
             label="Bill-to Customer"
             error={e.customerId}
           >
-            <Select
-              id="customerId"
-              name="customerId"
-              defaultValue={initial?.customerId ?? ""}
-            >
-              <option value="">— spot / no customer —</option>
+            {/* Hidden inputs — customerId for linked system customer, brokerName for free text */}
+            <input type="hidden" name="customerId" value={customerId} />
+            <input
+              type="hidden"
+              name="brokerName"
+              value={customerId ? "" : customerText}
+            />
+            <input
+              list="customer-datalist-form"
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              placeholder="Search or type customer name…"
+              value={
+                customerId
+                  ? (customers.find((c) => c.id === customerId)?.label ?? customerText)
+                  : customerText
+              }
+              onChange={(e) => {
+                const val = e.target.value;
+                const match = customers.find((c) => c.label === val);
+                if (match) {
+                  setCustomerId(match.id);
+                  setCustomerText(match.label);
+                } else {
+                  setCustomerId("");
+                  setCustomerText(val);
+                }
+              }}
+            />
+            <datalist id="customer-datalist-form">
               {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
+                <option key={c.id} value={c.label} />
               ))}
-            </Select>
+            </datalist>
+            {customerId && (
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+                ✓ Linked to system customer
+              </p>
+            )}
           </Field>
           <Field
             name="billingMethod"
