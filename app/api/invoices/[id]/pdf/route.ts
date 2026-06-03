@@ -35,6 +35,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
   const pdf = renderInvoicePdf({
     ...inv,
+    customer: inv.customer ?? {
+      name: (inv as { customerName?: string | null }).customerName ?? "Unknown",
+      taxId: null,
+      registrationNumber: null,
+      street: null,
+      city: null,
+      county: null,
+      postalCode: null,
+      country: null,
+    },
     logoBase64: logo?.logoBase64 ?? null,
     logoFormat: logo?.logoFormat ?? null,
   });

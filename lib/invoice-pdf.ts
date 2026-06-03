@@ -42,7 +42,7 @@ type InvoiceForPdf = {
     county: string | null;
     postalCode: string | null;
     country: string | null;
-  };
+  } | null;
   load?: {
     referenceNumber: string;
     pickupCity: string | null;
@@ -352,11 +352,11 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   ].filter(Boolean) as string[];
 
   const customerLines = [
-    ...addrBlock(inv.customer),
+    ...addrBlock(inv.customer ?? { street: null, city: null, county: null, postalCode: null, country: null }),
   ].filter(Boolean) as string[];
 
   drawPartyBox(ML, "FROM", inv.company.name, supplierLines);
-  drawPartyBox(ML + halfW + boxGap, "BILL TO", inv.customer.name, customerLines);
+  drawPartyBox(ML + halfW + boxGap, "BILL TO", inv.customer?.name ?? "—", customerLines);
 
   let cursorY = boxTop + boxH + 10;
 
