@@ -53,7 +53,9 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
 
   // Fetch customer + load context
   const [payCustomer, payLoad] = await Promise.all([
-    prisma.customer.findUnique({ where: { id: invoice.customerId }, select: { name: true } }),
+    invoice.customerId
+      ? prisma.customer.findUnique({ where: { id: invoice.customerId }, select: { name: true } })
+      : null,
     invoice.loadId
       ? prisma.load.findUnique({
           where: { id: invoice.loadId },
@@ -67,7 +69,7 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
   ]);
 
   const payBodyLines: string[] = [
-    `Customer: ${payCustomer?.name ?? invoice.customerId}`,
+    `Customer: ${payCustomer?.name ?? (invoice as { customerName?: string | null }).customerName ?? invoice.customerId ?? "Unknown"}`,
   ];
   if (payLoad) {
     payBodyLines.push(`Load: ${payLoad.referenceNumber}`);

@@ -234,11 +234,7 @@ export function InvoiceForm({
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            name="customerId"
-            label="Customer"
-            error={e.customerId}
-          >
+          <Field name="customerId" label="Customer" error={e.customerId}>
             {/* hidden fields so handleSubmit picks them up */}
             <input type="hidden" name="customerId" value={customerIdState} />
             <input
