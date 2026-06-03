@@ -558,7 +558,11 @@ export function LoadImportDialog({
                 <h3 className="text-sm font-semibold">Customer</h3>
 
                 {/* Always submit the AI-detected name as brokerName */}
-                <input type="hidden" name="brokerName" value={d.customerName ?? ""} />
+                <input
+                  type="hidden"
+                  name="brokerName"
+                  value={d.customerName ?? ""}
+                />
                 {/* Hidden real customerId submitted to action */}
                 <input
                   type="hidden"
@@ -597,7 +601,10 @@ export function LoadImportDialog({
                   <p className="text-xs text-green-600 dark:text-green-400">
                     ✓ Linked to system customer:{" "}
                     <span className="font-medium">
-                      {customers.find((c) => c.id === selectedCustomerId)?.label}
+                      {
+                        customers.find((c) => c.id === selectedCustomerId)
+                          ?.label
+                      }
                     </span>{" "}
                     <button
                       type="button"
@@ -609,8 +616,9 @@ export function LoadImportDialog({
                   </p>
                 ) : d.customerName ? (
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    AI detected &quot;{d.customerName}&quot; — saved as broker/customer name.
-                    Select from list above to link to a system customer.
+                    AI detected &quot;{d.customerName}&quot; — saved as
+                    broker/customer name. Select from list above to link to a
+                    system customer.
                   </p>
                 ) : null}
               </section>

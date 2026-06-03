@@ -154,11 +154,31 @@ export async function createInvoiceFromLoad(
 
   // Build line items from the load.
   const items: InvoiceItem[] = [];
-  const route = [load.pickupCity, load.deliveryCity].filter(Boolean).join(" > ");
+
+  // Build full address strings for pickup and delivery
+  function fmtAddr(
+    address: string | null,
+    city: string | null,
+    state: string | null,
+    zip: string | null,
+  ): string {
+    return [address, city, [state, zip].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", ");
+  }
+  const pickupFull = fmtAddr(load.pickupAddress, load.pickupCity, load.pickupState, load.pickupZip);
+  const deliveryFull = fmtAddr(load.deliveryAddress, load.deliveryCity, load.deliveryState, load.deliveryZip);
+
+  const description = [
+    `Freight — Load ${load.referenceNumber}`,
+    pickupFull ? `From: ${pickupFull}` : null,
+    deliveryFull ? `To:   ${deliveryFull}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   items.push({
-    description: route
-      ? `Freight: ${route}`
-      : `Freight \u2014 Load ${load.referenceNumber}`,
+    description,
     quantity: 1,
     unitPrice: load.price ?? 0,
   });
