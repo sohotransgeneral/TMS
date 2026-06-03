@@ -103,8 +103,18 @@ export default async function NewInvoicePage({
       : null;
   const descFromUrl = loadFromUrl
     ? [
-        fmtAddr(loadFromUrl.pickupAddress, loadFromUrl.pickupCity, loadFromUrl.pickupState, loadFromUrl.pickupZip),
-        fmtAddr(loadFromUrl.deliveryAddress, loadFromUrl.deliveryCity, loadFromUrl.deliveryState, loadFromUrl.deliveryZip),
+        fmtAddr(
+          loadFromUrl.pickupAddress,
+          loadFromUrl.pickupCity,
+          loadFromUrl.pickupState,
+          loadFromUrl.pickupZip,
+        ),
+        fmtAddr(
+          loadFromUrl.deliveryAddress,
+          loadFromUrl.deliveryCity,
+          loadFromUrl.deliveryState,
+          loadFromUrl.deliveryZip,
+        ),
       ]
         .filter(Boolean)
         .join(" > ") || "Freight transport"

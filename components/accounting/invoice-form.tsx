@@ -109,18 +109,26 @@ export function InvoiceForm({
       state?: string | null,
       zip?: string | null,
     ) {
-      return [
-        address,
-        city,
-        [state, zip].filter(Boolean).join(" "),
-      ]
+      return [address, city, [state, zip].filter(Boolean).join(" ")]
         .filter(Boolean)
         .join(", ");
     }
 
-    const pickupFull = fmtAddr(ld.pickupAddress, ld.pickupCity, ld.pickupState, ld.pickupZip);
-    const deliveryFull = fmtAddr(ld.deliveryAddress, ld.deliveryCity, ld.deliveryState, ld.deliveryZip);
-    const desc = [pickupFull, deliveryFull].filter(Boolean).join(" > ") || "Freight transport";
+    const pickupFull = fmtAddr(
+      ld.pickupAddress,
+      ld.pickupCity,
+      ld.pickupState,
+      ld.pickupZip,
+    );
+    const deliveryFull = fmtAddr(
+      ld.deliveryAddress,
+      ld.deliveryCity,
+      ld.deliveryState,
+      ld.deliveryZip,
+    );
+    const desc =
+      [pickupFull, deliveryFull].filter(Boolean).join(" > ") ||
+      "Freight transport";
 
     const newItems: ItemRow[] = [
       { description: desc, quantity: 1, unitPrice: ld.price ?? 0 },
