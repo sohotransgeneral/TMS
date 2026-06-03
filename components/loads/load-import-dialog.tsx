@@ -556,23 +556,21 @@ export function LoadImportDialog({
               {/* Customer */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Customer</h3>
-                {d.customerName && !selectedCustomerId && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    AI detected &quot;{d.customerName}&quot; — not found in your
-                    customer list. Select below or leave as spot load.
-                  </p>
-                )}
+
+                {/* Always submit the AI-detected name as brokerName */}
+                <input type="hidden" name="brokerName" value={d.customerName ?? ""} />
                 {/* Hidden real customerId submitted to action */}
                 <input
                   type="hidden"
                   name="customerId"
                   value={selectedCustomerId}
                 />
+
                 {/* Combobox: text shows AI name or selected customer label */}
                 <div className="relative">
                   <Input
                     list="customer-datalist"
-                    placeholder={d.customerName ?? "Search customer…"}
+                    placeholder="Search customer…"
                     value={
                       selectedCustomerId
                         ? (customers.find((c) => c.id === selectedCustomerId)
@@ -594,14 +592,12 @@ export function LoadImportDialog({
                     ))}
                   </datalist>
                 </div>
-                {selectedCustomerId && (
+
+                {selectedCustomerId ? (
                   <p className="text-xs text-green-600 dark:text-green-400">
-                    ✓ Linked to:{" "}
+                    ✓ Linked to system customer:{" "}
                     <span className="font-medium">
-                      {
-                        customers.find((c) => c.id === selectedCustomerId)
-                          ?.label
-                      }
+                      {customers.find((c) => c.id === selectedCustomerId)?.label}
                     </span>{" "}
                     <button
                       type="button"
@@ -611,7 +607,12 @@ export function LoadImportDialog({
                       clear
                     </button>
                   </p>
-                )}
+                ) : d.customerName ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    AI detected &quot;{d.customerName}&quot; — saved as broker/customer name.
+                    Select from list above to link to a system customer.
+                  </p>
+                ) : null}
               </section>
 
               {/* Pickup */}

@@ -242,7 +242,7 @@ export default async function LoadDetailPage({
           <div className="grid grid-cols-2 gap-3">
             <Row label="Entered By" value={l.enteredBy} />
             <Row label="Invoicing Company" value={l.invoicingCompany} />
-            <Row label="Bill-to Customer" value={load.customer?.name} />
+            <Row label="Bill-to Customer" value={load.customer?.name ?? load.brokerName} />
             <Row label="Billing Method" value={l.billingMethod} />
             <Row label="Billing Type" value={l.billingType} />
             <Row label="Invoice #" value={l.loadInvoiceNumber} />
