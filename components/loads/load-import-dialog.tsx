@@ -66,6 +66,69 @@ type ExtractedData = {
   internalNotes?: string | null;
 };
 
+const COMMODITIES = [
+  "A+ Slabs","Air Filtration Product","Aluminium Coils","Aluminum Cans","Aluminum Wheels",
+  "Appliances","Auto Parts","Baled Cardboard","Baled Paper","Batteries","Beer","Berries",
+  "Beverage Machinery","Beverages","Bolts","Books","Bottled Water","Bottles","Brackets",
+  "Brass","Brick","Building Materials","Cable Trays","Candies","Canned Goods","Car Parts",
+  "Carbon","Cardboard","Cargo Restraint Products","Chemicals","Clothing","Coffee",
+  "Computer Equipment","Construction Materials","Consumer Electronics","Copper","Cosmetics",
+  "Dairy Products","Dry Goods","Electronics","Fertilizer","Flooring","Food Products",
+  "Freight","Fresh Produce","Frozen Food","Furniture","Glass","Grain","Hardware",
+  "Heavy Machinery","Industrial Equipment","Iron","Landscaping Materials","Lumber",
+  "Machinery Parts","Medical Equipment","Medical Supplies","Metal Parts","Metal Scrap",
+  "Military Equipment","Motorcycle Parts","Packaging Materials","Paint","Paper Products",
+  "Pharmaceuticals","Pipes","Plastic","Plumbing Supplies","Plastics (Tubing, PVC Pipes, etc.)",
+  "Poultry","Produce","Recycled Materials","Refrigerated Goods","Retail Goods","Rubber",
+  "Salt","Seafood","Seeds","Sheet Metal","Shoes","Soft Drinks","Solar Panels","Steel",
+  "Steel Coils","Steel Pipes","Stone","Textiles","Tires","Tools","Vegetables","Water",
+  "Wine","Wire","Wood","Wood Products",
+];
+
+const EQUIPMENT_TYPES = [
+  "Dry Van","Reefer","Flatbed","Step Deck","Flatbed or Step Deck","Conestoga",
+  "Power Only","RGN","Lowboy","Tanker","Auto Carrier","Double Drop","Hotshot",
+  "Sprinter Van","Box Truck",
+];
+
+function bestMatch(list: string[], ai: string | null | undefined): string {
+  if (!ai) return "";
+  const n = ai.toLowerCase().trim();
+  // Exact match first
+  const exact = list.find((o) => o.toLowerCase() === n);
+  if (exact) return exact;
+  // Contains match
+  const contains = list.find(
+    (o) => o.toLowerCase().includes(n) || n.includes(o.toLowerCase()),
+  );
+  return contains ?? "";
+}
+
+// IANA timezone → short label used in the load form Select
+const IANA_TO_SHORT: Record<string, string> = {
+  "America/New_York": "ET",
+  "America/Detroit": "ET",
+  "America/Toronto": "ET",
+  "America/Chicago": "CT",
+  "America/Winnipeg": "CT",
+  "America/Denver": "MT",
+  "America/Edmonton": "MT",
+  "America/Phoenix": "MT",
+  "America/Los_Angeles": "PT",
+  "America/Vancouver": "PT",
+  "America/Anchorage": "AKT",
+  "Pacific/Honolulu": "HT",
+  "America/Halifax": "ET",
+  "America/Moncton": "ET",
+  "America/Regina": "CT",
+  "America/St_Johns": "ET",
+};
+
+function ianaToShort(iana: string | null | undefined): string {
+  if (!iana) return "";
+  return IANA_TO_SHORT[iana] ?? "";
+}
+
 const toDateTimeLocal = (val: string | null | undefined) => {
   if (!val) return "";
   try {
@@ -103,6 +166,8 @@ export function LoadImportDialog({
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [editCommodity, setEditCommodity] = useState("");
   const [editEquipment, setEditEquipment] = useState("");
+  const [editPickupTz, setEditPickupTz] = useState("");
+  const [editDeliveryTz, setEditDeliveryTz] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -170,8 +235,10 @@ export function LoadImportDialog({
         throw new Error(json.error ?? "Extraction failed");
       setExtracted(json.data);
       setStep("review");
-      setEditCommodity(json.data?.commodity ?? "");
-      setEditEquipment(json.data?.equipmentType ?? "");
+      setEditCommodity(bestMatch(COMMODITIES, json.data?.commodity ?? json.data?.cargoDescription));
+      setEditEquipment(bestMatch(EQUIPMENT_TYPES, json.data?.equipmentType));
+      setEditPickupTz(ianaToShort(json.data?.pickupTimezone));
+      setEditDeliveryTz(ianaToShort(json.data?.deliveryTimezone));
       // Auto-match AI detected customer name
       const detectedName: string | null = json.data?.customerName ?? null;
       if (detectedName) {
@@ -440,11 +507,22 @@ export function LoadImportDialog({
                     placeholder="PU# / appointment confirmation"
                   />
                 </Field>
-                <input
-                  type="hidden"
-                  name="pickupTimezone"
-                  value={d.pickupTimezone ?? ""}
-                />
+                <Field name="pickupTimezone" label="Timezone">
+                  <Select
+                    name="pickupTimezone"
+                    value={editPickupTz}
+                    onChange={(e) => setEditPickupTz(e.target.value)}
+                  >
+                    <option value="">—</option>
+                    <option value="ET">ET</option>
+                    <option value="CT">CT</option>
+                    <option value="MT">MT</option>
+                    <option value="PT">PT</option>
+                    <option value="AKT">AKT</option>
+                    <option value="HT">HT</option>
+                    <option value="UTC">UTC</option>
+                  </Select>
+                </Field>
                 <Field name="pickupNotes" label="Pickup Notes">
                   <Textarea
                     name="pickupNotes"
@@ -532,11 +610,22 @@ export function LoadImportDialog({
                     placeholder="DEL# / appointment confirmation"
                   />
                 </Field>
-                <input
-                  type="hidden"
-                  name="deliveryTimezone"
-                  value={d.deliveryTimezone ?? ""}
-                />
+                <Field name="deliveryTimezone" label="Timezone">
+                  <Select
+                    name="deliveryTimezone"
+                    value={editDeliveryTz}
+                    onChange={(e) => setEditDeliveryTz(e.target.value)}
+                  >
+                    <option value="">—</option>
+                    <option value="ET">ET</option>
+                    <option value="CT">CT</option>
+                    <option value="MT">MT</option>
+                    <option value="PT">PT</option>
+                    <option value="AKT">AKT</option>
+                    <option value="HT">HT</option>
+                    <option value="UTC">UTC</option>
+                  </Select>
+                </Field>
                 <Field name="deliveryNotes" label="Delivery Notes">
                   <Textarea
                     name="deliveryNotes"
@@ -551,20 +640,28 @@ export function LoadImportDialog({
                 <h3 className="text-sm font-semibold">Cargo</h3>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <Field name="commodity" label="Commodity">
-                    <Input
+                    <Select
                       name="commodity"
                       value={editCommodity}
                       onChange={(e) => setEditCommodity(e.target.value)}
-                      placeholder="Steel / Produce / General freight"
-                    />
+                    >
+                      <option value="">—</option>
+                      {COMMODITIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </Select>
                   </Field>
                   <Field name="equipment" label="Equipment">
-                    <Input
+                    <Select
                       name="equipment"
                       value={editEquipment}
                       onChange={(e) => setEditEquipment(e.target.value)}
-                      placeholder="Dry Van / Reefer / Flatbed"
-                    />
+                    >
+                      <option value="">—</option>
+                      {EQUIPMENT_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </Select>
                   </Field>
                   <Field name="cargoDescription" label="Description">
                     <Input
@@ -697,7 +794,11 @@ export function LoadImportDialog({
 
               {/* Default billing/admin fields */}
               <input type="hidden" name="enteredBy" value={userName ?? ""} />
-              <input type="hidden" name="invoicingCompany" value={companyName ?? ""} />
+              <input
+                type="hidden"
+                name="invoicingCompany"
+                value={companyName ?? ""}
+              />
               <input type="hidden" name="billingMethod" value="Collect" />
               <input type="hidden" name="billingType" value="Factoring" />
 

@@ -137,7 +137,9 @@ export default async function LoadDetailPage({
               </Link>
             </Button>
             {!load.invoice && (
-              <CreateInvoiceButton action={createInvoiceFromLoad.bind(null, load.id)} />
+              <CreateInvoiceButton
+                action={createInvoiceFromLoad.bind(null, load.id)}
+              />
             )}
             {load.invoice && (
               <Button asChild variant="outline">
