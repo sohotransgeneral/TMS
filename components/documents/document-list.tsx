@@ -39,6 +39,8 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   BOL: "Bill of Lading",
   POD: "Proof of Delivery",
   INVOICE: "Invoice",
+  RATE_CONFIRMATION: "Rate Confirmation",
+  ACCESSORIAL: "Accessorial Proof",
   DRIVER_LICENSE: "Driver License",
   ID_CARD: "ID Card",
   INSURANCE: "Insurance",

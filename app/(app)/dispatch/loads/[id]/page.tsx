@@ -11,6 +11,8 @@ import { CreateInvoiceButton } from "@/components/loads/create-invoice-button";
 import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { parseAccessorials } from "@/lib/accessorials";
+import { ratePerMile } from "@/lib/load-miles";
 import {
   Pencil,
   MapPin,
@@ -22,6 +24,8 @@ import {
   Phone,
   AlertTriangle,
   MessageSquare,
+  Paperclip,
+  Route,
 } from "lucide-react";
 import { DocumentSection } from "@/components/documents/document-section";
 
@@ -123,6 +127,11 @@ export default async function LoadDetailPage({
   };
 
   const totalRate = (l.price ?? 0) + (l.accessorialAmount ?? 0);
+  const accessorials = parseAccessorials(load.accessorials);
+  const loadedMiles = load.actualDistanceKm ?? load.estimatedDistanceKm ?? null;
+  const rpm = ratePerMile(totalRate, loadedMiles);
+  const allInMiles = (loadedMiles ?? 0) + (load.deadheadMiles ?? 0);
+  const allInRpm = ratePerMile(totalRate, allInMiles);
 
   return (
     <div className="space-y-6">
@@ -306,6 +315,47 @@ export default async function LoadDetailPage({
               </span>
             </div>
           </div>
+
+          {/* Miles & rate per mile */}
+          <div className="space-y-2 border-t pt-3">
+            <div className="flex justify-between text-sm">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Route className="h-3.5 w-3.5" /> Loaded miles
+              </span>
+              <span className="font-medium tabular-nums">
+                {loadedMiles != null
+                  ? `${Math.round(loadedMiles).toLocaleString("en-US")} mi`
+                  : "—"}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Deadhead (empty)</span>
+              <span className="font-medium tabular-nums">
+                {load.deadheadMiles != null
+                  ? `${Math.round(load.deadheadMiles).toLocaleString("en-US")} mi`
+                  : "—"}
+              </span>
+            </div>
+            {load.deadheadOrigin && (
+              <p className="-mt-1 text-xs text-muted-foreground">
+                Empty from {load.deadheadOrigin}
+              </p>
+            )}
+            <div className="flex justify-between border-t pt-2 text-sm font-semibold">
+              <span>Rate per mile</span>
+              <span className="tabular-nums">
+                {rpm != null ? `${formatCurrency(rpm, load.currency)}/mi` : "—"}
+              </span>
+            </div>
+            {allInRpm != null && load.deadheadMiles != null && (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>All-in (loaded + empty)</span>
+                <span className="tabular-nums">
+                  {formatCurrency(allInRpm, load.currency)}/mi
+                </span>
+              </div>
+            )}
+          </div>
           {(load.poNumber || load.soNumber) && (
             <div className="grid grid-cols-2 gap-3 border-t pt-3">
               <Row label="PO #" value={load.poNumber} />
@@ -456,6 +506,45 @@ export default async function LoadDetailPage({
         </section>
       </div>
 
+      {/* Accessorials */}
+      {accessorials.length > 0 && (
+        <section className="rounded-lg border bg-card p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-semibold">
+            <Paperclip className="h-4 w-4" /> Accessorials
+          </h3>
+          <ul className="divide-y rounded-md border">
+            {accessorials.map((a) => (
+              <li
+                key={a.name}
+                className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm"
+              >
+                <span className="min-w-[10rem] flex-1 font-medium">
+                  {a.name}
+                </span>
+                <span className="tabular-nums">
+                  {formatCurrency(a.amount, load.currency)}
+                </span>
+                {a.docUrl ? (
+                  <a
+                    href={a.docUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-[16rem] items-center gap-1 truncate text-xs text-primary hover:underline"
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{a.docName ?? "Document"}</span>
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    No document
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Notes */}
       {load.specialInstructions && (
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950/30">
@@ -534,7 +623,14 @@ export default async function LoadDetailPage({
             uploadedBy: null,
           }))}
           entityLink={{ loadId: load.id }}
-          allowedTypes={["CMR", "BOL", "POD", "OTHER"]}
+          allowedTypes={[
+            "CMR",
+            "BOL",
+            "POD",
+            "RATE_CONFIRMATION",
+            "ACCESSORIAL",
+            "OTHER",
+          ]}
         />
       </section>
 

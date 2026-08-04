@@ -13,7 +13,13 @@ import {
   LOAD_NEXT_STATUSES,
 } from "@/lib/validators/load";
 import { nextLoadReference } from "@/lib/load-reference";
-import { geocodeAddress } from "@/lib/geocode";
+import { drivingMiles, resolvePoint, type LatLng } from "@/lib/distance";
+import { computeDeadhead, type DeadheadResult } from "@/lib/load-miles";
+import {
+  parseAccessorials,
+  serializeAccessorials,
+  accessorialsTotal,
+} from "@/lib/accessorials";
 import { notifyEvent } from "@/lib/notifications";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { randomUUID } from "crypto";
@@ -55,6 +61,28 @@ function loadNotifyBody(args: {
   return lines.join("\n");
 }
 
+/**
+ * Accessorials arrive as a JSON list of line items (name + charge + proof doc).
+ * The load's `accessorialAmount` is always their sum, so the Total shown on the
+ * load and the Total charged on the invoice can never drift apart.
+ */
+function normalizeAccessorials(d: {
+  accessorials?: string;
+  accessorialAmount?: number;
+}) {
+  const items = parseAccessorials(d.accessorials);
+  if (!items.length) return;
+  d.accessorials = serializeAccessorials(items);
+  d.accessorialAmount = accessorialsTotal(items);
+}
+
+function pointOf(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): LatLng | null {
+  return lat != null && lng != null ? { lat, lng } : null;
+}
+
 export async function createLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
   if (!me.companyId) return failure("You are not assigned to a company.");
@@ -69,18 +97,37 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   // Dispatcher creates with driver → auto-accepted, no manual confirmation needed
   const status = d.driverId ? "DRIVER_ACCEPTED" : "DRAFT";
 
+  normalizeAccessorials(d);
+
   // Geocode pickup/delivery if coords not provided
-  if (!d.pickupLat || !d.pickupLng) {
-    const geo = await geocodeAddress(
-      [d.pickupAddress, d.pickupCity, d.pickupState, d.pickupZip, d.pickupCountry].filter(Boolean).join(", "),
-    );
-    if (geo) { d.pickupLat = geo.lat; d.pickupLng = geo.lng; }
+  const [pickupPoint, deliveryPoint] = await Promise.all([
+    resolvePoint({
+      lat: d.pickupLat, lng: d.pickupLng, address: d.pickupAddress,
+      city: d.pickupCity, state: d.pickupState, zip: d.pickupZip, country: d.pickupCountry,
+    }),
+    resolvePoint({
+      lat: d.deliveryLat, lng: d.deliveryLng, address: d.deliveryAddress,
+      city: d.deliveryCity, state: d.deliveryState, zip: d.deliveryZip, country: d.deliveryCountry,
+    }),
+  ]);
+  if (pickupPoint) { d.pickupLat = pickupPoint.lat; d.pickupLng = pickupPoint.lng; }
+  if (deliveryPoint) { d.deliveryLat = deliveryPoint.lat; d.deliveryLng = deliveryPoint.lng; }
+
+  // Loaded miles on the road, unless the dispatcher typed a number themselves
+  if (d.estimatedDistanceKm == null) {
+    const miles = await drivingMiles(pickupPoint, deliveryPoint);
+    if (miles != null) d.estimatedDistanceKm = miles;
   }
-  if (!d.deliveryLat || !d.deliveryLng) {
-    const geo = await geocodeAddress(
-      [d.deliveryAddress, d.deliveryCity, d.deliveryState, d.deliveryZip, d.deliveryCountry].filter(Boolean).join(", "),
-    );
-    if (geo) { d.deliveryLat = geo.lat; d.deliveryLng = geo.lng; }
+
+  // Deadhead — empty miles from the driver's previous drop to this pickup
+  let deadhead: DeadheadResult | null = null;
+  if (d.driverId && pickupPoint) {
+    deadhead = await computeDeadhead({
+      companyId: me.companyId,
+      driverId: d.driverId,
+      pickup: pickupPoint,
+      pickupDate: d.pickupDate,
+    });
   }
 
   const load = await prisma.load.create({
@@ -140,6 +187,8 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       lineHaulRate: d.lineHaulRate,
       fuelSurcharge: d.fuelSurcharge,
       estimatedDistanceKm: d.estimatedDistanceKm,
+      deadheadMiles: deadhead?.miles ?? null,
+      deadheadOrigin: deadhead?.origin ?? null,
       poNumber: d.poNumber,
       soNumber: d.soNumber,
       brokerName: d.brokerName,
@@ -226,24 +275,74 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
     return failure("Load can no longer be modified.");
   }
 
-  // Re-geocode if address changed but coords are missing
-  if (rest.pickupAddress && !rest.pickupLat && !rest.pickupLng) {
-    const geo = await geocodeAddress(
-      [rest.pickupAddress, rest.pickupCity, rest.pickupCountry].filter(Boolean).join(", "),
-    );
-    if (geo) { rest.pickupLat = geo.lat; rest.pickupLng = geo.lng; }
+  normalizeAccessorials(rest);
+
+  // Re-geocode if the address changed but coords weren't supplied
+  const pickupChanged =
+    rest.pickupAddress != null && rest.pickupAddress !== target.pickupAddress;
+  const deliveryChanged =
+    rest.deliveryAddress != null && rest.deliveryAddress !== target.deliveryAddress;
+
+  let pickupPoint: LatLng | null = null;
+  let deliveryPoint: LatLng | null = null;
+
+  if (rest.pickupAddress) {
+    pickupPoint = await resolvePoint({
+      lat: pickupChanged ? rest.pickupLat : (rest.pickupLat ?? target.pickupLat),
+      lng: pickupChanged ? rest.pickupLng : (rest.pickupLng ?? target.pickupLng),
+      address: rest.pickupAddress, city: rest.pickupCity, state: rest.pickupState,
+      zip: rest.pickupZip, country: rest.pickupCountry,
+    });
+    if (pickupPoint) { rest.pickupLat = pickupPoint.lat; rest.pickupLng = pickupPoint.lng; }
   }
-  if (rest.deliveryAddress && !rest.deliveryLat && !rest.deliveryLng) {
-    const geo = await geocodeAddress(
-      [rest.deliveryAddress, rest.deliveryCity, rest.deliveryCountry].filter(Boolean).join(", "),
-    );
-    if (geo) { rest.deliveryLat = geo.lat; rest.deliveryLng = geo.lng; }
+  if (rest.deliveryAddress) {
+    deliveryPoint = await resolvePoint({
+      lat: deliveryChanged ? rest.deliveryLat : (rest.deliveryLat ?? target.deliveryLat),
+      lng: deliveryChanged ? rest.deliveryLng : (rest.deliveryLng ?? target.deliveryLng),
+      address: rest.deliveryAddress, city: rest.deliveryCity, state: rest.deliveryState,
+      zip: rest.deliveryZip, country: rest.deliveryCountry,
+    });
+    if (deliveryPoint) { rest.deliveryLat = deliveryPoint.lat; rest.deliveryLng = deliveryPoint.lng; }
   }
+
+  // Recompute loaded miles when either end moved and no manual value was sent
+  if (rest.estimatedDistanceKm == null && (pickupChanged || deliveryChanged || target.estimatedDistanceKm == null)) {
+    const miles = await drivingMiles(
+      pickupPoint ?? pointOf(target.pickupLat, target.pickupLng),
+      deliveryPoint ?? pointOf(target.deliveryLat, target.deliveryLng),
+    );
+    if (miles != null) rest.estimatedDistanceKm = miles;
+  }
+
+  // Deadhead follows the driver and the pickup, so recompute when either is in play
+  const driverId = rest.driverId === undefined ? target.driverId : rest.driverId || null;
+  const pickupDate = rest.pickupDate ?? target.pickupDate;
+  const pickupFrom = pickupPoint ?? pointOf(target.pickupLat, target.pickupLng);
+  let deadhead: DeadheadResult | null = null;
+  if (driverId && pickupFrom) {
+    deadhead = await computeDeadhead({
+      companyId: me.companyId,
+      driverId,
+      pickup: pickupFrom,
+      pickupDate,
+      excludeLoadId: id,
+    });
+  }
+  // Only overwrite what we actually know: a failed lookup (no token, Mapbox
+  // down) must not wipe a good number. Dropping the driver does clear it.
+  const driverChanged = driverId !== target.driverId;
+  const deadheadWrite =
+    deadhead != null
+      ? { deadheadMiles: deadhead.miles, deadheadOrigin: deadhead.origin }
+      : !driverId || driverChanged
+        ? { deadheadMiles: null, deadheadOrigin: null }
+        : {};
 
   await prisma.load.update({
     where: { id },
     data: {
       ...rest,
+      ...deadheadWrite,
       customerId: rest.customerId === undefined ? undefined : rest.customerId || null,
       driverId: rest.driverId === undefined ? undefined : rest.driverId || null,
       truckId: rest.truckId === undefined ? undefined : rest.truckId || null,
@@ -282,6 +381,30 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const wasUnassigned = ["DRAFT", "ASSIGNED"].includes(target.status) && !!driverId;
   const newStatus = wasUnassigned ? "DRIVER_ACCEPTED" : target.status;
 
+  // The empty run depends on which driver takes the load, so recompute it here
+  const pickupPoint = await resolvePoint({
+    lat: target.pickupLat, lng: target.pickupLng, address: target.pickupAddress,
+    city: target.pickupCity, state: target.pickupState, zip: target.pickupZip,
+    country: target.pickupCountry,
+  });
+  const deadhead =
+    driverId && pickupPoint
+      ? await computeDeadhead({
+          companyId: me.companyId,
+          driverId,
+          pickup: pickupPoint,
+          pickupDate: target.pickupDate,
+          excludeLoadId: id,
+        })
+      : null;
+  // Keep the stored value when the lookup simply failed for the same driver.
+  const deadheadWrite =
+    deadhead != null
+      ? { deadheadMiles: deadhead.miles, deadheadOrigin: deadhead.origin }
+      : !driverId || driverId !== target.driverId
+        ? { deadheadMiles: null, deadheadOrigin: null }
+        : {};
+
   await prisma.load.update({
     where: { id },
     data: {
@@ -289,6 +412,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
       truckId: truckId || null,
       trailerId: trailerId || null,
       status: newStatus,
+      ...deadheadWrite,
       dispatcherId: target.dispatcherId ?? me.id,
       ...(wasUnassigned && {
         statusHistory: {

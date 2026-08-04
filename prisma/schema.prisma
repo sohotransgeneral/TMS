@@ -101,6 +101,8 @@ enum DocumentType {
   BOL
   POD
   INVOICE
+  RATE_CONFIRMATION   // original rate con / BOL sent to AI for extraction
+  ACCESSORIAL         // proof/justification for an accessorial charge
   DRIVER_LICENSE
   ID_CARD
   INSURANCE
@@ -557,8 +559,10 @@ model Load {
   currency         String    @default("EUR")
   lineHaulRate     Float?    // line haul component
   fuelSurcharge    Float?    // fuel surcharge component
-  estimatedDistanceKm Float?
+  estimatedDistanceKm Float?  // loaded miles pickup → delivery (US operation stores MILES)
   actualDistanceKm    Float?
+  deadheadMiles       Float?  // empty miles: previous load's delivery → this load's pickup
+  deadheadOrigin      String? // where those empty miles start from, e.g. "Dallas, TX · L-2026-00012"
 
   // References
   poNumber         String?   // PO#

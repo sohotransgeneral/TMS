@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useActionState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -17,8 +17,6 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { createLoad } from "@/actions/loads";
-import { toActionState } from "@/lib/to-action-state";
-import type { ActionResult } from "@/lib/action-helpers";
 import { Upload, Sparkles, FileText, X, AlertCircle } from "lucide-react";
 
 type Opt = {
@@ -74,6 +72,8 @@ type ExtractedData = {
   currency?: string;
   estimatedDistanceKm?: number | null;
   internalNotes?: string | null;
+  /** Set by the API when the extracted dates don't make sense together. */
+  dateWarning?: string | null;
 };
 
 const COMMODITIES = [
@@ -231,8 +231,18 @@ function ianaToShort(iana: string | null | undefined): string {
   return IANA_TO_SHORT[iana] ?? "";
 }
 
+/**
+ * The API returns naive local datetimes ("2026-06-15T08:00:00"). Feeding those
+ * through `new Date()` treats a bare date as UTC and lands a day earlier in
+ * every US timezone, so take the digits as written and only fall back to Date
+ * parsing for anything that carries a real timezone.
+ */
 const toDateTimeLocal = (val: string | null | undefined) => {
   if (!val) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::\d{2})?)?$/.exec(
+    val.trim(),
+  );
+  if (m) return `${m[1]}-${m[2]}-${m[3]}T${m[4] ?? "00"}:${m[5] ?? "00"}`;
   try {
     const d = new Date(val);
     if (isNaN(d.getTime())) return "";
@@ -266,6 +276,8 @@ export function LoadImportDialog({
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extracted, setExtracted] = useState<ExtractedData | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [attaching, setAttaching] = useState(false);
+  const [pending, setPending] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [editCommodity, setEditCommodity] = useState("");
@@ -278,24 +290,54 @@ export function LoadImportDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const action = toActionState(createLoad);
-  const [state, formAction, pending] = useActionState<
-    ActionResult | null,
-    FormData
-  >(action, null);
+  /**
+   * Creates the load, then attaches the very file the AI read to it. Keeping
+   * the source document means a misread field can always be checked against
+   * the original instead of being lost with the upload.
+   */
+  async function handleCreate(formData: FormData) {
+    setPending(true);
+    try {
+      const res = await createLoad(formData);
+      if (!res.ok) {
+        toast.error(res.error ?? "Failed to create load");
+        return;
+      }
+      const id = (res.data as { id?: string } | undefined)?.id;
 
-  useEffect(() => {
-    if (!state) return;
-    if (state.ok) {
-      toast.success("Load created successfully!");
+      if (id && file) {
+        setAttaching(true);
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("type", "RATE_CONFIRMATION");
+          fd.append("name", file.name);
+          fd.append("loadId", id);
+          const upload = await fetch("/api/upload", { method: "POST", body: fd });
+          if (!upload.ok) {
+            const body = await upload.json().catch(() => ({}));
+            throw new Error(body.error ?? "Upload failed");
+          }
+          toast.success("Load created — original document attached.");
+        } catch (err) {
+          toast.warning(
+            `Load created, but the original document was not attached (${
+              err instanceof Error ? err.message : "upload failed"
+            }). Upload it from the load's Documents section.`,
+          );
+        } finally {
+          setAttaching(false);
+        }
+      } else {
+        toast.success("Load created successfully!");
+      }
+
       setOpen(false);
-      const id = (state.data as { id?: string } | undefined)?.id;
-      if (id) router.push(`/dispatch/loads/${id}`);
-      else router.push("/dispatch/loads");
-    } else {
-      toast.error(state.error ?? "Failed to create load");
+      router.push(id ? `/dispatch/loads/${id}` : "/dispatch/loads");
+    } finally {
+      setPending(false);
     }
-  }, [state, router]);
+  }
 
   function reset() {
     setStep("upload");
@@ -531,7 +573,27 @@ export function LoadImportDialog({
 
           {/* ── Step 2: Review form ── */}
           {step === "review" && extracted && (
-            <form action={formAction} className="grid gap-6">
+            <form action={handleCreate} className="grid gap-6">
+              {file && (
+                <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  <FileText className="h-4 w-4 shrink-0 text-violet-500" />
+                  <span className="truncate">
+                    <span className="font-medium text-foreground">
+                      {file.name}
+                    </span>{" "}
+                    stays attached to the load, so you can always check the AI
+                    against the original.
+                  </span>
+                </div>
+              )}
+
+              {d.dateWarning && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-400/50 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {d.dateWarning}
+                </div>
+              )}
+
               {/* Reference */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Reference</h3>
@@ -1023,8 +1085,12 @@ export function LoadImportDialog({
                 <Button type="button" variant="ghost" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={pending}>
-                  {pending ? "Creating…" : "Create Load"}
+                <Button type="submit" disabled={pending || attaching}>
+                  {attaching
+                    ? "Attaching document…"
+                    : pending
+                      ? "Creating…"
+                      : "Create Load"}
                 </Button>
               </DialogFooter>
             </form>

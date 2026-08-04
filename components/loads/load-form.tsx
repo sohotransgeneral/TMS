@@ -1,16 +1,23 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
+import { AccessorialsField } from "@/components/loads/accessorials-field";
 import { createLoad, updateLoad } from "@/actions/loads";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
+import {
+  accessorialsTotal,
+  parseAccessorials,
+  type AccessorialItem,
+} from "@/lib/accessorials";
 
 type Opt = {
   id: string;
@@ -75,6 +82,8 @@ export type LoadFormInitial = {
   lineHaulRate: number | null;
   fuelSurcharge: number | null;
   estimatedDistanceKm: number | null;
+  deadheadMiles?: number | null;
+  deadheadOrigin?: string | null;
   poNumber: string | null;
   soNumber: string | null;
   brokerName: string | null;
@@ -87,80 +96,6 @@ export type LoadFormInitial = {
   internalNotes: string | null;
   dispatchNotes: string | null;
 };
-
-const ACCESSORIALS = [
-  "Detention",
-  "Driver Assist",
-  "Drop Trailer",
-  "Fuel Surcharge",
-  "Hazmat",
-  "Inside Delivery",
-  "Inside Pickup",
-  "Layover",
-  "Liftgate Delivery",
-  "Liftgate Pickup",
-  "Lumper",
-  "Notify Before Delivery",
-  "Over-Dimensional",
-  "Overweight",
-  "Pallet Exchange",
-  "Reefer",
-  "Residential Delivery",
-  "Residential Pickup",
-  "Reweigh",
-  "Scale Ticket",
-  "Sorting & Segregating",
-  "Stop-off",
-  "TONU (Truck Order Not Used)",
-  "Tanker Endorsement",
-  "Team Driver",
-  "Toll Charges",
-  "Unloading",
-  "Wait Time",
-];
-
-function AccessorialsField({
-  initial,
-  error,
-}: {
-  initial: string | null;
-  error?: string[];
-}) {
-  const [selected, setSelected] = useState<string[]>(() => {
-    try {
-      return initial ? JSON.parse(initial) : [];
-    } catch {
-      return [];
-    }
-  });
-  const toggle = (item: string) =>
-    setSelected((prev) =>
-      prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item],
-    );
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium">Accessorials</label>
-      <input
-        type="hidden"
-        name="accessorials"
-        value={JSON.stringify(selected)}
-      />
-      <div className="flex flex-wrap gap-2">
-        {ACCESSORIALS.map((a) => (
-          <button
-            key={a}
-            type="button"
-            onClick={() => toggle(a)}
-            className={`rounded-full border px-3 py-1 text-xs transition-colors ${selected.includes(a) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:border-primary hover:text-primary"}`}
-          >
-            {a}
-          </button>
-        ))}
-      </div>
-      {error && <p className="mt-1 text-xs text-destructive">{error[0]}</p>}
-    </div>
-  );
-}
 
 const toDateTimeInput = (d: Date | string | null | undefined) => {
   if (!d) return "";
@@ -216,6 +151,119 @@ export function LoadForm({
   const [accessorialAmount, setAccessorialAmount] = useState(
     initial?.accessorialAmount ?? 0,
   );
+  const [accessorials, setAccessorials] = useState<AccessorialItem[]>(() =>
+    parseAccessorials(initial?.accessorials ?? null),
+  );
+
+  // ── Miles ────────────────────────────────────────────────────────────────
+  // Road miles are looked up from the pickup/delivery addresses as soon as both
+  // are filled in. A number typed by hand always wins — the lookup never
+  // overwrites it (and the server applies the same rule when saving).
+  const formRef = useRef<HTMLFormElement>(null);
+  const [miles, setMiles] = useState(
+    initial?.estimatedDistanceKm != null ? String(initial.estimatedDistanceKm) : "",
+  );
+  const milesTouched = useRef(false);
+  const [calculating, setCalculating] = useState(false);
+  const [deadhead, setDeadhead] = useState<{
+    miles: number;
+    origin: string | null;
+  } | null>(
+    initial?.deadheadMiles != null
+      ? { miles: initial.deadheadMiles, origin: initial.deadheadOrigin ?? null }
+      : null,
+  );
+
+  const loadId = initial?.id;
+  const recalcMiles = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      const form = formRef.current;
+      if (!form) return;
+      const fd = new FormData(form);
+      const get = (k: string) => ((fd.get(k) as string | null) ?? "").trim();
+
+      const pickup = {
+        address: get("pickupAddress"),
+        city: get("pickupCity"),
+        state: get("pickupState"),
+        zip: get("pickupZip"),
+        country: get("pickupCountry"),
+      };
+      const delivery = {
+        address: get("deliveryAddress"),
+        city: get("deliveryCity"),
+        state: get("deliveryState"),
+        zip: get("deliveryZip"),
+        country: get("deliveryCountry"),
+      };
+      if (!pickup.address || !delivery.address) return;
+
+      setCalculating(true);
+      try {
+        const res = await fetch("/api/loads/distance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pickup,
+            delivery,
+            driverId: get("driverId") || undefined,
+            pickupDate: get("pickupDate") || undefined,
+            excludeLoadId: loadId,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.ok) throw new Error(json.error ?? "Lookup failed");
+
+        if (json.miles != null && (force || !milesTouched.current)) {
+          setMiles(String(json.miles));
+        } else if (json.miles == null && force) {
+          toast.error("Could not find a route between these two addresses.");
+        }
+        setDeadhead(
+          json.deadheadMiles != null
+            ? { miles: json.deadheadMiles, origin: json.deadheadOrigin ?? null }
+            : null,
+        );
+      } catch {
+        if (force) toast.error("Mileage lookup failed. Enter the miles manually.");
+      } finally {
+        setCalculating(false);
+      }
+    },
+    [loadId],
+  );
+
+  // Debounced auto-lookup, triggered when a location field loses focus.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleRecalc = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => void recalcMiles(), 400);
+  }, [recalcMiles]);
+
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+  }, []);
+
+  // Looks up miles when the load opens without them, and again whenever the
+  // driver changes — the empty run depends on who is taking the load.
+  const skipFirstLookup = useRef(initial?.estimatedDistanceKm != null);
+  useEffect(() => {
+    if (skipFirstLookup.current) {
+      skipFirstLookup.current = false;
+      return;
+    }
+    void recalcMiles();
+  }, [driverId, recalcMiles]);
+
+  const accessorialTotal = accessorials.length
+    ? accessorialsTotal(accessorials)
+    : accessorialAmount;
+  const totalRate = price + accessorialTotal;
+  const milesNum = Number(miles);
+  const ratePerMile = milesNum > 0 ? totalRate / milesNum : null;
+  const totalMilesWithDeadhead = milesNum + (deadhead?.miles ?? 0);
+  const allInRatePerMile =
+    totalMilesWithDeadhead > 0 ? totalRate / totalMilesWithDeadhead : null;
 
   function handleDriverChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
@@ -271,12 +319,15 @@ export function LoadForm({
   const e = state && !state.ok ? (state.fieldErrors ?? {}) : {};
 
   return (
-    <form action={formAction} className="grid gap-6">
+    <form ref={formRef} action={formAction} className="grid gap-6">
       {editing && <input type="hidden" name="id" value={initial!.id} />}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* ── SHIPPER ── */}
-        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+        <section
+          onBlur={scheduleRecalc}
+          className="grid content-start gap-4 rounded-lg border bg-card p-6"
+        >
           <h3 className="font-semibold">Shipper</h3>
           <Field
             name="pickupCompanyName"
@@ -410,7 +461,10 @@ export function LoadForm({
         </section>
 
         {/* ── RECEIVER ── */}
-        <section className="grid content-start gap-4 rounded-lg border bg-card p-6">
+        <section
+          onBlur={scheduleRecalc}
+          className="grid content-start gap-4 rounded-lg border bg-card p-6"
+        >
           <h3 className="font-semibold">Receiver</h3>
           <Field
             name="deliveryCompanyName"
@@ -871,29 +925,130 @@ export function LoadForm({
             label="Accessorial ($)"
             error={e.accessorialAmount}
           >
-            <Input
-              id="accessorialAmount"
-              name="accessorialAmount"
-              type="number"
-              step="0.01"
-              min="0"
-              value={accessorialAmount}
-              onChange={(ev) => setAccessorialAmount(Number(ev.target.value))}
-            />
+            {accessorials.length > 0 ? (
+              <>
+                <Input
+                  id="accessorialAmount"
+                  type="number"
+                  value={accessorialTotal}
+                  readOnly
+                  disabled
+                  className="bg-muted/60"
+                />
+                <input
+                  type="hidden"
+                  name="accessorialAmount"
+                  value={accessorialTotal}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sum of the {accessorials.length} accessorial
+                  {accessorials.length > 1 ? "s" : ""} below.
+                </p>
+              </>
+            ) : (
+              <Input
+                id="accessorialAmount"
+                name="accessorialAmount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={accessorialAmount}
+                onChange={(ev) => setAccessorialAmount(Number(ev.target.value))}
+              />
+            )}
           </Field>
           <div className="flex items-center justify-between rounded border bg-muted/40 px-3 py-2">
             <span className="text-sm font-medium">Total</span>
             <span className="font-mono text-sm font-semibold">
               $
-              {(price + accessorialAmount).toLocaleString("en-US", {
+              {totalRate.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </span>
           </div>
+
+          <Field
+            name="estimatedDistanceKm"
+            label="Loaded Miles"
+            error={e.estimatedDistanceKm}
+          >
+            <div className="flex gap-2">
+              <Input
+                id="estimatedDistanceKm"
+                name="estimatedDistanceKm"
+                type="number"
+                step="any"
+                min="0"
+                placeholder="auto"
+                value={miles}
+                onChange={(ev) => {
+                  milesTouched.current = true;
+                  setMiles(ev.target.value);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                title="Recalculate miles from the pickup and delivery addresses"
+                disabled={calculating}
+                onClick={() => {
+                  milesTouched.current = false;
+                  void recalcMiles({ force: true });
+                }}
+              >
+                {calculating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Calculated from the addresses on the map — edit to override.
+            </p>
+          </Field>
+
+          <div className="flex items-center justify-between rounded border bg-muted/40 px-3 py-2">
+            <span className="text-sm font-medium">Rate per mile</span>
+            <span className="font-mono text-sm font-semibold">
+              {ratePerMile != null ? `$${ratePerMile.toFixed(2)}/mi` : "—"}
+            </span>
+          </div>
+
+          {deadhead && (
+            <div className="rounded border border-dashed px-3 py-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Deadhead (empty)</span>
+                <span className="font-mono font-semibold">
+                  {deadhead.miles.toLocaleString("en-US")} mi
+                </span>
+              </div>
+              {deadhead.origin && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  From {deadhead.origin}
+                </p>
+              )}
+              {allInRatePerMile != null && (
+                <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>All-in (loaded + empty)</span>
+                  <span className="font-mono">
+                    ${allInRatePerMile.toFixed(2)}/mi
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           <input type="hidden" name="currency" value="USD" />
         </section>
       </div>
+
+      <AccessorialsField
+        items={accessorials}
+        onChange={setAccessorials}
+        error={e.accessorials}
+      />
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">
         <h3 className="font-semibold">Assignment (optional)</h3>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requirePermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { normalizeExtractedDate } from "@/lib/extract-dates";
 
 // Pricing per 1M tokens (USD) — update if OpenAI changes pricing
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
@@ -50,6 +51,26 @@ function tzFromState(state: unknown): string | null {
   return STATE_TIMEZONE[state.trim().toUpperCase()] ?? null;
 }
 
+/**
+ * Dates are the field the model gets wrong most often, so the prompt is built
+ * per-request with today's date baked in — a hardcoded "current year" silently
+ * rots and turns every undated document into the wrong year.
+ */
+function dateRules(now: Date): string {
+  const iso = now.toISOString().slice(0, 10);
+  const pretty = now.toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
+  });
+  return `DATE HANDLING (most common source of errors — read twice):
+- TODAY IS ${pretty} (${iso}). Resolve every relative or incomplete date against it.
+- US documents write dates MONTH/DAY/YEAR. "06/07/2026" is June 7th, NOT July 6th. Only read DAY/MONTH when the document is clearly non-US (EU address, EUR/RON amounts, DD.MM.YYYY dotted format) or when the first number is greater than 12.
+- Two-digit years: "6/15/26" → 2026. "12/28/25" → 2025.
+- Missing year ("Mon 6/15", "June 15", "PU 6/15"): choose the year that puts the date NEAREST to today — normally ${new Date(iso).getUTCFullYear()}, but use the next year when that date already passed more than 60 days ago.
+- Weekday names are a cross-check, not a source. If the document says "Mon 6/15" but 6/15 is not a Monday, still return 6/15 and note the mismatch in internalNotes.
+- Delivery is never earlier than pickup. If your reading produces that, re-read both dates before answering.
+- OUTPUT FORMAT IS EXACTLY "YYYY-MM-DDTHH:MM:SS" — no "Z", no "+00:00" offset, no other format. The time is local time at that stop. Date with no time → "T00:00:00".`;
+}
+
 const SYSTEM_PROMPT = `You are a meticulous logistics data extraction assistant. You will receive a transport document (rate confirmation, broker carrier confirmation, BOL, shipper's order, load tender, dispatch sheet, etc.) and must extract EVERY relevant data point with extreme attention to detail.
 
 CRITICAL OUTPUT REQUIREMENT:
@@ -66,7 +87,7 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "pickupState": "string or null — 2-letter US state code (TX, CA, OH, NJ, etc.). MANDATORY when a US city is present: extract it from the city line (e.g. 'Newark, NJ 07114' → 'NJ'). Never leave null if the document shows a state.",
   "pickupZip": "string or null — pickup ZIP/postal code. MANDATORY when present: extract the 5-digit (or ZIP+4) code from the address/city line (e.g. 'Newark, NJ 07114' → '07114'). Never leave null if a postal code is visible.",
   "pickupCountry": "string or null — 2-letter country code (US, CA, MX, RO, DE, etc.); default US for US addresses",
-  "pickupDate": "ISO8601 datetime string or null — the CALENDAR DATE of pickup only (e.g. '2026-06-15T00:00:00'). If the document shows a DATE (Mon 6/15, June 15, 06/15/2026) use that date. If ONLY a time window like '0700-1400' or '07:00 to 14:00' is given with no date, set pickupDate to null. Year defaults to 2026.",
+  "pickupDate": "datetime string 'YYYY-MM-DDTHH:MM:SS' or null — the CALENDAR DATE of pickup only (e.g. '2026-06-15T00:00:00'). If the document shows a DATE (Mon 6/15, June 15, 06/15/2026) use that date, following the DATE HANDLING rules below. If ONLY a time window like '0700-1400' or '07:00 to 14:00' is given with no date, set pickupDate to null.",
   "pickupWindow": "string or null — ALWAYS extract ANY time range or time instruction here, NORMALIZED to HH:MM-HH:MM 24-hour format. Convert '0700-1400' → '07:00-14:00', '7a-2p' → '07:00-14:00', '07:00 to 14:00' → '07:00-14:00', '8 AM - 4 PM' → '08:00-16:00'. Keep FCFS/By Appt/ASAP prefixes if present (e.g. 'FCFS 08:00-15:00'). Even if only one time is given (e.g. 'Appt 10:00') put it here as '10:00'. NEVER leave this null if there is any time information in the pickup section. Do NOT put time windows in pickupDate or pickupNotes.",
   "pickupContact": "string or null — person's name listed as pickup contact, dispatcher, shipping clerk, warehouse contact. NOT a company name.",
   "pickupPhone": "string or null — phone number for pickup location/contact, digits as written (e.g. '+1 713-555-0123'). Strip 'Tel:', 'Phone:' prefixes.",
@@ -78,7 +99,7 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "deliveryState": "string or null — 2-letter US state code. MANDATORY when a US city is present: extract from the city line (e.g. 'Los Angeles, CA 90001' → 'CA'). Never leave null if a state is shown.",
   "deliveryZip": "string or null — delivery ZIP/postal code. MANDATORY when present: extract from the address/city line (e.g. 'Los Angeles, CA 90001' → '90001'). Never leave null if a postal code is visible.",
   "deliveryCountry": "string or null — 2-letter code; default US",
-  "deliveryDate": "ISO8601 datetime string or null — same rules as pickupDate",
+  "deliveryDate": "datetime string 'YYYY-MM-DDTHH:MM:SS' or null — same rules as pickupDate",
   "deliveryWindow": "string or null — same as pickupWindow: ALWAYS extract any time range here, NORMALIZED to HH:MM-HH:MM 24-hour format. '0700-1400' → '07:00-14:00', '8 AM - 4 PM' → '08:00-16:00'. Keep FCFS/By Appt/ASAP if present. NEVER put time windows in deliveryDate or deliveryNotes.",
   "deliveryContact": "string or null — person's name listed for the delivery/consignee/receiver contact. Look carefully in the CONSIGNEE / SHIP TO / DELIVERY / RECEIVER block for any contact name, even if it's only near the phone number. Do not leave null if any name is present in the delivery section.",
   "deliveryPhone": "string or null — phone number for the delivery/consignee/receiver location or contact. Look carefully in the CONSIGNEE / SHIP TO / DELIVERY block. Digits as written; strip 'Tel:'/'Phone:' prefixes. Do not leave null if any phone is present in the delivery section.",
@@ -109,13 +130,14 @@ EXTRACTION RULES (read carefully):
 2. TIME WINDOWS ARE MANDATORY: Any pattern like "NNNN-NNNN", "NN:NN to NN:NN", "NN:NN-NN:NN", "FCFS", "By Appt", "ASAP", "Open until NN:NN" MUST go into pickupWindow / deliveryWindow. NEVER in pickupDate/deliveryDate (dates are calendar days, not time-of-day ranges). NEVER in notes.
 3. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
 4. ADDRESSES: keep street address clean (no city/state in pickupAddress). ALWAYS split a "City, State ZIP" line into THREE separate fields. Examples: "Newark, NJ 07114" → city="Newark", state="NJ", zip="07114". "Los Angeles, CA 90001-1234" → city="Los Angeles", state="CA", zip="90001-1234". "Houston TX 77001" → city="Houston", state="TX", zip="77001". NEVER leave state or zip null when they appear anywhere in the location block.
-5. DATES: prefer ISO8601 with time when known. If only a date is given (no time) use the date with T00:00:00. Years default to 2026 if missing.
+5. DATES: follow the DATE HANDLING section appended below — it overrides any habit you have about date formats.
 6. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
 7. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings. For weight: ALWAYS fill weightLbs if document shows pounds (lbs, LBS, lb, LB). Fill weightKg ONLY if document explicitly states kg/KG. Never leave both null if a weight is visible.
 8. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
 9. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
 
 Now extract.`;
+
 
 export async function POST(req: Request) {
   let me: Awaited<ReturnType<typeof requirePermission>>;
@@ -182,10 +204,11 @@ export async function POST(req: Request) {
       ];
     }
 
+    const now = new Date();
     const response = await openai.chat.completions.create({
       model: AI_MODEL,
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: `${SYSTEM_PROMPT}\n\n${dateRules(now)}` },
         { role: "user", content },
       ],
       max_completion_tokens: 8192,
@@ -246,6 +269,18 @@ export async function POST(req: Request) {
         billedUsd: BILLED_PER_EXTRACTION,
       },
     });
+
+    // Re-read the dates ourselves — the model answers in whatever format the
+    // document used, and anything with a "Z" shifts a day in US timezones.
+    const pickupDate = normalizeExtractedDate(extracted.pickupDate, now);
+    const deliveryDate = normalizeExtractedDate(extracted.deliveryDate, now);
+    extracted.pickupDate = pickupDate;
+    extracted.deliveryDate = deliveryDate;
+    // Flagged, not silently "fixed": the dispatcher decides which one is wrong.
+    extracted.dateWarning =
+      pickupDate && deliveryDate && deliveryDate < pickupDate
+        ? "Delivery date is before the pickup date — check both against the document."
+        : null;
 
     // Auto-derive timezones from the detected state when AI didn't provide one.
     if (!extracted.pickupTimezone) {
