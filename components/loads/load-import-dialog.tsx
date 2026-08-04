@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -17,7 +17,15 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { createLoad } from "@/actions/loads";
-import { Upload, Sparkles, FileText, X, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  Sparkles,
+  FileText,
+  X,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 
 type Opt = {
   id: string;
@@ -290,6 +298,90 @@ export function LoadImportDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  // ── Miles ────────────────────────────────────────────────────────────────
+  // Rate confirmations often don't state the mileage. Look it up from the
+  // extracted addresses so the dispatcher sees miles and $/mile before
+  // creating the load, not only afterwards on the load page.
+  const reviewFormRef = useRef<HTMLFormElement>(null);
+  const [price, setPrice] = useState("");
+  const [miles, setMiles] = useState("");
+  const milesTouched = useRef(false);
+  const [calculating, setCalculating] = useState(false);
+  const [deadhead, setDeadhead] = useState<{
+    miles: number;
+    origin: string | null;
+  } | null>(null);
+
+  const recalcMiles = useCallback(
+    async ({ force = false }: { force?: boolean } = {}) => {
+      const form = reviewFormRef.current;
+      if (!form) return;
+      const fd = new FormData(form);
+      const get = (k: string) => ((fd.get(k) as string | null) ?? "").trim();
+
+      const pickup = {
+        address: get("pickupAddress"),
+        city: get("pickupCity"),
+        state: get("pickupState"),
+        zip: get("pickupZip"),
+        country: get("pickupCountry"),
+      };
+      const delivery = {
+        address: get("deliveryAddress"),
+        city: get("deliveryCity"),
+        state: get("deliveryState"),
+        zip: get("deliveryZip"),
+        country: get("deliveryCountry"),
+      };
+      if (!pickup.address || !delivery.address) return;
+
+      setCalculating(true);
+      try {
+        const res = await fetch("/api/loads/distance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pickup,
+            delivery,
+            driverId: get("driverId") || undefined,
+            pickupDate: get("pickupDate") || undefined,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.ok) throw new Error(json.error ?? "Lookup failed");
+
+        if (json.miles != null && (force || !milesTouched.current)) {
+          setMiles(String(json.miles));
+        } else if (json.miles == null && force) {
+          toast.error("Could not find a route between these two addresses.");
+        }
+        setDeadhead(
+          json.deadheadMiles != null
+            ? { miles: json.deadheadMiles, origin: json.deadheadOrigin ?? null }
+            : null,
+        );
+      } catch {
+        if (force) toast.error("Mileage lookup failed. Enter the miles manually.");
+      } finally {
+        setCalculating(false);
+      }
+    },
+    [],
+  );
+
+  // Runs once the review form is on screen, and again when the driver changes
+  // (the empty run depends on who takes the load).
+  useEffect(() => {
+    if (step !== "review") return;
+    void recalcMiles();
+  }, [step, selDriverId, recalcMiles]);
+
+  const priceNum = Number(price) || 0;
+  const milesNum = Number(miles) || 0;
+  const ratePerMile = milesNum > 0 ? priceNum / milesNum : null;
+  const allInMiles = milesNum + (deadhead?.miles ?? 0);
+  const allInRatePerMile = allInMiles > 0 ? priceNum / allInMiles : null;
+
   /**
    * Creates the load, then attaches the very file the AI read to it. Keeping
    * the source document means a misread field can always be checked against
@@ -422,6 +514,13 @@ export function LoadImportDialog({
         throw new Error(json.error ?? "Extraction failed");
       setExtracted(json.data);
       setStep("review");
+      setPrice(json.data?.price != null ? String(json.data.price) : "");
+      // A mileage printed on the rate con is what the broker pays on — keep it
+      // and let the lookup only fill the gap when the document is silent.
+      const statedMiles = json.data?.estimatedDistanceKm;
+      setMiles(statedMiles != null ? String(statedMiles) : "");
+      milesTouched.current = statedMiles != null;
+      setDeadhead(null);
       setEditCommodity(
         bestMatch(
           COMMODITIES,
@@ -573,7 +672,11 @@ export function LoadImportDialog({
 
           {/* ── Step 2: Review form ── */}
           {step === "review" && extracted && (
-            <form action={handleCreate} className="grid gap-6">
+            <form
+              ref={reviewFormRef}
+              action={handleCreate}
+              className="grid gap-6"
+            >
               {file && (
                 <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                   <FileText className="h-4 w-4 shrink-0 text-violet-500" />
@@ -686,7 +789,10 @@ export function LoadImportDialog({
               </section>
 
               {/* Pickup */}
-              <section className="grid gap-3 rounded-lg border bg-card p-4">
+              <section
+                onBlur={() => void recalcMiles()}
+                className="grid gap-3 rounded-lg border bg-card p-4"
+              >
                 <h3 className="text-sm font-semibold">Pickup</h3>
                 <Field name="pickupAddress" label="Address" required>
                   <Input
@@ -789,7 +895,10 @@ export function LoadImportDialog({
               </section>
 
               {/* Delivery */}
-              <section className="grid gap-3 rounded-lg border bg-card p-4">
+              <section
+                onBlur={() => void recalcMiles()}
+                className="grid gap-3 rounded-lg border bg-card p-4"
+              >
                 <h3 className="text-sm font-semibold">Delivery</h3>
                 <Field name="deliveryAddress" label="Address" required>
                   <Input
@@ -984,7 +1093,8 @@ export function LoadImportDialog({
                       name="price"
                       type="number"
                       step="0.01"
-                      defaultValue={d.price ?? ""}
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
                       required
                     />
                   </Field>
@@ -997,15 +1107,71 @@ export function LoadImportDialog({
                     </Select>
                   </Field>
                   <Field name="estimatedDistanceKm" label="Distance (mi)">
-                    <Input
-                      name="estimatedDistanceKm"
-                      type="number"
-                      step="any"
-                      min="0"
-                      defaultValue={d.estimatedDistanceKm ?? ""}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        name="estimatedDistanceKm"
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder={calculating ? "calculating…" : "auto"}
+                        value={miles}
+                        onChange={(e) => {
+                          milesTouched.current = true;
+                          setMiles(e.target.value);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Calculate miles from the pickup and delivery addresses"
+                        disabled={calculating}
+                        onClick={() => {
+                          milesTouched.current = false;
+                          void recalcMiles({ force: true });
+                        }}
+                      >
+                        {calculating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </Field>
                 </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 rounded border bg-muted/40 px-3 py-2 text-sm">
+                  <span className="font-medium">Rate per mile</span>
+                  <span className="font-mono font-semibold">
+                    {ratePerMile != null ? `$${ratePerMile.toFixed(2)}/mi` : "—"}
+                  </span>
+                </div>
+                {deadhead && (
+                  <div className="rounded border border-dashed px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">
+                        Deadhead (empty)
+                      </span>
+                      <span className="font-mono font-semibold">
+                        {deadhead.miles.toLocaleString("en-US")} mi
+                      </span>
+                    </div>
+                    {deadhead.origin && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        From {deadhead.origin}
+                      </p>
+                    )}
+                    {allInRatePerMile != null && (
+                      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                        <span>All-in (loaded + empty)</span>
+                        <span className="font-mono">
+                          ${allInRatePerMile.toFixed(2)}/mi
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
 
               {/* Assignment */}

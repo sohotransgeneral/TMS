@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { encode } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
+import { appOrigin } from "@/lib/app-url";
 import { randomUUID } from "crypto";
 
 /**
@@ -51,11 +52,11 @@ export async function GET(req: NextRequest) {
   }
 
   // On Vercel, req.nextUrl.protocol is always "http:" because SSL is terminated
-  // at the edge proxy. Use x-forwarded-proto or fall back to NEXTAUTH_URL.
+  // at the edge proxy. Use x-forwarded-proto, or fall back to the configured
+  // app origin (https://tms.sohotransllc.com unless an env var overrides it).
   const forwardedProto = req.headers.get("x-forwarded-proto");
-  const baseUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "";
   const isSecure =
-    forwardedProto === "https" || baseUrl.startsWith("https://");
+    forwardedProto === "https" || appOrigin().startsWith("https://");
 
   // Cookie name must match what NextAuth v5 uses internally
   const cookieName = isSecure

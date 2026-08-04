@@ -22,7 +22,8 @@ export async function sendMail(opts: {
     console.warn("[mail] EMAIL_SERVER not set, skipping:", opts.subject);
     return { skipped: true };
   }
-  const from = process.env.EMAIL_FROM ?? "TMS <no-reply@example.com>";
+  // EMAIL_FROM must be an address your SMTP provider is allowed to send as.
+  const from = process.env.EMAIL_FROM ?? "TMS <no-reply@tms.sohotransllc.com>";
   await transporter.sendMail({
     from,
     to: opts.to,

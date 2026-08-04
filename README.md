@@ -50,6 +50,14 @@ AUTH_TRUST_HOST="true"
 APP_URL="http://localhost:3000"
 ```
 
+`APP_URL` este adresa de la care se construiesc linkurile absolute trimise în
+afara aplicației (email de resetare parolă, notificări Telegram, magic link
+pentru șoferi). În **producție** aplicația rulează pe
+**https://tms.sohotransllc.com** — aceasta este și valoarea implicită din
+[lib/app-url.ts](lib/app-url.ts) când nicio variabilă nu e setată, deci în
+local trebuie setat `APP_URL="http://localhost:3000"` ca linkurile să nu
+trimită către producție.
+
 ### 4. Inițializare bază de date
 
 ```powershell

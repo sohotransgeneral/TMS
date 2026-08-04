@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
+import { appOrigin } from "@/lib/app-url";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +27,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  // Makes every relative metadata URL (OG images, canonical) absolute against
+  // the deployed origin — https://tms.sohotransllc.com unless an env overrides.
+  metadataBase: new URL(appOrigin()),
   title: {
     default: "TMS — Transport Management System",
     template: "%s · TMS",

@@ -8,6 +8,7 @@ import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
 import { sendMail } from "@/lib/mail";
+import { appUrl } from "@/lib/app-url";
 import { logAudit } from "@/lib/audit";
 import { defaultDashboardFor } from "@/lib/permissions";
 import {
@@ -171,7 +172,7 @@ export async function forgotPasswordAction(
         resetTokenExpires: new Date(Date.now() + 1000 * 60 * 60), // 1h
       },
     });
-    const url = `${process.env.APP_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
+    const url = appUrl(`/reset-password?token=${token}`);
     await sendMail({
       to: email,
       subject: "TMS password reset",

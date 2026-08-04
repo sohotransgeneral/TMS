@@ -5,6 +5,7 @@ import {
   sendTelegramMessage,
   type TelegramTopic,
 } from "@/lib/telegram";
+import { appUrl } from "@/lib/app-url";
 
 export type NotifyArgs = {
   userId: string;
@@ -47,7 +48,7 @@ export async function notify(args: NotifyArgs): Promise<void> {
         select: { telegramChatId: true },
       });
       if (user?.telegramChatId) {
-        const link = args.link ? `\n${process.env.APP_URL ?? ""}${args.link}` : "";
+        const link = args.link ? `\n${appUrl(args.link)}` : "";
         await sendTelegramMessage({
           chatId: user.telegramChatId,
           text: `<b>${escape(args.title)}</b>${
@@ -91,7 +92,7 @@ export async function notifyRoles(args: {
     });
 
     if (args.telegram) {
-      const link = args.link ? `\n${process.env.APP_URL ?? ""}${args.link}` : "";
+      const link = args.link ? `\n${appUrl(args.link)}` : "";
       const text = `<b>${escape(args.title)}</b>${
         args.body ? "\n" + escape(args.body) : ""
       }${link}`;
@@ -166,7 +167,7 @@ export async function notifyEvent(args: {
     );
   }
 
-  const link = args.link ? `\n${process.env.APP_URL ?? ""}${args.link}` : "";
+  const link = args.link ? `\n${appUrl(args.link)}` : "";
   const text =
     args.telegramText ??
     `<b>${escape(args.title)}</b>${

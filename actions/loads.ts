@@ -22,6 +22,7 @@ import {
 } from "@/lib/accessorials";
 import { notifyEvent } from "@/lib/notifications";
 import { sendTelegramMessage } from "@/lib/telegram";
+import { appUrl } from "@/lib/app-url";
 import { randomUUID } from "crypto";
 
 /** Build a clean multi-line notification body for load events. */
@@ -477,11 +478,8 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
           where: { id: assignDriver.userId },
           data: { magicToken, magicTokenExpiresAt: expiresAt },
         });
-        const appUrl = (process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "").replace(/\/$/, "")
-          || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
         const next = encodeURIComponent(`/dispatch/loads/${id}`);
-        const magicLink = `${appUrl}/api/auth/magic?token=${magicToken}&next=${next}`;
-        const driverName = `${assignDriver.firstName} ${assignDriver.lastName}`;
+        const magicLink = appUrl(`/api/auth/magic?token=${magicToken}&next=${next}`);
         await sendTelegramMessage({
           chatId: driverUser.telegramChatId,
           text: [

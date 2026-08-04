@@ -40,7 +40,9 @@ Gândește-te la ea ca la un **creier central** al firmei de transport:
 
 ## 2. Cum te autentifici?
 
-### Pagina de login — `http://localhost:3000/login`
+### Pagina de login — `https://tms.sohotransllc.com/login`
+
+_(în dezvoltare locală: `http://localhost:3000/login`)_
 
 Introduci:
 
