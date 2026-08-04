@@ -132,3 +132,91 @@ export function normalizeExtractedDate(
 
   return `${y}-${pad(mo)}-${pad(d)}T${pad(hh)}:${pad(mi)}:00`;
 }
+
+type Clock = { hh: number; mi: number };
+
+/** Reads "0600 to 2000", "FCFS 06:00-20:00", "7a-2p", "Appt 10:00" → start/end. */
+export function parseWindow(window: unknown): { start: Clock; end: Clock | null } | null {
+  if (typeof window !== "string") return null;
+  const text = window.trim();
+  if (!text) return null;
+
+  const times: Clock[] = [];
+  // HH:MM, HHMM (military), or a bare hour with am/pm — including the "7a-2p"
+  // shorthand. The trailing \b keeps "2 pallets" from reading as 2 PM.
+  const re = /(\d{1,2})\s*:\s*(\d{2})\s*(?:([ap])\.?m?\.?\b)?|\b(\d{3,4})\b|\b(\d{1,2})\s*([ap])\.?m?\.?\b/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null && times.length < 2) {
+    let hh: number;
+    let mi = 0;
+    let meridiem: string | undefined;
+
+    if (m[1] != null) {
+      hh = Number(m[1]);
+      mi = Number(m[2]);
+      meridiem = m[3];
+    } else if (m[4] != null) {
+      const digits = m[4].padStart(4, "0");
+      hh = Number(digits.slice(0, 2));
+      mi = Number(digits.slice(2));
+    } else {
+      hh = Number(m[5]);
+      meridiem = m[6];
+    }
+
+    if (meridiem) {
+      const pm = /^p/i.test(meridiem);
+      if (pm && hh < 12) hh += 12;
+      if (!pm && hh === 12) hh = 0;
+    }
+    if (hh > 23 || mi > 59) continue;
+    times.push({ hh, mi });
+  }
+
+  if (times.length === 0) return null;
+  return { start: times[0], end: times[1] ?? null };
+}
+
+const minutes = (c: Clock) => c.hh * 60 + c.mi;
+
+/**
+ * Puts the load's time where the document actually says it is.
+ *
+ * Rate confirmations usually give a receiving window ("Load Time: 0600 to
+ * 2000"), not an appointment. The model either drops the time (midnight) or
+ * invents one (3 AM), and both read as a hard appointment on the dispatch
+ * board. So: a time outside the stated window — midnight included — is wrong by
+ * definition and becomes the start of the window. A time inside it is kept,
+ * because that's a real appointment the document gave.
+ *
+ * The full range still lives in pickupWindow / deliveryWindow.
+ */
+export function alignTimeToWindow(
+  dateStr: string | null,
+  window: unknown,
+): string | null {
+  if (!dateStr) return null;
+  const parsed = parseWindow(window);
+  if (!parsed) return dateStr;
+
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(dateStr);
+  if (!m) return dateStr;
+
+  const current = { hh: Number(m[2]), mi: Number(m[3]) };
+  const { start, end } = parsed;
+
+  let inside: boolean;
+  if (!end || minutes(start) === minutes(end)) {
+    inside = minutes(current) === minutes(start);
+  } else if (minutes(end) > minutes(start)) {
+    inside = minutes(current) >= minutes(start) && minutes(current) <= minutes(end);
+  } else {
+    // Overnight window, e.g. 22:00-06:00
+    inside = minutes(current) >= minutes(start) || minutes(current) <= minutes(end);
+  }
+
+  if (inside && minutes(current) !== 0) return dateStr;
+  if (inside && minutes(start) === 0) return dateStr;
+
+  return `${m[1]}T${pad(start.hh)}:${pad(start.mi)}:00`;
+}

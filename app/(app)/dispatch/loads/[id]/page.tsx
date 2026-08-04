@@ -128,9 +128,41 @@ export default async function LoadDetailPage({
 
   const totalRate = (l.price ?? 0) + (l.accessorialAmount ?? 0);
   const accessorials = parseAccessorials(load.accessorials);
-  const loadedMiles = load.actualDistanceKm ?? load.estimatedDistanceKm ?? null;
+
+  // Loads created before mileage was tracked have nothing stored, so work the
+  // numbers out on the fly instead of showing "—" until someone re-saves them.
+  // (Both lookups are cached fetches; the values persist on the next save.)
+  const pickupParts = {
+    lat: load.pickupLat, lng: load.pickupLng, address: load.pickupAddress,
+    city: load.pickupCity, state: load.pickupState, zip: load.pickupZip,
+    country: load.pickupCountry,
+  };
+
+  let loadedMiles = load.actualDistanceKm ?? load.estimatedDistanceKm ?? null;
+  if (loadedMiles == null) {
+    loadedMiles = await routeMiles(pickupParts, {
+      lat: load.deliveryLat, lng: load.deliveryLng, address: load.deliveryAddress,
+      city: load.deliveryCity, state: load.deliveryState, zip: load.deliveryZip,
+      country: load.deliveryCountry,
+    });
+  }
+
+  let deadheadMiles = load.deadheadMiles;
+  let deadheadOrigin = load.deadheadOrigin;
+  if (deadheadMiles == null && load.driverId && me.companyId) {
+    const dh = await computeDeadhead({
+      companyId: me.companyId,
+      driverId: load.driverId,
+      pickup: pickupParts,
+      pickupDate: load.pickupDate,
+      excludeLoadId: load.id,
+    });
+    deadheadMiles = dh?.miles ?? null;
+    deadheadOrigin = dh?.origin ?? null;
+  }
+
   const rpm = ratePerMile(totalRate, loadedMiles);
-  const allInMiles = (loadedMiles ?? 0) + (load.deadheadMiles ?? 0);
+  const allInMiles = (loadedMiles ?? 0) + (deadheadMiles ?? 0);
   const allInRpm = ratePerMile(totalRate, allInMiles);
 
   return (

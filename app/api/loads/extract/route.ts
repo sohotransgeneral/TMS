@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requirePermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { normalizeExtractedDate } from "@/lib/extract-dates";
+import { normalizeExtractedDate, alignTimeToWindow } from "@/lib/extract-dates";
 
 // Pricing per 1M tokens (USD) — update if OpenAI changes pricing
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
@@ -68,7 +68,9 @@ function dateRules(now: Date): string {
 - Missing year ("Mon 6/15", "June 15", "PU 6/15"): choose the year that puts the date NEAREST to today — normally ${new Date(iso).getUTCFullYear()}, but use the next year when that date already passed more than 60 days ago.
 - Weekday names are a cross-check, not a source. If the document says "Mon 6/15" but 6/15 is not a Monday, still return 6/15 and note the mismatch in internalNotes.
 - Delivery is never earlier than pickup. If your reading produces that, re-read both dates before answering.
-- OUTPUT FORMAT IS EXACTLY "YYYY-MM-DDTHH:MM:SS" — no "Z", no "+00:00" offset, no other format. The time is local time at that stop. Date with no time → "T00:00:00".`;
+- DATE RANGES: documents often print "Load Date: 03-Aug-2026 to 03-Aug-2026" or "Delivery Date: 04-Aug-2026 to 06-Aug-2026". Use the FIRST date of the range for pickupDate/deliveryDate. When the two dates DIFFER, also add "Delivery window: 04-Aug-2026 to 06-Aug-2026" (or "Pickup window: …") as a note in deliveryNotes/pickupNotes so the flexibility is not lost.
+- NEVER INVENT A CLOCK TIME. If the document shows a time RANGE ("Load Time: 0600 to 2000", "0800 to 1400", "FCFS 07:00-15:00"), the time on pickupDate/deliveryDate is the START of that range (0600 → T06:00:00) and the FULL range goes in pickupWindow/deliveryWindow. Use a different time ONLY when the document states one exact appointment time ("Appt 10:30").
+- OUTPUT FORMAT IS EXACTLY "YYYY-MM-DDTHH:MM:SS" — no "Z", no "+00:00" offset, no other format. The time is local time at that stop. No date and no time information at all → "T00:00:00".`;
 }
 
 const SYSTEM_PROMPT = `You are a meticulous logistics data extraction assistant. You will receive a transport document (rate confirmation, broker carrier confirmation, BOL, shipper's order, load tender, dispatch sheet, etc.) and must extract EVERY relevant data point with extreme attention to detail.
@@ -272,8 +274,16 @@ export async function POST(req: Request) {
 
     // Re-read the dates ourselves — the model answers in whatever format the
     // document used, and anything with a "Z" shifts a day in US timezones.
-    const pickupDate = normalizeExtractedDate(extracted.pickupDate, now);
-    const deliveryDate = normalizeExtractedDate(extracted.deliveryDate, now);
+    // The time comes from the stated window, not from the model's imagination:
+    // "Load Time: 0600 to 2000" must land on 06:00, not midnight or 3 AM.
+    const pickupDate = alignTimeToWindow(
+      normalizeExtractedDate(extracted.pickupDate, now),
+      extracted.pickupWindow,
+    );
+    const deliveryDate = alignTimeToWindow(
+      normalizeExtractedDate(extracted.deliveryDate, now),
+      extracted.deliveryWindow,
+    );
     extracted.pickupDate = pickupDate;
     extracted.deliveryDate = deliveryDate;
     // Flagged, not silently "fixed": the dispatcher decides which one is wrong.
