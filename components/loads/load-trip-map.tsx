@@ -114,7 +114,7 @@ export function LoadTripMap({
           Capped so it doesn't take over the page on a large screen. */}
       <div
         ref={containerRef}
-        className="mx-auto aspect-square w-full max-w-2xl overflow-hidden rounded-lg border"
+        className="aspect-square w-full overflow-hidden rounded-lg border"
       />
       <div className="flex flex-wrap gap-4 px-1 text-xs text-muted-foreground">
         {emptyFrom && (

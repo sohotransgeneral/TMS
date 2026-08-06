@@ -10,6 +10,8 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { AccessorialsField } from "@/components/loads/accessorials-field";
+import { LoadTripMap } from "@/components/loads/load-trip-map";
+import type { LatLng } from "@/lib/distance";
 import { createLoad, updateLoad } from "@/actions/loads";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
@@ -177,6 +179,13 @@ export function LoadForm({
       ? { miles: initial.deadheadMiles, origin: initial.deadheadOrigin ?? null }
       : null,
   );
+  // Coordinates come back from the same lookup that gives us the miles, so the
+  // trip can be drawn before the load exists in the database.
+  const [trip, setTrip] = useState<{
+    pickup: LatLng | null;
+    delivery: LatLng | null;
+    emptyFrom: LatLng | null;
+  }>({ pickup: null, delivery: null, emptyFrom: null });
 
   const loadId = initial?.id;
   const recalcMiles = useCallback(
@@ -229,6 +238,11 @@ export function LoadForm({
             ? { miles: json.deadheadMiles, origin: json.deadheadOrigin ?? null }
             : null,
         );
+        setTrip({
+          pickup: json.pickupPoint ?? null,
+          delivery: json.deliveryPoint ?? null,
+          emptyFrom: json.deadheadFrom ?? null,
+        });
       } catch {
         if (force) toast.error("Mileage lookup failed. Enter the miles manually.");
       } finally {
@@ -1077,6 +1091,27 @@ export function LoadForm({
           <input type="hidden" name="currency" value="USD" />
         </section>
       </div>
+
+      {trip.pickup && trip.delivery && (
+        <section className="grid gap-4 rounded-lg border bg-card p-6 sm:max-w-sm">
+          <h3 className="font-semibold">Trip</h3>
+          <LoadTripMap
+            /* Remounts when the route changes — the map is built once on
+               mount, so new coordinates need a new instance. */
+            key={`${trip.pickup.lat},${trip.pickup.lng}-${trip.delivery.lat},${trip.delivery.lng}-${trip.emptyFrom?.lat ?? ""}`}
+            token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
+            emptyFrom={
+              trip.emptyFrom
+                ? { ...trip.emptyFrom, label: deadhead?.origin ?? "Previous delivery" }
+                : null
+            }
+            pickup={{ ...trip.pickup, label: "Pickup" }}
+            delivery={{ ...trip.delivery, label: "Delivery" }}
+            emptyMiles={deadhead?.miles ?? null}
+            loadedMiles={milesNum > 0 ? milesNum : null}
+          />
+        </section>
+      )}
 
       <AccessorialsField
         items={accessorials}

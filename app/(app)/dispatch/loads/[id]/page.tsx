@@ -562,12 +562,13 @@ export default async function LoadDetailPage({
         </section>
       </div>
 
-      {/* The trip as driven: empty run in, loaded run out */}
+      {/* The trip as driven: empty run in, loaded run out. Kept to a narrow
+          card — the route is a glance check, not the page's main content. */}
       {load.pickupLat != null &&
         load.pickupLng != null &&
         load.deliveryLat != null &&
         load.deliveryLng != null && (
-          <section className="rounded-lg border bg-card p-6">
+          <section className="rounded-lg border bg-card p-6 sm:max-w-sm">
             <h3 className="mb-4 flex items-center gap-2 font-semibold">
               <Route className="h-4 w-4" /> Trip
             </h3>

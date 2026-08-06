@@ -19,6 +19,8 @@ import { Field } from "@/components/forms/field";
 import { createLoad } from "@/actions/loads";
 import { AccessorialsField } from "@/components/loads/accessorials-field";
 import { coerceAccessorials, type AccessorialItem } from "@/lib/accessorials";
+import { LoadTripMap } from "@/components/loads/load-trip-map";
+import type { LatLng } from "@/lib/distance";
 import {
   Upload,
   Sparkles,
@@ -318,6 +320,13 @@ export function LoadImportDialog({
     miles: number;
     origin: string | null;
   } | null>(null);
+  // Coordinates from the same lookup that returns the miles, so the route can
+  // be checked on a map before the load is created.
+  const [trip, setTrip] = useState<{
+    pickup: LatLng | null;
+    delivery: LatLng | null;
+    emptyFrom: LatLng | null;
+  }>({ pickup: null, delivery: null, emptyFrom: null });
 
   const recalcMiles = useCallback(
     async ({ force = false }: { force?: boolean } = {}) => {
@@ -368,6 +377,11 @@ export function LoadImportDialog({
             ? { miles: json.deadheadMiles, origin: json.deadheadOrigin ?? null }
             : null,
         );
+        setTrip({
+          pickup: json.pickupPoint ?? null,
+          delivery: json.deliveryPoint ?? null,
+          emptyFrom: json.deadheadFrom ?? null,
+        });
       } catch {
         if (force) toast.error("Mileage lookup failed. Enter the miles manually.");
       } finally {
@@ -1305,6 +1319,39 @@ export function LoadImportDialog({
                   </div>
                 )}
               </section>
+
+              {trip.pickup && trip.delivery && (
+                <section className="grid gap-3 rounded-lg border bg-card p-4 sm:max-w-sm">
+                  <h3 className="text-sm font-semibold">Trip</h3>
+                  <LoadTripMap
+                    key={`${trip.pickup.lat},${trip.pickup.lng}-${trip.delivery.lat},${trip.delivery.lng}-${trip.emptyFrom?.lat ?? ""}`}
+                    token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
+                    emptyFrom={
+                      trip.emptyFrom
+                        ? {
+                            ...trip.emptyFrom,
+                            label: deadhead?.origin ?? "Previous delivery",
+                          }
+                        : null
+                    }
+                    pickup={{
+                      ...trip.pickup,
+                      label:
+                        [d.pickupCity, d.pickupState].filter(Boolean).join(", ") ||
+                        "Pickup",
+                    }}
+                    delivery={{
+                      ...trip.delivery,
+                      label:
+                        [d.deliveryCity, d.deliveryState]
+                          .filter(Boolean)
+                          .join(", ") || "Delivery",
+                    }}
+                    emptyMiles={deadhead?.miles ?? null}
+                    loadedMiles={milesNum > 0 ? milesNum : null}
+                  />
+                </section>
+              )}
 
               <AccessorialsField
                 items={accessorials}
