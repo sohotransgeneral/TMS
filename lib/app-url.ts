@@ -18,18 +18,41 @@
 /** Where the app is served in production. */
 export const PRODUCTION_APP_URL = "https://tms.sohotransllc.com";
 
-/** Absolute origin of the app, with no trailing slash. */
-export function appOrigin(): string {
-  const fromEnv =
-    process.env.APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    process.env.AUTH_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
-
-  const base = (fromEnv || PRODUCTION_APP_URL).trim().replace(/\/+$/, "");
+function normalize(url: string): string {
+  const base = url.trim().replace(/\/+$/, "");
   // A bare host in the env var ("tms.sohotransllc.com") would produce a link
   // no mail client can open.
   return /^https?:\/\//i.test(base) ? base : `https://${base}`;
+}
+
+/** Vercel's auto-generated deployment host, never the customer-facing domain. */
+function isVercelDeployHost(url: string): boolean {
+  return /^https?:\/\/[^/]*\.vercel\.app$/i.test(url);
+}
+
+/** Absolute origin of the app, with no trailing slash. */
+export function appOrigin(): string {
+  // On the production deployment the custom domain always wins. A stale
+  // NEXTAUTH_URL left pointing at tms-kappa-vert.vercel.app used to leak into
+  // every password-reset email and Telegram link; preview deploys still link
+  // to themselves, because there the *.vercel.app host is the right answer.
+  const isProduction = process.env.VERCEL_ENV === "production";
+
+  const candidates = [
+    process.env.APP_URL,
+    process.env.NEXTAUTH_URL,
+    process.env.AUTH_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "",
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate?.trim()) continue;
+    const url = normalize(candidate);
+    if (isProduction && isVercelDeployHost(url)) continue;
+    return url;
+  }
+
+  return PRODUCTION_APP_URL;
 }
 
 /** Absolute URL for a path inside the app, e.g. appUrl("/dispatch/loads/123"). */
