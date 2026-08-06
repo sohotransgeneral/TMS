@@ -95,9 +95,10 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   }
   const d = parsed.data;
 
-  const referenceNumber = await nextLoadReference(me.companyId);
   // Dispatcher creates with driver → auto-accepted, no manual confirmation needed
-  const status = d.driverId ? "DRIVER_ACCEPTED" : "DRAFT";
+  const status: "DRIVER_ACCEPTED" | "DRAFT" = d.driverId
+    ? "DRIVER_ACCEPTED"
+    : "DRAFT";
 
   normalizeAccessorials(d);
 
@@ -132,9 +133,8 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
     });
   }
 
-  const load = await prisma.load.create({
-    data: {
-      companyId: me.companyId,
+  const buildData = (referenceNumber: string) => ({
+      companyId: me.companyId!,
       referenceNumber,
       customerId: d.customerId || null,
       pickupCompanyName: d.pickupCompanyName,
@@ -208,8 +208,26 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       statusHistory: {
         create: { status, changedById: me.id, note: "Load created" },
       },
-    },
   });
+
+  // Two dispatchers saving in the same moment read the same highest reference,
+  // so one of them loses the unique index. Take the next free number and try
+  // again rather than handing the user a database error.
+  let load;
+  for (let attempt = 0; ; attempt++) {
+    const referenceNumber = await nextLoadReference(me.companyId);
+    try {
+      load = await prisma.load.create({ data: buildData(referenceNumber) });
+      break;
+    } catch (err) {
+      const duplicate =
+        typeof err === "object" &&
+        err !== null &&
+        (err as { code?: string }).code === "P2002";
+      if (!duplicate || attempt >= 4) throw err;
+    }
+  }
+  const referenceNumber = load.referenceNumber;
 
   await logAudit({
     action: "load.create",
