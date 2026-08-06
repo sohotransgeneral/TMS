@@ -24,6 +24,8 @@ export type DeadheadResult = {
   miles: number;
   /** Human label for where the empty run starts, e.g. "Dallas, TX · L-2026-00012" */
   origin: string;
+  /** Where the previous load dropped — used to draw the empty leg on the map. */
+  from: LatLng;
 };
 
 /** Loaded miles between two locations, geocoding them first when needed. */
@@ -109,7 +111,7 @@ export async function computeDeadhead(args: {
   ]);
 
   const miles = await drivingMiles(from, to);
-  if (miles == null) return null;
+  if (miles == null || !from) return null;
 
   const place = [previous.deliveryCity, previous.deliveryState]
     .filter(Boolean)
@@ -128,6 +130,7 @@ export async function computeDeadhead(args: {
     origin: [place, previous.referenceNumber, dropped]
       .filter(Boolean)
       .join(" · "),
+    from,
   };
 }
 

@@ -9,6 +9,7 @@ import { LoadStatusBadge } from "@/components/loads/load-status-badge";
 import { LoadStatusButton } from "@/components/loads/load-status-button";
 import { LoadAssignDialog } from "@/components/loads/load-assign-dialog";
 import { DeleteLoadButton } from "@/components/loads/delete-load-button";
+import { LoadTripMap } from "@/components/loads/load-trip-map";
 import { CreateInvoiceButton } from "@/components/loads/create-invoice-button";
 import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
@@ -153,19 +154,23 @@ export default async function LoadDetailPage({
     });
   }
 
-  let deadheadMiles = load.deadheadMiles;
-  let deadheadOrigin = load.deadheadOrigin;
-  if (deadheadMiles == null && load.driverId && me.companyId) {
-    const dh = await computeDeadhead({
+  // Deadhead is recomputed on every view rather than trusted from the record:
+  // assigning a load to a different driver, or fixing a date on an earlier
+  // load, changes which trip came before this one — and a stored number from
+  // before that edit is simply wrong. The saved value is only a fallback for
+  // when the lookup fails.
+  let deadhead = null;
+  if (load.driverId && me.companyId) {
+    deadhead = await computeDeadhead({
       companyId: me.companyId,
       driverId: load.driverId,
       pickup: pickupParts,
       pickupDate: load.pickupDate,
       excludeLoadId: load.id,
     });
-    deadheadMiles = dh?.miles ?? null;
-    deadheadOrigin = dh?.origin ?? null;
   }
+  const deadheadMiles = deadhead?.miles ?? (load.driverId ? load.deadheadMiles : null);
+  const deadheadOrigin = deadhead?.origin ?? (load.driverId ? load.deadheadOrigin : null);
 
   const rpm = ratePerMile(totalRate, loadedMiles);
   const allInMiles = (loadedMiles ?? 0) + (deadheadMiles ?? 0);
@@ -554,6 +559,47 @@ export default async function LoadDetailPage({
           </div>
         </section>
       </div>
+
+      {/* The trip as driven: empty run in, loaded run out */}
+      {load.pickupLat != null &&
+        load.pickupLng != null &&
+        load.deliveryLat != null &&
+        load.deliveryLng != null && (
+          <section className="rounded-lg border bg-card p-6">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold">
+              <Route className="h-4 w-4" /> Trip
+            </h3>
+            <LoadTripMap
+              token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
+              emptyFrom={
+                deadhead
+                  ? {
+                      lat: deadhead.from.lat,
+                      lng: deadhead.from.lng,
+                      label: deadhead.origin,
+                    }
+                  : null
+              }
+              pickup={{
+                lat: load.pickupLat,
+                lng: load.pickupLng,
+                label:
+                  [load.pickupCity, load.pickupState].filter(Boolean).join(", ") ||
+                  load.pickupAddress,
+              }}
+              delivery={{
+                lat: load.deliveryLat,
+                lng: load.deliveryLng,
+                label:
+                  [load.deliveryCity, load.deliveryState]
+                    .filter(Boolean)
+                    .join(", ") || load.deliveryAddress,
+              }}
+              emptyMiles={deadheadMiles}
+              loadedMiles={loadedMiles}
+            />
+          </section>
+        )}
 
       {/* Accessorials */}
       {accessorials.length > 0 && (

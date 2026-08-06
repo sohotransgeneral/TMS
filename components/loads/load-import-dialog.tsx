@@ -17,6 +17,8 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { createLoad } from "@/actions/loads";
+import { AccessorialsField } from "@/components/loads/accessorials-field";
+import { coerceAccessorials, type AccessorialItem } from "@/lib/accessorials";
 import {
   Upload,
   Sparkles,
@@ -81,8 +83,8 @@ type ExtractedData = {
   currency?: string;
   estimatedDistanceKm?: number | null;
   internalNotes?: string | null;
-  /** Set by the API when the extracted dates don't make sense together. */
-  dateWarning?: string | null;
+  /** Extra services found on the document, as {name, amount} entries. */
+  accessorials?: unknown;
 };
 
 const COMMODITIES = [
@@ -305,6 +307,7 @@ export function LoadImportDialog({
   // creating the load, not only afterwards on the load page.
   const reviewFormRef = useRef<HTMLFormElement>(null);
   const [price, setPrice] = useState("");
+  const [accessorials, setAccessorials] = useState<AccessorialItem[]>([]);
   const [miles, setMiles] = useState("");
   const milesTouched = useRef(false);
   // Raw text of the $/mi field while the user types; cleared when Price or
@@ -575,6 +578,7 @@ export function LoadImportDialog({
       setExtracted(json.data);
       setStep("review");
       setPrice(json.data?.price != null ? String(json.data.price) : "");
+      setAccessorials(coerceAccessorials(json.data?.accessorials));
       // A mileage printed on the rate con is what the broker pays on — keep it
       // and let the lookup only fill the gap when the document is silent.
       const statedMiles = json.data?.estimatedDistanceKm;
@@ -631,7 +635,13 @@ export function LoadImportDialog({
           if (!v) handleClose();
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        {/* Wide on a desktop — the review step is a dozen field groups and
+            reading them in a narrow column is what forces sideways scrolling.
+            Phones keep the plain full-width dialog. Only the vertical axis
+            ever scrolls; overflow-x-hidden makes that a guarantee rather than
+            a hope, since one wide child would otherwise drag the whole dialog
+            sideways. */}
+        <DialogContent className="max-h-[92vh] overflow-y-auto overflow-x-hidden sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-violet-500" />
@@ -890,10 +900,13 @@ export function LoadImportDialog({
                 ) : null}
               </section>
 
+              {/* The two stops side by side once there's room — they are read
+                  against each other, so a wide screen should show both. */}
+              <div className="grid gap-6 lg:grid-cols-2">
               {/* Pickup */}
               <section
                 onBlur={() => void recalcMiles()}
-                className="grid gap-3 rounded-lg border bg-card p-4"
+                className="grid content-start gap-3 rounded-lg border bg-card p-4"
               >
                 <h3 className="text-sm font-semibold">Pickup</h3>
                 <Field name="pickupAddress" label="Address" required>
@@ -999,7 +1012,7 @@ export function LoadImportDialog({
               {/* Delivery */}
               <section
                 onBlur={() => void recalcMiles()}
-                className="grid gap-3 rounded-lg border bg-card p-4"
+                className="grid content-start gap-3 rounded-lg border bg-card p-4"
               >
                 <h3 className="text-sm font-semibold">Delivery</h3>
                 <Field name="deliveryAddress" label="Address" required>
@@ -1101,6 +1114,7 @@ export function LoadImportDialog({
                   />
                 </Field>
               </section>
+              </div>
 
               {/* Cargo */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">
@@ -1291,6 +1305,11 @@ export function LoadImportDialog({
                   </div>
                 )}
               </section>
+
+              <AccessorialsField
+                items={accessorials}
+                onChange={setAccessorials}
+              />
 
               {/* Assignment */}
               <section className="grid gap-3 rounded-lg border bg-card p-4">

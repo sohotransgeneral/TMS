@@ -34,6 +34,7 @@ export function AccessorialsField({
   const fileRef = useRef<HTMLInputElement>(null);
   const targetIndex = useRef<number | null>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const used = new Set(items.map((i) => i.name));
   const available = ACCESSORIAL_TYPES.filter((t) => !used.has(t));
@@ -57,13 +58,7 @@ export function AccessorialsField({
     fileRef.current?.click();
   }
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    const index = targetIndex.current;
-    e.target.value = "";
-    targetIndex.current = null;
-    if (!file || index == null) return;
-
+  async function uploadFor(index: number, file: File) {
     setUploadingIndex(index);
     try {
       const fd = new FormData();
@@ -83,13 +78,46 @@ export function AccessorialsField({
     }
   }
 
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const index = targetIndex.current;
+    e.target.value = "";
+    targetIndex.current = null;
+    if (!file || index == null) return;
+    await uploadFor(index, file);
+  }
+
+  // Each row is its own drop target, so a receipt lands on the charge it backs
+  // up rather than on some generic pile.
+  function handleDrop(e: React.DragEvent, index: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(null);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void uploadFor(index, file);
+  }
+
+  function handleDragOver(e: React.DragEvent, index: number) {
+    // Without preventDefault the browser opens the dropped file instead.
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDragOverIndex(index);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    // dragleave also fires when crossing into a child element — ignore those.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragOverIndex(null);
+  }
+
   return (
     <section className="grid gap-3 rounded-lg border bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="font-semibold">Accessorials</h3>
           <p className="text-xs text-muted-foreground">
-            Add each extra charge and attach the document that justifies it.
+            Add each extra charge and attach the document that justifies it —
+            click Document, or drag a file onto its row.
           </p>
         </div>
         <div className="text-sm">
@@ -118,10 +146,22 @@ export function AccessorialsField({
           {items.map((item, i) => (
             <li
               key={item.name}
-              className="flex flex-wrap items-center gap-3 px-3 py-2"
+              onDragOver={(e) => handleDragOver(e, i)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, i)}
+              className={`flex flex-wrap items-center gap-3 px-3 py-2 transition-colors ${
+                dragOverIndex === i
+                  ? "bg-primary/10 outline-dashed outline-2 -outline-offset-2 outline-primary"
+                  : ""
+              }`}
             >
               <span className="min-w-[10rem] flex-1 text-sm font-medium">
                 {item.name}
+                {dragOverIndex === i && (
+                  <span className="ml-2 text-xs font-normal text-primary">
+                    drop to attach
+                  </span>
+                )}
               </span>
 
               <div className="flex items-center gap-1.5">

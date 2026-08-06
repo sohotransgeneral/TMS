@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { requirePermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { normalizeExtractedDate, alignTimeToWindow } from "@/lib/extract-dates";
+import { coerceAccessorials } from "@/lib/accessorials";
 
 // Pricing per 1M tokens (USD) — update if OpenAI changes pricing
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
@@ -120,6 +121,10 @@ Return ONLY a raw JSON object — no markdown, no \`\`\`json fences, no commenta
   "price": number or null — total carrier pay / total rate / line haul + FSC summed. Extract numeric only (e.g. '$2,750.00' → 2750). If multiple totals shown, pick 'TOTAL', 'Total Carrier Pay', 'All-in Rate'.",
   "currency": "string — 3-letter ISO code: USD, EUR, RON, GBP, CAD, MXN. Default USD if '$' shown without other clues.",
   "estimatedDistanceKm": number or null — distance value as stated in the document. For US docs the number is in MILES — extract it as-is (do NOT convert). For EU docs already in km, also extract as-is.",
+  "accessorials": [ { "name": "string", "amount": number } ] — array (use [] when there are none) of the EXTRA SERVICES this load requires or is paid for, beyond the plain line haul. Two sources, both count:
+     (a) CHARGE LINES: any line in the charges/rates table other than the line haul — Tarp, Detention, Layover, Lumper, Stop-off, TONU, Driver Assist, Scale Ticket, Toll Charges, Team Driver, Fuel Surcharge. Put the stated dollar figure in "amount".
+     (b) REQUIREMENTS with no separate charge: "Tarps Required - Tarp Size 4" → {"name":"Tarp","amount":0}. "Oversized" / "Over-Dimensional" / "Permit load" → {"name":"Over-Dimensional","amount":0}. "Overweight" → {"name":"Overweight","amount":0}. "Hazmat/placards" → {"name":"Hazmat","amount":0}. "Team service" → {"name":"Team Driver","amount":0}. "Driver assist/unload" → {"name":"Driver Assist","amount":0}. "Reefer/temp control" → {"name":"Reefer","amount":0}. Use amount 0 when the document states no price for it.
+     Use these exact names where they fit: Detention, Driver Assist, Drop Trailer, Fuel Surcharge, Hazmat, Inside Delivery, Inside Pickup, Layover, Liftgate Delivery, Liftgate Pickup, Lumper, Notify Before Delivery, Over-Dimensional, Overweight, Pallet Exchange, Partial, Reefer, Residential Delivery, Residential Pickup, Reweigh, Scale Ticket, Sorting & Segregating, Stop-off, TONU (Truck Order Not Used), Tanker Endorsement, Tarp, Team Driver, Toll Charges, Unloading, Wait Time. Only invent a name when none of these fit. Never list the line haul itself as an accessorial.",
   "internalNotes": "string or null — any other useful info that doesn't fit elsewhere: detention terms, lumper instructions, accessorial rates, broker MC#, multi-stop summary, payment terms, special accessorials."
 }
 
@@ -298,6 +303,23 @@ export async function POST(req: Request) {
       pickupDate && deliveryDate && deliveryDate < pickupDate
         ? "Delivery date is before the pickup date — check both against the document."
         : null;
+
+    // Accessorials: drop anything malformed, canonicalise the names.
+    const accessorials = coerceAccessorials(extracted.accessorials);
+    extracted.accessorials = accessorials;
+
+    // A load's Total is price + accessorials. When the document billed an
+    // accessorial on its own charge line, that money is already inside the
+    // TOTAL RATE the model reported as `price` — so take it back out, or the
+    // load would be worth more than the rate confirmation says.
+    const charged = accessorials.reduce((sum, a) => sum + a.amount, 0);
+    if (
+      charged > 0 &&
+      typeof extracted.price === "number" &&
+      extracted.price > charged
+    ) {
+      extracted.price = Number((extracted.price - charged).toFixed(2));
+    }
 
     // Auto-derive timezones from the detected state when AI didn't provide one.
     if (!extracted.pickupTimezone) {

@@ -46,17 +46,34 @@ export const ACCESSORIAL_TYPES = [
   "Stop-off",
   "TONU (Truck Order Not Used)",
   "Tanker Endorsement",
+  "Tarp",
   "Team Driver",
   "Toll Charges",
   "Unloading",
   "Wait Time",
 ] as const;
 
+/**
+ * Matches a free-form name to the canonical spelling ("tarp" → "Tarp") so
+ * names coming from AI extraction line up with the picker. Anything unknown is
+ * kept as written rather than dropped — losing a charge is worse than an
+ * off-list name.
+ */
+function canonicalName(name: string): string {
+  const needle = name.trim().toLowerCase();
+  const exact = ACCESSORIAL_TYPES.find((t) => t.toLowerCase() === needle);
+  if (exact) return exact;
+  const partial = ACCESSORIAL_TYPES.find(
+    (t) => t.toLowerCase().startsWith(`${needle} `) || t.toLowerCase() === `${needle}s`,
+  );
+  return partial ?? name.trim();
+}
+
 function toItem(raw: unknown): AccessorialItem | null {
   // Legacy shape — just the accessorial name.
   if (typeof raw === "string") {
     const name = raw.trim();
-    return name ? { name, amount: 0 } : null;
+    return name ? { name: canonicalName(name), amount: 0 } : null;
   }
   if (!raw || typeof raw !== "object") return null;
 
@@ -66,11 +83,23 @@ function toItem(raw: unknown): AccessorialItem | null {
 
   const amount = Number(o.amount);
   return {
-    name,
+    name: canonicalName(name),
     amount: Number.isFinite(amount) ? amount : 0,
     docUrl: typeof o.docUrl === "string" && o.docUrl ? o.docUrl : null,
     docName: typeof o.docName === "string" && o.docName ? o.docName : null,
   };
+}
+
+/** Reads a raw array (e.g. straight from AI extraction) into line items. */
+export function coerceAccessorials(value: unknown): AccessorialItem[] {
+  if (!Array.isArray(value)) return [];
+  const items = value
+    .map(toItem)
+    .filter((i): i is AccessorialItem => i !== null);
+  // One row per accessorial — the picker keys on the name.
+  return items.filter(
+    (item, i) => items.findIndex((x) => x.name === item.name) === i,
+  );
 }
 
 /** Reads the stored JSON (either shape) into line items. Never throws. */
@@ -79,11 +108,7 @@ export function parseAccessorials(
 ): AccessorialItem[] {
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map(toItem)
-      .filter((i): i is AccessorialItem => i !== null);
+    return coerceAccessorials(JSON.parse(raw));
   } catch {
     return [];
   }
