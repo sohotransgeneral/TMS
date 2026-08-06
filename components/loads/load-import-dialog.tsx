@@ -1350,6 +1350,27 @@ export function LoadImportDialog({
                     emptyMiles={deadhead?.miles ?? null}
                     loadedMiles={milesNum > 0 ? milesNum : null}
                   />
+                  {/* Same note as the manual form: the empty leg needs a
+                      driver, and that select sits further down the dialog. */}
+                  {deadhead ? (
+                    <p className="text-xs text-muted-foreground">
+                      Empty from {deadhead.origin} —{" "}
+                      <span className="font-medium text-foreground">
+                        {deadhead.miles.toLocaleString("en-US")} mi
+                      </span>{" "}
+                      before loading.
+                    </p>
+                  ) : selDriverId ? (
+                    <p className="text-xs text-muted-foreground">
+                      No earlier load for this driver, so there are no empty
+                      miles to show.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Pick a driver below to see the empty miles from their last
+                      delivery.
+                    </p>
+                  )}
                 </section>
               )}
 

@@ -1110,6 +1110,28 @@ export function LoadForm({
             emptyMiles={deadhead?.miles ?? null}
             loadedMiles={milesNum > 0 ? milesNum : null}
           />
+          {/* The empty leg only exists once we know whose truck this is, and
+              the driver is picked further down the form — say so, otherwise
+              the missing dashed line looks like a bug. */}
+          {deadhead ? (
+            <p className="text-xs text-muted-foreground">
+              Empty from {deadhead.origin} —{" "}
+              <span className="font-medium text-foreground">
+                {deadhead.miles.toLocaleString("en-US")} mi
+              </span>{" "}
+              before loading.
+            </p>
+          ) : driverId ? (
+            <p className="text-xs text-muted-foreground">
+              No earlier load for this driver, so there are no empty miles to
+              show.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Pick a driver below to see the empty miles from their last
+              delivery.
+            </p>
+          )}
         </section>
       )}
 
