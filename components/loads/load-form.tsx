@@ -164,6 +164,10 @@ export function LoadForm({
     initial?.estimatedDistanceKm != null ? String(initial.estimatedDistanceKm) : "",
   );
   const milesTouched = useRef(false);
+  // What the user typed into the $/mi field, kept raw so "1.9" doesn't jump to
+  // "1.90" mid-keystroke. Cleared whenever Rate, miles or accessorials change,
+  // which hands the field back to the computed value.
+  const [rpmDraft, setRpmDraft] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [deadhead, setDeadhead] = useState<{
     miles: number;
@@ -216,6 +220,7 @@ export function LoadForm({
 
         if (json.miles != null && (force || !milesTouched.current)) {
           setMiles(String(json.miles));
+          setRpmDraft(null);
         } else if (json.miles == null && force) {
           toast.error("Could not find a route between these two addresses.");
         }
@@ -264,6 +269,21 @@ export function LoadForm({
   const totalMilesWithDeadhead = milesNum + (deadhead?.miles ?? 0);
   const allInRatePerMile =
     totalMilesWithDeadhead > 0 ? totalRate / totalMilesWithDeadhead : null;
+
+  /**
+   * $/mi is normally Total ÷ miles, but dispatchers negotiate in $/mi — so the
+   * field is editable and works backwards: what you type sets the Rate for the
+   * miles on the load. `rpmDraft` holds what you typed (so "1.9" doesn't jump
+   * to "1.90" mid-keystroke) and is dropped once Rate or miles change, which
+   * hands the field back to the computed value.
+   */
+  function handleRatePerMileChange(raw: string) {
+    setRpmDraft(raw);
+    const rpm = Number(raw);
+    if (!raw || !Number.isFinite(rpm) || milesNum <= 0) return;
+    const newPrice = rpm * milesNum - accessorialTotal;
+    setPrice(Number(Math.max(0, newPrice).toFixed(2)));
+  }
 
   function handleDriverChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
@@ -916,7 +936,10 @@ export function LoadForm({
               step="0.01"
               min="0"
               value={price}
-              onChange={(ev) => setPrice(Number(ev.target.value))}
+              onChange={(ev) => {
+                setPrice(Number(ev.target.value));
+                setRpmDraft(null);
+              }}
               required
             />
           </Field>
@@ -985,6 +1008,7 @@ export function LoadForm({
                 onChange={(ev) => {
                   milesTouched.current = true;
                   setMiles(ev.target.value);
+                  setRpmDraft(null);
                 }}
               />
               <Button
@@ -1010,12 +1034,22 @@ export function LoadForm({
             </p>
           </Field>
 
-          <div className="flex items-center justify-between rounded border bg-muted/40 px-3 py-2">
-            <span className="text-sm font-medium">Rate per mile</span>
-            <span className="font-mono text-sm font-semibold">
-              {ratePerMile != null ? `$${ratePerMile.toFixed(2)}/mi` : "—"}
-            </span>
-          </div>
+          <Field name="ratePerMile" label="Rate per mile ($/mi)">
+            <Input
+              id="ratePerMile"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder={milesNum > 0 ? "0.00" : "enter miles first"}
+              disabled={milesNum <= 0}
+              value={rpmDraft ?? (ratePerMile != null ? ratePerMile.toFixed(2) : "")}
+              onChange={(ev) => handleRatePerMileChange(ev.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Total ÷ miles. Type a $/mi here and the Rate is worked back from
+              it.
+            </p>
+          </Field>
 
           {deadhead && (
             <div className="rounded border border-dashed px-3 py-2 text-sm">
@@ -1046,7 +1080,10 @@ export function LoadForm({
 
       <AccessorialsField
         items={accessorials}
-        onChange={setAccessorials}
+        onChange={(items) => {
+          setAccessorials(items);
+          setRpmDraft(null);
+        }}
         error={e.accessorials}
       />
 

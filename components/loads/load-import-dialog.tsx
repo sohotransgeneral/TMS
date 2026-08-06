@@ -306,6 +306,9 @@ export function LoadImportDialog({
   const [price, setPrice] = useState("");
   const [miles, setMiles] = useState("");
   const milesTouched = useRef(false);
+  // Raw text of the $/mi field while the user types; cleared when Price or
+  // miles change so the computed value takes over again.
+  const [rpmDraft, setRpmDraft] = useState<string | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [deadhead, setDeadhead] = useState<{
     miles: number;
@@ -352,6 +355,7 @@ export function LoadImportDialog({
 
         if (json.miles != null && (force || !milesTouched.current)) {
           setMiles(String(json.miles));
+          setRpmDraft(null);
         } else if (json.miles == null && force) {
           toast.error("Could not find a route between these two addresses.");
         }
@@ -381,6 +385,14 @@ export function LoadImportDialog({
   const ratePerMile = milesNum > 0 ? priceNum / milesNum : null;
   const allInMiles = milesNum + (deadhead?.miles ?? 0);
   const allInRatePerMile = allInMiles > 0 ? priceNum / allInMiles : null;
+
+  /** Typing a $/mi works backwards and sets the Price for the miles on screen. */
+  function handleRatePerMileChange(raw: string) {
+    setRpmDraft(raw);
+    const rpm = Number(raw);
+    if (!raw || !Number.isFinite(rpm) || milesNum <= 0) return;
+    setPrice(Math.max(0, rpm * milesNum).toFixed(2));
+  }
 
   /**
    * Creates the load, then attaches the very file the AI read to it. Keeping
@@ -1094,7 +1106,10 @@ export function LoadImportDialog({
                       type="number"
                       step="0.01"
                       value={price}
-                      onChange={(e) => setPrice(e.target.value)}
+                      onChange={(e) => {
+                        setPrice(e.target.value);
+                        setRpmDraft(null);
+                      }}
                       required
                     />
                   </Field>
@@ -1118,6 +1133,7 @@ export function LoadImportDialog({
                         onChange={(e) => {
                           milesTouched.current = true;
                           setMiles(e.target.value);
+                          setRpmDraft(null);
                         }}
                       />
                       <Button
@@ -1141,12 +1157,24 @@ export function LoadImportDialog({
                   </Field>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 rounded border bg-muted/40 px-3 py-2 text-sm">
-                  <span className="font-medium">Rate per mile</span>
-                  <span className="font-mono font-semibold">
-                    {ratePerMile != null ? `$${ratePerMile.toFixed(2)}/mi` : "—"}
-                  </span>
-                </div>
+                <Field name="ratePerMile" label="Rate per mile ($/mi)">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={milesNum > 0 ? "0.00" : "enter miles first"}
+                    disabled={milesNum <= 0}
+                    value={
+                      rpmDraft ??
+                      (ratePerMile != null ? ratePerMile.toFixed(2) : "")
+                    }
+                    onChange={(e) => handleRatePerMileChange(e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Price ÷ miles. Type a $/mi here and the Price is worked back
+                    from it.
+                  </p>
+                </Field>
                 {deadhead && (
                   <div className="rounded border border-dashed px-3 py-2 text-sm">
                     <div className="flex items-center justify-between">
