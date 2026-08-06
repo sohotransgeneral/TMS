@@ -51,10 +51,14 @@ export function LoadTripMap({
       style: "mapbox://styles/mapbox/streets-v12",
       center: [pickup.lng, pickup.lat],
       zoom: 4,
+      // Wheel zoom needs Ctrl (two fingers on touch). Without this the map
+      // swallows the wheel and the page stops scrolling once the cursor
+      // crosses it; disabling zoom outright is worse still. Mapbox shows the
+      // "use ctrl + scroll" hint on its own.
+      cooperativeGestures: true,
     });
     mapRef.current = map;
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.scrollZoom.disable(); // page scroll shouldn't zoom the map
 
     map.on("load", async () => {
       const stops: [TripPoint, string, string][] = [];
@@ -105,9 +109,12 @@ export function LoadTripMap({
 
   return (
     <div className="space-y-2">
+      {/* Square rather than a letterbox: a cross-country trip is as tall as it
+          is wide, and a wide strip crops the route to a thin horizontal band.
+          Capped so it doesn't take over the page on a large screen. */}
       <div
         ref={containerRef}
-        className="h-72 w-full overflow-hidden rounded-lg border"
+        className="mx-auto aspect-square w-full max-w-2xl overflow-hidden rounded-lg border"
       />
       <div className="flex flex-wrap gap-4 px-1 text-xs text-muted-foreground">
         {emptyFrom && (
