@@ -78,10 +78,14 @@ export async function computeDeadhead(args: {
       pickupDate: { lt: pickupDate },
       ...(excludeLoadId ? { id: { not: excludeLoadId } } : {}),
     },
+    // Reference number is the last word rather than updatedAt: it follows the
+    // order loads were created, so when two loads share a pickup date (usual
+    // when only dates are entered, no times) the newer one wins. Sorting by
+    // updatedAt would instead promote whichever old load was edited last.
     orderBy: [
       { pickupDate: "desc" },
       { deliveryDate: "desc" },
-      { updatedAt: "desc" },
+      { referenceNumber: "desc" },
     ],
     select: {
       referenceNumber: true,
