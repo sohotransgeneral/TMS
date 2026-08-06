@@ -36,6 +36,7 @@ export const ACCESSORIAL_TYPES = [
   "Over-Dimensional",
   "Overweight",
   "Pallet Exchange",
+  "Partial",
   "Reefer",
   "Residential Delivery",
   "Residential Pickup",

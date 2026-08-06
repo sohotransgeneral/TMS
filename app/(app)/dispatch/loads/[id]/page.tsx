@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LoadStatusBadge } from "@/components/loads/load-status-badge";
 import { LoadStatusButton } from "@/components/loads/load-status-button";
 import { LoadAssignDialog } from "@/components/loads/load-assign-dialog";
+import { DeleteLoadButton } from "@/components/loads/delete-load-button";
 import { CreateInvoiceButton } from "@/components/loads/create-invoice-button";
 import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
@@ -230,6 +231,11 @@ export default async function LoadDetailPage({
               loadId={load.id}
               current={load.status}
               canForce={canForce}
+            />
+            <DeleteLoadButton
+              loadId={load.id}
+              referenceNumber={load.referenceNumber}
+              status={load.status}
             />
           </div>
         }

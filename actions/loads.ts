@@ -585,12 +585,26 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
   return success(undefined, "Status actualizat.");
 }
 
+/**
+ * Deletes a load and everything hanging off it — status history, documents and
+ * GPS pings all cascade away.
+ *
+ * An invoiced load is refused rather than deleted: the invoice would survive
+ * with a dangling reference and the money would no longer trace back to a trip.
+ * Expenses and fuel entries are kept (their load link is simply cleared), so
+ * costs already booked against the load stay in the accounting.
+ */
 export async function deleteLoad(id: string): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
-  const target = await prisma.load.findUnique({ where: { id } });
+  const target = await prisma.load.findUnique({
+    where: { id },
+    include: { invoice: { select: { number: true } } },
+  });
   if (!target || target.companyId !== me.companyId) return failure("Load not found.");
-  if (target.status !== "DRAFT" && target.status !== "CANCELLED") {
-    return failure("Only DRAFT or CANCELED loads can be deleted.");
+  if (target.invoice) {
+    return failure(
+      `Load is invoiced (${target.invoice.number}). Delete or cancel that invoice first.`,
+    );
   }
 
   await prisma.load.delete({ where: { id } });
@@ -600,9 +614,11 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
     companyId: me.companyId,
     entityType: "Load",
     entityId: id,
+    meta: { referenceNumber: target.referenceNumber, status: target.status },
   });
   revalidatePath("/dispatch/loads");
-  return success(undefined, "Load deleted.");
+  revalidatePath("/dispatch/cockpit");
+  return success(undefined, `Load ${target.referenceNumber} deleted.`);
 }
 
 /** Driver acknowledges receiving the load. */
