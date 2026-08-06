@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/session";
 import {
   computeDeadhead,
+  suggestNearestTruck,
   type DeadheadResult,
   type LocationParts,
 } from "@/lib/load-miles";
@@ -68,6 +69,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // With no driver picked yet there is no empty leg to measure, so offer the
+  // truck that is closest to this pickup instead — it's the question being
+  // asked at that point anyway, and it gives the map something real to draw.
+  let suggestion = null;
+  if (
+    !body.driverId &&
+    me.companyId &&
+    pickupPoint &&
+    pickupDate &&
+    !Number.isNaN(pickupDate.getTime())
+  ) {
+    suggestion = await suggestNearestTruck({
+      companyId: me.companyId,
+      pickup: pickupPoint,
+      pickupDate,
+      excludeLoadId: body.excludeLoadId,
+    });
+  }
+
   return NextResponse.json({
     ok: true,
     miles,
@@ -76,5 +96,6 @@ export async function POST(req: NextRequest) {
     pickupPoint,
     deliveryPoint,
     deadheadFrom: deadhead?.from ?? null,
+    suggestion,
   });
 }

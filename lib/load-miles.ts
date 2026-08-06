@@ -8,7 +8,12 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { drivingMiles, resolvePoint, type LatLng } from "@/lib/distance";
+import {
+  drivingMiles,
+  haversineMiles,
+  resolvePoint,
+  type LatLng,
+} from "@/lib/distance";
 
 export type LocationParts = {
   lat?: number | null;
@@ -132,6 +137,107 @@ export async function computeDeadhead(args: {
   return {
     miles,
     origin: [place, previous.referenceNumber, dropped]
+      .filter(Boolean)
+      .join(" · "),
+    from,
+  };
+}
+
+export type TruckSuggestion = {
+  driverId: string;
+  driverName: string;
+  miles: number;
+  origin: string;
+  from: LatLng;
+};
+
+/**
+ * Which truck is closest to this pickup, based on where each driver last
+ * dropped. Answers the question a dispatcher actually has before assigning —
+ * "who is nearby?" — and lets the empty leg be drawn before a driver is chosen.
+ *
+ * Only the best candidate gets a Directions call: everyone else is ranked by
+ * straight-line distance, which is free and plenty for ordering.
+ */
+export async function suggestNearestTruck(args: {
+  companyId: string;
+  pickup: LatLng;
+  pickupDate: Date;
+  excludeLoadId?: string;
+}): Promise<TruckSuggestion | null> {
+  const { companyId, pickup, pickupDate, excludeLoadId } = args;
+
+  const recent = await prisma.load.findMany({
+    where: {
+      companyId,
+      driverId: { not: null },
+      status: { not: "CANCELLED" },
+      pickupDate: { lt: pickupDate },
+      ...(excludeLoadId ? { id: { not: excludeLoadId } } : {}),
+    },
+    orderBy: [{ pickupDate: "desc" }, { referenceNumber: "desc" }],
+    take: 200,
+    select: {
+      driverId: true,
+      referenceNumber: true,
+      deliveryDate: true,
+      deliveryCity: true,
+      deliveryState: true,
+      deliveryLat: true,
+      deliveryLng: true,
+    },
+  });
+
+  // First entry per driver is that driver's latest trip — the list is already
+  // in the same order computeDeadhead uses, so the two always agree.
+  const latestPerDriver = new Map<string, (typeof recent)[number]>();
+  for (const load of recent) {
+    if (load.driverId && !latestPerDriver.has(load.driverId)) {
+      latestPerDriver.set(load.driverId, load);
+    }
+  }
+
+  const candidates = [...latestPerDriver.values()]
+    .filter((l) => l.deliveryLat != null && l.deliveryLng != null)
+    .map((l) => ({
+      load: l,
+      crow: haversineMiles(
+        { lat: l.deliveryLat!, lng: l.deliveryLng! },
+        pickup,
+      ),
+    }))
+    .sort((a, b) => a.crow - b.crow);
+
+  const best = candidates[0];
+  if (!best) return null;
+
+  const from = { lat: best.load.deliveryLat!, lng: best.load.deliveryLng! };
+  const miles = await drivingMiles(from, pickup);
+  if (miles == null) return null;
+
+  const driver = await prisma.driverProfile.findUnique({
+    where: { id: best.load.driverId! },
+    select: { firstName: true, lastName: true, user: { select: { name: true } } },
+  });
+  if (!driver) return null;
+
+  const place = [best.load.deliveryCity, best.load.deliveryState]
+    .filter(Boolean)
+    .join(", ");
+  const dropped = best.load.deliveryDate
+    ? best.load.deliveryDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      })
+    : null;
+
+  return {
+    driverId: best.load.driverId!,
+    driverName:
+      driver.user?.name ?? `${driver.firstName} ${driver.lastName}`.trim(),
+    miles,
+    origin: [place, best.load.referenceNumber, dropped]
       .filter(Boolean)
       .join(" · "),
     from,

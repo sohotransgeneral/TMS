@@ -186,6 +186,14 @@ export function LoadForm({
     delivery: LatLng | null;
     emptyFrom: LatLng | null;
   }>({ pickup: null, delivery: null, emptyFrom: null });
+  // Closest truck to this pickup, offered while no driver is chosen.
+  const [suggestion, setSuggestion] = useState<{
+    driverId: string;
+    driverName: string;
+    miles: number;
+    origin: string;
+    from: LatLng;
+  } | null>(null);
 
   const loadId = initial?.id;
   const recalcMiles = useCallback(
@@ -238,10 +246,11 @@ export function LoadForm({
             ? { miles: json.deadheadMiles, origin: json.deadheadOrigin ?? null }
             : null,
         );
+        setSuggestion(json.suggestion ?? null);
         setTrip({
           pickup: json.pickupPoint ?? null,
           delivery: json.deliveryPoint ?? null,
-          emptyFrom: json.deadheadFrom ?? null,
+          emptyFrom: json.deadheadFrom ?? json.suggestion?.from ?? null,
         });
       } catch {
         if (force) toast.error("Mileage lookup failed. Enter the miles manually.");
@@ -1102,17 +1111,25 @@ export function LoadForm({
             token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
             emptyFrom={
               trip.emptyFrom
-                ? { ...trip.emptyFrom, label: deadhead?.origin ?? "Previous delivery" }
+                ? {
+                    ...trip.emptyFrom,
+                    label:
+                      deadhead?.origin ??
+                      (suggestion
+                        ? `${suggestion.driverName} · ${suggestion.origin}`
+                        : "Previous delivery"),
+                  }
                 : null
             }
             pickup={{ ...trip.pickup, label: "Pickup" }}
             delivery={{ ...trip.delivery, label: "Delivery" }}
-            emptyMiles={deadhead?.miles ?? null}
+            emptyMiles={deadhead?.miles ?? suggestion?.miles ?? null}
             loadedMiles={milesNum > 0 ? milesNum : null}
+            total={totalRate}
           />
-          {/* The empty leg only exists once we know whose truck this is, and
-              the driver is picked further down the form — say so, otherwise
-              the missing dashed line looks like a bug. */}
+          {/* Empty miles depend on whose truck this is. With a driver chosen
+              they're exact; without one, the closest truck is offered so the
+              dashed leg still means something instead of being absent. */}
           {deadhead ? (
             <p className="text-xs text-muted-foreground">
               Empty from {deadhead.origin} —{" "}
@@ -1121,6 +1138,35 @@ export function LoadForm({
               </span>{" "}
               before loading.
             </p>
+          ) : suggestion ? (
+            <div className="space-y-1.5 text-xs text-muted-foreground">
+              <p>
+                Closest truck:{" "}
+                <span className="font-medium text-foreground">
+                  {suggestion.driverName}
+                </span>{" "}
+                —{" "}
+                <span className="font-medium text-foreground">
+                  {suggestion.miles.toLocaleString("en-US")} mi
+                </span>{" "}
+                empty from {suggestion.origin}.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDriverId(suggestion.driverId);
+                  const a = driverAssignments.find(
+                    (x) => x.id === suggestion.driverId,
+                  );
+                  setTruckId(a?.truckId ?? "");
+                  setTrailerId(a?.trailerId ?? "");
+                }}
+              >
+                Assign {suggestion.driverName}
+              </Button>
+            </div>
           ) : driverId ? (
             <p className="text-xs text-muted-foreground">
               No earlier load for this driver, so there are no empty miles to

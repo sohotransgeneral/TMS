@@ -573,6 +573,9 @@ export default async function LoadDetailPage({
               <Route className="h-4 w-4" /> Trip
             </h3>
             <LoadTripMap
+              /* Assigning a driver adds the empty leg, and the map is built
+                 once on mount — a key tied to the route forces the rebuild. */
+              key={`${load.pickupLat},${load.pickupLng}-${load.deliveryLat},${load.deliveryLng}-${deadhead?.from.lat ?? "none"}`}
               token={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
               emptyFrom={
                 deadhead
@@ -600,6 +603,8 @@ export default async function LoadDetailPage({
               }}
               emptyMiles={deadheadMiles}
               loadedMiles={loadedMiles}
+              total={totalRate}
+              currency={load.currency}
             />
           </section>
         )}

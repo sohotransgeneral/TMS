@@ -291,6 +291,10 @@ export function LoadImportDialog({
   const [file, setFile] = useState<File | null>(null);
   const [attaching, setAttaching] = useState(false);
   const [pending, setPending] = useState(false);
+  // Set when the load was created but its source document didn't make it —
+  // the dialog then stays open offering a retry instead of losing the file.
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [createdLoadId, setCreatedLoadId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [editCommodity, setEditCommodity] = useState("");
@@ -327,6 +331,14 @@ export function LoadImportDialog({
     delivery: LatLng | null;
     emptyFrom: LatLng | null;
   }>({ pickup: null, delivery: null, emptyFrom: null });
+  // Closest truck to this pickup, offered while no driver is chosen.
+  const [suggestion, setSuggestion] = useState<{
+    driverId: string;
+    driverName: string;
+    miles: number;
+    origin: string;
+    from: LatLng;
+  } | null>(null);
 
   const recalcMiles = useCallback(
     async ({ force = false }: { force?: boolean } = {}) => {
@@ -377,10 +389,11 @@ export function LoadImportDialog({
             ? { miles: json.deadheadMiles, origin: json.deadheadOrigin ?? null }
             : null,
         );
+        setSuggestion(json.suggestion ?? null);
         setTrip({
           pickup: json.pickupPoint ?? null,
           delivery: json.deliveryPoint ?? null,
-          emptyFrom: json.deadheadFrom ?? null,
+          emptyFrom: json.deadheadFrom ?? json.suggestion?.from ?? null,
         });
       } catch {
         if (force) toast.error("Mileage lookup failed. Enter the miles manually.");
@@ -459,6 +472,31 @@ export function LoadImportDialog({
     setPrice(Math.max(0, rpm * milesNum).toFixed(2));
   }
 
+  /** Uploads the file the AI read and links it to the load. */
+  async function attachSourceDocument(loadId: string): Promise<boolean> {
+    if (!file) return false;
+    setAttaching(true);
+    setAttachError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("type", "RATE_CONFIRMATION");
+      fd.append("name", file.name);
+      fd.append("loadId", loadId);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Upload failed (${res.status})`);
+      }
+      return true;
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : "Upload failed");
+      return false;
+    } finally {
+      setAttaching(false);
+    }
+  }
+
   /**
    * Creates the load, then attaches the very file the AI read to it. Keeping
    * the source document means a misread field can always be checked against
@@ -475,28 +513,15 @@ export function LoadImportDialog({
       const id = (res.data as { id?: string } | undefined)?.id;
 
       if (id && file) {
-        setAttaching(true);
-        try {
-          const fd = new FormData();
-          fd.append("file", file);
-          fd.append("type", "RATE_CONFIRMATION");
-          fd.append("name", file.name);
-          fd.append("loadId", id);
-          const upload = await fetch("/api/upload", { method: "POST", body: fd });
-          if (!upload.ok) {
-            const body = await upload.json().catch(() => ({}));
-            throw new Error(body.error ?? "Upload failed");
-          }
-          toast.success("Load created — original document attached.");
-        } catch (err) {
-          toast.warning(
-            `Load created, but the original document was not attached (${
-              err instanceof Error ? err.message : "upload failed"
-            }). Upload it from the load's Documents section.`,
-          );
-        } finally {
-          setAttaching(false);
+        const attached = await attachSourceDocument(id);
+        if (!attached) {
+          // Deliberately stays open. A toast for this scrolls away unnoticed
+          // and the load ends up without the document it was read from —
+          // exactly what happened to L-2026-00008.
+          setCreatedLoadId(id);
+          return;
         }
+        toast.success("Load created — original document attached.");
       } else {
         toast.success("Load created successfully!");
       }
@@ -514,6 +539,8 @@ export function LoadImportDialog({
     setFile(null);
     setExtractError(null);
     setExtracting(false);
+    setAttachError(null);
+    setCreatedLoadId(null);
   }
 
   function handleOpen() {
@@ -760,7 +787,55 @@ export function LoadImportDialog({
           )}
 
           {/* ── Step 2: Review form ── */}
-          {step === "review" && extracted && (
+          {/* The load exists but its document doesn't. Nothing else matters
+              until that is resolved, so the form is replaced outright. */}
+          {createdLoadId && (
+            <div className="grid gap-4">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="font-medium">
+                    Load created, but {file?.name ?? "the document"} was not
+                    attached.
+                  </p>
+                  <p className="mt-1 opacity-90">{attachError}</p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Retry the upload, or open the load and add it later from the
+                Documents section — the file is only held in this dialog, so
+                closing now loses it.
+              </p>
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setOpen(false);
+                    router.push(`/dispatch/loads/${createdLoadId}`);
+                  }}
+                >
+                  Open load without it
+                </Button>
+                <Button
+                  type="button"
+                  disabled={attaching}
+                  onClick={async () => {
+                    const ok = await attachSourceDocument(createdLoadId);
+                    if (ok) {
+                      toast.success("Document attached.");
+                      setOpen(false);
+                      router.push(`/dispatch/loads/${createdLoadId}`);
+                    }
+                  }}
+                >
+                  {attaching ? "Uploading…" : "Retry upload"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+
+          {step === "review" && extracted && !createdLoadId && (
             <form
               key={formKey}
               ref={reviewFormRef}
@@ -1330,7 +1405,11 @@ export function LoadImportDialog({
                       trip.emptyFrom
                         ? {
                             ...trip.emptyFrom,
-                            label: deadhead?.origin ?? "Previous delivery",
+                            label:
+                              deadhead?.origin ??
+                              (suggestion
+                                ? `${suggestion.driverName} · ${suggestion.origin}`
+                                : "Previous delivery"),
                           }
                         : null
                     }
@@ -1347,11 +1426,12 @@ export function LoadImportDialog({
                           .filter(Boolean)
                           .join(", ") || "Delivery",
                     }}
-                    emptyMiles={deadhead?.miles ?? null}
+                    emptyMiles={deadhead?.miles ?? suggestion?.miles ?? null}
                     loadedMiles={milesNum > 0 ? milesNum : null}
+                    total={priceNum}
                   />
-                  {/* Same note as the manual form: the empty leg needs a
-                      driver, and that select sits further down the dialog. */}
+                  {/* Same as the manual form: exact once a driver is chosen,
+                      the closest truck as an offer until then. */}
                   {deadhead ? (
                     <p className="text-xs text-muted-foreground">
                       Empty from {deadhead.origin} —{" "}
@@ -1360,6 +1440,28 @@ export function LoadImportDialog({
                       </span>{" "}
                       before loading.
                     </p>
+                  ) : suggestion ? (
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <p>
+                        Closest truck:{" "}
+                        <span className="font-medium text-foreground">
+                          {suggestion.driverName}
+                        </span>{" "}
+                        —{" "}
+                        <span className="font-medium text-foreground">
+                          {suggestion.miles.toLocaleString("en-US")} mi
+                        </span>{" "}
+                        empty from {suggestion.origin}.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDriverChange(suggestion.driverId)}
+                      >
+                        Assign {suggestion.driverName}
+                      </Button>
+                    </div>
                   ) : selDriverId ? (
                     <p className="text-xs text-muted-foreground">
                       No earlier load for this driver, so there are no empty

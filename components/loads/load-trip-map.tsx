@@ -30,6 +30,8 @@ export function LoadTripMap({
   delivery,
   emptyMiles,
   loadedMiles,
+  total,
+  currency = "USD",
 }: {
   token: string | null;
   emptyFrom?: TripPoint | null;
@@ -37,6 +39,9 @@ export function LoadTripMap({
   delivery?: TripPoint | null;
   emptyMiles?: number | null;
   loadedMiles?: number | null;
+  /** Rate + accessorials, used for the $/mi figures under the map. */
+  total?: number | null;
+  currency?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -107,6 +112,18 @@ export function LoadTripMap({
 
   if (!token || !pickup || !delivery) return null;
 
+  const money = (value: number) =>
+    value.toLocaleString("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+    });
+  const loadedRpm =
+    total && loadedMiles && loadedMiles > 0 ? total / loadedMiles : null;
+  const allInMiles = (loadedMiles ?? 0) + (emptyMiles ?? 0);
+  const allInRpm =
+    total && emptyMiles && allInMiles > 0 ? total / allInMiles : null;
+
   return (
     <div className="space-y-2">
       {/* Square rather than a letterbox: a cross-country trip is as tall as it
@@ -116,19 +133,38 @@ export function LoadTripMap({
         ref={containerRef}
         className="aspect-square w-full overflow-hidden rounded-lg border"
       />
-      <div className="flex flex-wrap gap-4 px-1 text-xs text-muted-foreground">
+      <div className="space-y-1 px-1 text-xs text-muted-foreground">
         {emptyFrom && (
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-0.5 w-6 border-t-2 border-dashed border-[#d97706]" />
-            Empty{emptyMiles != null && ` · ${Math.round(emptyMiles).toLocaleString("en-US")} mi`}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block h-0.5 w-6 shrink-0 border-t-2 border-dashed border-[#d97706]" />
+            Empty
+            {emptyMiles != null &&
+              ` · ${Math.round(emptyMiles).toLocaleString("en-US")} mi`}
+            {emptyMiles != null && <span className="ml-1">· unpaid</span>}
+          </div>
         )}
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-0.5 w-6 bg-[#2563eb]" />
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block h-0.5 w-6 shrink-0 bg-[#2563eb]" />
           Loaded
           {loadedMiles != null &&
             ` · ${Math.round(loadedMiles).toLocaleString("en-US")} mi`}
-        </span>
+          {loadedRpm != null && (
+            <span className="font-medium text-foreground">
+              · {money(loadedRpm)}/mi
+            </span>
+          )}
+        </div>
+        {/* What the trip really pays once the empty run is counted — the
+            number to compare against cost per mile. */}
+        {allInRpm != null && (
+          <div className="flex items-center gap-1.5 border-t pt-1">
+            <span className="w-6 shrink-0" />
+            All-in · {Math.round(allInMiles).toLocaleString("en-US")} mi
+            <span className="font-medium text-foreground">
+              · {money(allInRpm)}/mi
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
