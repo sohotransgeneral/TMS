@@ -15,6 +15,7 @@ import {
 import { nextLoadReference } from "@/lib/load-reference";
 import { drivingMiles, resolvePoint, type LatLng } from "@/lib/distance";
 import { computeDeadhead, type DeadheadResult } from "@/lib/load-miles";
+import { canForceLoadStatus } from "@/lib/permissions";
 import {
   parseAccessorials,
   serializeAccessorials,
@@ -533,7 +534,7 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
 
   // Validate transition (admins can force any change)
   const allowed = LOAD_NEXT_STATUSES[target.status] ?? [];
-  const canForce = me.role === "COMPANY_ADMIN" || me.role === "SUPER_ADMIN";
+  const canForce = canForceLoadStatus(me.role);
   if (!allowed.includes(status) && status !== target.status && !canForce) {
     return failure(`Invalid transition: ${target.status} → ${status}.`);
   }

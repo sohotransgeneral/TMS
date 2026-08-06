@@ -142,6 +142,24 @@ export function assertPermission(
   }
 }
 
+/**
+ * Roles allowed to set any load status directly instead of stepping through
+ * LOAD_NEXT_STATUSES one at a time.
+ *
+ * Dispatchers included: they field the phone calls and routinely have to
+ * correct a status after the fact, or skip ahead when a driver forgot to update
+ * on the road. Drivers stay on the step-by-step flow — their status changes are
+ * meant to reflect where the truck actually is.
+ *
+ * Both the dialog's option list and the server-side check read this, so what
+ * the UI offers is always what the action accepts.
+ */
+export function canForceLoadStatus(role: UserRole | null | undefined): boolean {
+  return (
+    role === "SUPER_ADMIN" || role === "COMPANY_ADMIN" || role === "DISPATCHER"
+  );
+}
+
 /** Default landing path after login, by role. */
 export function defaultDashboardFor(role: UserRole): string {
   switch (role) {

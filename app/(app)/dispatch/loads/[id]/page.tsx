@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
+import { canForceLoadStatus } from "@/lib/permissions";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { LoadStatusBadge } from "@/components/loads/load-status-badge";
@@ -113,7 +114,7 @@ export default async function LoadDetailPage({
     }),
   ]);
 
-  const canForce = me.role === "COMPANY_ADMIN" || me.role === "SUPER_ADMIN";
+  const canForce = canForceLoadStatus(me.role);
 
   const l = load as typeof load & {
     loadNumber?: string | null;
