@@ -56,17 +56,34 @@ export async function computeDeadhead(args: {
   const { companyId, driverId, pickupDate, excludeLoadId } = args;
   if (!driverId || !args.pickup) return null;
 
+  // The previous trip is the one that STARTED most recently before this one —
+  // its delivery point is where the truck stands empty.
+  //
+  // Selecting on delivery date instead looks right but isn't: dispatchers book
+  // the next load while the current one is still running, so the real previous
+  // load often delivers AFTER this pickup date. Filtering those out silently
+  // skipped back to some much older load — a truck that dropped in PA and
+  // reloads in MD (~150 mi) was being measured from a weeks-old delivery in
+  // Lamont, CA (2,654 mi).
+  //
+  // The secondary sorts matter too: two loads starting the same day would
+  // otherwise come back in whatever order the database felt like.
   const previous = await prisma.load.findFirst({
     where: {
       companyId,
       driverId,
       status: { not: "CANCELLED" },
-      deliveryDate: { lte: pickupDate },
+      pickupDate: { lt: pickupDate },
       ...(excludeLoadId ? { id: { not: excludeLoadId } } : {}),
     },
-    orderBy: { deliveryDate: "desc" },
+    orderBy: [
+      { pickupDate: "desc" },
+      { deliveryDate: "desc" },
+      { updatedAt: "desc" },
+    ],
     select: {
       referenceNumber: true,
+      deliveryDate: true,
       deliveryAddress: true,
       deliveryCity: true,
       deliveryState: true,
@@ -97,9 +114,20 @@ export async function computeDeadhead(args: {
   const place = [previous.deliveryCity, previous.deliveryState]
     .filter(Boolean)
     .join(", ");
+  // The reference and the drop date are part of the label on purpose: they let
+  // a dispatcher confirm at a glance that this really is the previous trip.
+  const dropped = previous.deliveryDate
+    ? previous.deliveryDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      })
+    : null;
   return {
     miles,
-    origin: [place, previous.referenceNumber].filter(Boolean).join(" · "),
+    origin: [place, previous.referenceNumber, dropped]
+      .filter(Boolean)
+      .join(" · "),
   };
 }
 
