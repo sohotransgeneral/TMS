@@ -242,6 +242,8 @@ export default async function LoadDetailPage({
               loadId={load.id}
               referenceNumber={load.referenceNumber}
               status={load.status}
+              invoiceNumber={load.invoice?.number ?? null}
+              redirectTo="/dispatch/loads"
             />
           </div>
         }

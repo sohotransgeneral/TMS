@@ -590,10 +590,13 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
  * Deletes a load and everything hanging off it — status history, documents and
  * GPS pings all cascade away.
  *
- * An invoiced load is refused rather than deleted: the invoice would survive
- * with a dangling reference and the money would no longer trace back to a trip.
- * Expenses and fuel entries are kept (their load link is simply cleared), so
- * costs already booked against the load stay in the accounting.
+ * An invoiced load can be deleted too, but its invoice is NOT: the invoice
+ * stays in the accounting with its link to the load cleared. That is the
+ * honest outcome — the money was really billed — so the caller is told which
+ * invoice was left behind rather than the deletion being blocked.
+ *
+ * Expenses and fuel entries are likewise kept and only unlinked, so costs
+ * already booked against the load stay in the accounting.
  */
 export async function deleteLoad(id: string): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
@@ -602,11 +605,6 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
     include: { invoice: { select: { number: true } } },
   });
   if (!target || target.companyId !== me.companyId) return failure("Load not found.");
-  if (target.invoice) {
-    return failure(
-      `Load is invoiced (${target.invoice.number}). Delete or cancel that invoice first.`,
-    );
-  }
 
   await prisma.load.delete({ where: { id } });
   await logAudit({
@@ -615,11 +613,20 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
     companyId: me.companyId,
     entityType: "Load",
     entityId: id,
-    meta: { referenceNumber: target.referenceNumber, status: target.status },
+    meta: {
+      referenceNumber: target.referenceNumber,
+      status: target.status,
+      invoiceNumber: target.invoice?.number ?? null,
+    },
   });
   revalidatePath("/dispatch/loads");
   revalidatePath("/dispatch/cockpit");
-  return success(undefined, `Load ${target.referenceNumber} deleted.`);
+  return success(
+    undefined,
+    target.invoice
+      ? `Load ${target.referenceNumber} deleted. Invoice ${target.invoice.number} was kept and is no longer linked to a load.`
+      : `Load ${target.referenceNumber} deleted.`,
+  );
 }
 
 /** Driver acknowledges receiving the load. */

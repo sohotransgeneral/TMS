@@ -17,17 +17,28 @@ import { deleteLoad } from "@/actions/loads";
 
 /**
  * Deleting a load takes its documents, status history and GPS pings with it,
- * so the dialog names the load and warns when the trip is already under way —
- * "L-2026-00016" in the prompt is what stops the wrong tab being deleted.
+ * so the dialog names the load — "L-2026-00016" in the prompt is what stops the
+ * wrong row being deleted — and spells out the two cases worth pausing over: a
+ * trip already under way, and a load that has been invoiced.
+ *
+ * `icon` is the compact form for table rows; the full button is used on the
+ * load page, where it also navigates away afterwards since the page it was
+ * showing no longer exists.
  */
 export function DeleteLoadButton({
   loadId,
   referenceNumber,
   status,
+  invoiceNumber,
+  icon = false,
+  redirectTo,
 }: {
   loadId: string;
   referenceNumber: string;
   status: string;
+  invoiceNumber?: string | null;
+  icon?: boolean;
+  redirectTo?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -37,9 +48,21 @@ export function DeleteLoadButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="outline" onClick={() => setOpen(true)}>
-        <Trash2 className="mr-2 h-4 w-4" /> Delete
-      </Button>
+      {icon ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title={`Delete ${referenceNumber}`}
+          className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      ) : (
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          <Trash2 className="mr-2 h-4 w-4" /> Delete
+        </Button>
+      )}
+
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete load {referenceNumber}?</DialogTitle>
@@ -50,7 +73,15 @@ export function DeleteLoadButton({
           </DialogDescription>
         </DialogHeader>
 
-        {started && (
+        {invoiceNumber && (
+          <p className="rounded-md border border-amber-400/50 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            This load is invoiced ({invoiceNumber}). The invoice stays in the
+            accounting — it was really billed — but it will no longer be linked
+            to a load, so the revenue can&apos;t be traced back to a trip.
+          </p>
+        )}
+
+        {started && !invoiceNumber && (
           <p className="rounded-md border border-amber-400/50 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
             This load is already in progress ({status}). Make sure it is not a
             trip the driver is actually running.
@@ -74,7 +105,8 @@ export function DeleteLoadButton({
                 if (res.ok) {
                   toast.success(res.message ?? "Load deleted.");
                   setOpen(false);
-                  router.push("/dispatch/loads");
+                  if (redirectTo) router.push(redirectTo);
+                  else router.refresh();
                 } else {
                   toast.error(res.error);
                 }

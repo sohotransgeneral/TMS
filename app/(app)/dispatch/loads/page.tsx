@@ -24,6 +24,8 @@ import {
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { Plus, PackageOpen } from "lucide-react";
 import { LoadImportDialog } from "@/components/loads/load-import-dialog";
+import { DeleteLoadButton } from "@/components/loads/delete-load-button";
+import { hasPermission } from "@/lib/permissions";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 
 export const metadata = { title: "Loads" };
@@ -37,6 +39,8 @@ export default async function LoadsPage({
 }) {
   const me = await requirePermission("loads:read");
   const currentUser = await getCurrentUser();
+  // Accountants and fleet managers can read this list but must not delete from it.
+  const canWrite = hasPermission(me.role, "loads:write");
   const sp = await searchParams;
   const { page, pageSize, q, skip } = parseListParams(sp);
   const status = typeof sp.status === "string" ? sp.status : undefined;
@@ -96,6 +100,7 @@ export default async function LoadsPage({
           deliveryCountry: true,
           price: true,
           currency: true,
+          invoice: { select: { number: true } },
           customer: { select: { name: true } },
           truck: { select: { plateNumber: true, fleetNumber: true } },
           driver: { select: { user: { select: { name: true } } } },
@@ -261,6 +266,7 @@ export default async function LoadsPage({
                 <TableHead>Status</TableHead>
                 <TableHead className="w-10">LTL</TableHead>
                 <TableHead className="w-12">Truck</TableHead>
+                {canWrite && <TableHead className="w-10" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -309,6 +315,17 @@ export default async function LoadsPage({
                         : l.truck.plateNumber
                       : "—"}
                   </TableCell>
+                  {canWrite && (
+                    <TableCell>
+                      <DeleteLoadButton
+                        icon
+                        loadId={l.id}
+                        referenceNumber={l.referenceNumber}
+                        status={l.status}
+                        invoiceNumber={l.invoice?.number ?? null}
+                      />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
