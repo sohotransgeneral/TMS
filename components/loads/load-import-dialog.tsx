@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  ArrowUpDown,
 } from "lucide-react";
 
 type Opt = {
@@ -373,12 +374,59 @@ export function LoadImportDialog({
     [],
   );
 
-  // Runs once the review form is on screen, and again when the driver changes
-  // (the empty run depends on who takes the load).
+  // Bumped whenever the extracted values are changed programmatically (the
+  // swap below). The review inputs are uncontrolled, so they only pick up new
+  // defaults when the form remounts under a new key.
+  const [formKey, setFormKey] = useState(0);
+
+  /**
+   * Every broker lays a rate confirmation out differently — "PICK 1 / STOP 1",
+   * "Shipper / Consignee", "Origin / Destination" — and the model does swap the
+   * two stops now and then. Retyping a dozen fields to fix that is worse than
+   * the mistake, so this exchanges both stops in one click.
+   */
+  function swapStops() {
+    setExtracted((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        pickupAddress: prev.deliveryAddress,
+        deliveryAddress: prev.pickupAddress,
+        pickupCity: prev.deliveryCity,
+        deliveryCity: prev.pickupCity,
+        pickupState: prev.deliveryState,
+        deliveryState: prev.pickupState,
+        pickupZip: prev.deliveryZip,
+        deliveryZip: prev.pickupZip,
+        pickupCountry: prev.deliveryCountry,
+        deliveryCountry: prev.pickupCountry,
+        pickupDate: prev.deliveryDate,
+        deliveryDate: prev.pickupDate,
+        pickupWindow: prev.deliveryWindow,
+        deliveryWindow: prev.pickupWindow,
+        pickupContact: prev.deliveryContact,
+        deliveryContact: prev.pickupContact,
+        pickupPhone: prev.deliveryPhone,
+        deliveryPhone: prev.pickupPhone,
+        pickupNumber: prev.deliveryNumber,
+        deliveryNumber: prev.pickupNumber,
+        pickupNotes: prev.deliveryNotes,
+        deliveryNotes: prev.pickupNotes,
+      };
+    });
+    setEditPickupTz(editDeliveryTz);
+    setEditDeliveryTz(editPickupTz);
+    setFormKey((k) => k + 1);
+    toast.success("Pickup and delivery swapped.");
+  }
+
+  // Runs once the review form is on screen, when the driver changes (the empty
+  // run depends on who takes the load), and after a swap — the route is
+  // measured from the new pickup.
   useEffect(() => {
     if (step !== "review") return;
     void recalcMiles();
-  }, [step, selDriverId, recalcMiles]);
+  }, [step, selDriverId, formKey, recalcMiles]);
 
   const priceNum = Number(price) || 0;
   const milesNum = Number(miles) || 0;
@@ -564,6 +612,11 @@ export function LoadImportDialog({
   }
 
   const d = extracted ?? {};
+  // Delivery before pickup is the clearest sign the two stops came back
+  // reversed. Naive ISO strings compare correctly as text.
+  const datesInverted = Boolean(
+    d.pickupDate && d.deliveryDate && d.deliveryDate < d.pickupDate,
+  );
 
   return (
     <>
@@ -685,10 +738,54 @@ export function LoadImportDialog({
           {/* ── Step 2: Review form ── */}
           {step === "review" && extracted && (
             <form
+              key={formKey}
               ref={reviewFormRef}
               action={handleCreate}
               className="grid gap-6"
             >
+              {/* Layouts differ wildly between brokers, so the two stops are
+                  put up front to be checked before anything else. */}
+              <section
+                className={`grid gap-2 rounded-lg border p-3 ${
+                  datesInverted
+                    ? "border-amber-400/60 bg-amber-50 dark:bg-amber-950/30"
+                    : "bg-muted/40"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Pickup </span>
+                    <span className="font-medium">
+                      {[d.pickupCity, d.pickupState].filter(Boolean).join(", ") ||
+                        "—"}
+                    </span>
+                    <span className="mx-2 text-muted-foreground">→</span>
+                    <span className="text-muted-foreground">Delivery </span>
+                    <span className="font-medium">
+                      {[d.deliveryCity, d.deliveryState]
+                        .filter(Boolean)
+                        .join(", ") || "—"}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={swapStops}
+                  >
+                    <ArrowUpDown className="mr-1.5 h-3.5 w-3.5" />
+                    Swap pickup ↔ delivery
+                  </Button>
+                </div>
+                {datesInverted && (
+                  <p className="flex items-start gap-1.5 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    The delivery date is before the pickup date — the two stops
+                    are probably the wrong way round.
+                  </p>
+                )}
+              </section>
+
               {file && (
                 <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                   <FileText className="h-4 w-4 shrink-0 text-violet-500" />
@@ -699,13 +796,6 @@ export function LoadImportDialog({
                     stays attached to the load, so you can always check the AI
                     against the original.
                   </span>
-                </div>
-              )}
-
-              {d.dateWarning && (
-                <div className="flex items-start gap-2 rounded-lg border border-amber-400/50 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  {d.dateWarning}
                 </div>
               )}
 

@@ -130,13 +130,20 @@ EXTRACTION RULES (read carefully):
    - pickupPhone: "713-555-0123"
    - pickupNotes: "PU# ABC123; Tarps required"
 2. TIME WINDOWS ARE MANDATORY: Any pattern like "NNNN-NNNN", "NN:NN to NN:NN", "NN:NN-NN:NN", "FCFS", "By Appt", "ASAP", "Open until NN:NN" MUST go into pickupWindow / deliveryWindow. NEVER in pickupDate/deliveryDate (dates are calendar days, not time-of-day ranges). NEVER in notes.
-3. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
-4. ADDRESSES: keep street address clean (no city/state in pickupAddress). ALWAYS split a "City, State ZIP" line into THREE separate fields. Examples: "Newark, NJ 07114" → city="Newark", state="NJ", zip="07114". "Los Angeles, CA 90001-1234" → city="Los Angeles", state="CA", zip="90001-1234". "Houston TX 77001" → city="Houston", state="TX", zip="77001". NEVER leave state or zip null when they appear anywhere in the location block.
-5. DATES: follow the DATE HANDLING section appended below — it overrides any habit you have about date formats.
-6. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
-7. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings. For weight: ALWAYS fill weightLbs if document shows pounds (lbs, LBS, lb, LB). Fill weightKg ONLY if document explicitly states kg/KG. Never leave both null if a weight is visible.
-8. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
-9. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
+3. WHICH STOP IS WHICH — getting this backwards ruins the whole load, so decide it before anything else:
+   - PICKUP is the section labelled: PICK, PICK 1, PICKUP, SHIPPER, ORIGIN, LOAD AT, LOADING, FROM, COLLECT FROM, PU.
+   - DELIVERY is the section labelled: STOP, STOP 1, DROP, DELIVER, DELIVERY, CONSIGNEE, RECEIVER, SHIP TO, DESTINATION, TO, DEL.
+   - CAREFUL: on many rate confirmations the pickup is "PICK 1" and the delivery is "STOP 1". "STOP" alone is a DELIVERY, never the pickup, whenever a separate PICK/PICKUP/SHIPPER block exists.
+   - The stops are usually printed in order: the first block is the pickup, the last is the delivery.
+   - CHRONOLOGY IS THE CHECK: the pickup date/appointment is always EARLIER THAN OR EQUAL TO the delivery date. If the block you called "pickup" has the later date, you have them swapped — swap them back before answering.
+   - Never decide based on which city looks bigger, closer, or more familiar.
+4. MULTI-STOP: If the document has multiple pickups or deliveries, use the FIRST pickup and the LAST delivery for the main fields, and summarize the intermediate stops in internalNotes.
+5. ADDRESSES: keep street address clean (no city/state in pickupAddress). ALWAYS split a "City, State ZIP" line into THREE separate fields. Examples: "Newark, NJ 07114" → city="Newark", state="NJ", zip="07114". "Los Angeles, CA 90001-1234" → city="Los Angeles", state="CA", zip="90001-1234". "Houston TX 77001" → city="Houston", state="TX", zip="77001". NEVER leave state or zip null when they appear anywhere in the location block.
+6. DATES: follow the DATE HANDLING section appended below — it overrides any habit you have about date formats.
+7. PHONES: extract just the number with original formatting; ignore extension if it's a major hassle.
+8. NUMBERS: strip commas, currency symbols, units. price/weight/distance/packages are numeric — no strings. For weight: ALWAYS fill weightLbs if document shows pounds (lbs, LBS, lb, LB). Fill weightKg ONLY if document explicitly states kg/KG. Never leave both null if a weight is visible.
+9. NEVER GUESS: if a value isn't in the document, return null. Better null than wrong data.
+10. CASE: keep proper case for names and addresses (don't UPPERCASE unless source is UPPERCASE).
 
 Now extract.`;
 
