@@ -12,7 +12,11 @@ import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { parseAccessorials } from "@/lib/accessorials";
-import { ratePerMile } from "@/lib/load-miles";
+import {
+  computeDeadhead,
+  loadedMiles as routeMiles,
+  ratePerMile,
+} from "@/lib/load-miles";
 import {
   Pencil,
   MapPin,
@@ -363,23 +367,29 @@ export default async function LoadDetailPage({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Deadhead (empty)</span>
               <span className="font-medium tabular-nums">
-                {load.deadheadMiles != null
-                  ? `${Math.round(load.deadheadMiles).toLocaleString("en-US")} mi`
-                  : "—"}
+                {deadheadMiles != null
+                  ? `${Math.round(deadheadMiles).toLocaleString("en-US")} mi`
+                  : load.driverId
+                    ? "—"
+                    : "no driver"}
               </span>
             </div>
-            {load.deadheadOrigin && (
+            {deadheadOrigin ? (
               <p className="-mt-1 text-xs text-muted-foreground">
-                Empty from {load.deadheadOrigin}
+                Empty from {deadheadOrigin} → {load.pickupCity ?? "pickup"}
               </p>
-            )}
+            ) : deadheadMiles == null && load.driverId ? (
+              <p className="-mt-1 text-xs text-muted-foreground">
+                No earlier load for this driver.
+              </p>
+            ) : null}
             <div className="flex justify-between border-t pt-2 text-sm font-semibold">
               <span>Rate per mile</span>
               <span className="tabular-nums">
                 {rpm != null ? `${formatCurrency(rpm, load.currency)}/mi` : "—"}
               </span>
             </div>
-            {allInRpm != null && load.deadheadMiles != null && (
+            {allInRpm != null && deadheadMiles != null && (
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>All-in (loaded + empty)</span>
                 <span className="tabular-nums">
