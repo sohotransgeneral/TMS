@@ -74,10 +74,10 @@ export function DeleteLoadButton({
         </DialogHeader>
 
         {invoiceNumber && (
-          <p className="rounded-md border border-amber-400/50 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-            This load is invoiced ({invoiceNumber}). The invoice stays in the
-            accounting — it was really billed — but it will no longer be linked
-            to a load, so the revenue can&apos;t be traced back to a trip.
+          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            Invoice <span className="font-medium">{invoiceNumber}</span> and any
+            payments recorded against it are deleted with this load. That
+            revenue disappears from the accounting and the reports.
           </p>
         )}
 

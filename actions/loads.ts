@@ -608,22 +608,27 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
  * Deletes a load and everything hanging off it — status history, documents and
  * GPS pings all cascade away.
  *
- * An invoiced load can be deleted too, but its invoice is NOT: the invoice
- * stays in the accounting with its link to the load cleared. That is the
- * honest outcome — the money was really billed — so the caller is told which
- * invoice was left behind rather than the deletion being blocked.
+ * An invoiced load takes its invoice and that invoice's payments with it.
+ * Leaving the invoice behind unlinked is not an option: `Invoice.loadId` is a
+ * unique index, so clearing a second one to null collides with whichever
+ * invoice already has no load — that collision was the 500 seen when deleting
+ * an invoiced load.
  *
- * Expenses and fuel entries are likewise kept and only unlinked, so costs
- * already booked against the load stay in the accounting.
+ * Expenses and fuel entries are kept and only unlinked, so costs already
+ * booked against the load stay in the accounting.
  */
 export async function deleteLoad(id: string): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
   const target = await prisma.load.findUnique({
     where: { id },
-    include: { invoice: { select: { number: true } } },
+    include: { invoice: { select: { id: true, number: true } } },
   });
   if (!target || target.companyId !== me.companyId) return failure("Load not found.");
 
+  if (target.invoice) {
+    await prisma.payment.deleteMany({ where: { invoiceId: target.invoice.id } });
+    await prisma.invoice.delete({ where: { id: target.invoice.id } });
+  }
   await prisma.load.delete({ where: { id } });
   await logAudit({
     action: "load.delete",
@@ -642,7 +647,7 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
   return success(
     undefined,
     target.invoice
-      ? `Load ${target.referenceNumber} deleted. Invoice ${target.invoice.number} was kept and is no longer linked to a load.`
+      ? `Load ${target.referenceNumber} and invoice ${target.invoice.number} deleted.`
       : `Load ${target.referenceNumber} deleted.`,
   );
 }

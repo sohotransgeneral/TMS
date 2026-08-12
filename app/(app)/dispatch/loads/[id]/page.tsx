@@ -15,6 +15,7 @@ import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { parseAccessorials } from "@/lib/accessorials";
+import { getSignedDownloadUrl } from "@/lib/r2";
 import {
   computeDeadhead,
   loadedMiles as routeMiles,
@@ -135,6 +136,21 @@ export default async function LoadDetailPage({
 
   const totalRate = (l.price ?? 0) + (l.accessorialAmount ?? 0);
   const accessorials = parseAccessorials(load.accessorials);
+  // Proof documents live in private R2, so each needs a signed link. Older
+  // rows may hold a plain URL — those are passed through untouched.
+  const accessorialLinks = await Promise.all(
+    accessorials.map(async (a) => {
+      if (!a.docUrl) return null;
+      if (/^(https?:)?\/\//.test(a.docUrl) || a.docUrl.startsWith("/")) {
+        return a.docUrl;
+      }
+      try {
+        return await getSignedDownloadUrl(a.docUrl, 3600);
+      } catch {
+        return null;
+      }
+    }),
+  );
 
   // Loads created before mileage was tracked have nothing stored, so work the
   // numbers out on the fly instead of showing "—" until someone re-saves them.
@@ -616,7 +632,7 @@ export default async function LoadDetailPage({
             <Paperclip className="h-4 w-4" /> Accessorials
           </h3>
           <ul className="divide-y rounded-md border">
-            {accessorials.map((a) => (
+            {accessorials.map((a, i) => (
               <li
                 key={a.name}
                 className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm"
@@ -627,9 +643,9 @@ export default async function LoadDetailPage({
                 <span className="tabular-nums">
                   {formatCurrency(a.amount, load.currency)}
                 </span>
-                {a.docUrl ? (
+                {accessorialLinks[i] ? (
                   <a
-                    href={a.docUrl}
+                    href={accessorialLinks[i]!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex max-w-[16rem] items-center gap-1 truncate text-xs text-primary hover:underline"

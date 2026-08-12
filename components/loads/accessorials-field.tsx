@@ -58,6 +58,27 @@ export function AccessorialsField({
     fileRef.current?.click();
   }
 
+  /**
+   * Stored value is an R2 object key, which needs signing before it can be
+   * opened. Older rows hold a plain URL — those open directly.
+   */
+  async function openDocument(docUrl: string) {
+    if (/^(https?:)?\/\//.test(docUrl) || docUrl.startsWith("/")) {
+      window.open(docUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/loads/accessorial-doc?key=${encodeURIComponent(docUrl)}`,
+      );
+      if (!res.ok) throw new Error("Could not open document");
+      const { url } = await res.json();
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error("Could not open this document.");
+    }
+  }
+
   async function uploadFor(index: number, file: File) {
     setUploadingIndex(index);
     try {
@@ -181,16 +202,15 @@ export function AccessorialsField({
 
               {item.docUrl ? (
                 <span className="flex items-center gap-1 text-xs">
-                  <a
-                    href={item.docUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => openDocument(item.docUrl!)}
                     className="inline-flex max-w-[12rem] items-center gap-1 truncate text-primary hover:underline"
                     title={item.docName ?? "Document"}
                   >
                     <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{item.docName ?? "Document"}</span>
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() => update(i, { docUrl: null, docName: null })}
