@@ -176,7 +176,7 @@ export default async function LoadDetailPage({
   // before that edit is simply wrong. The saved value is only a fallback for
   // when the lookup fails.
   let deadhead = null;
-  if (load.driverId && me.companyId) {
+  if (load.trackDeadhead && load.driverId && me.companyId) {
     deadhead = await computeDeadhead({
       companyId: me.companyId,
       driverId: load.driverId,
@@ -397,14 +397,20 @@ export default async function LoadDetailPage({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Deadhead (empty)</span>
               <span className="font-medium tabular-nums">
-                {deadheadMiles != null
-                  ? `${Math.round(deadheadMiles).toLocaleString("en-US")} mi`
-                  : load.driverId
-                    ? "—"
-                    : "no driver"}
+                {!load.trackDeadhead
+                  ? "off"
+                  : deadheadMiles != null
+                    ? `${Math.round(deadheadMiles).toLocaleString("en-US")} mi`
+                    : load.driverId
+                      ? "—"
+                      : "no driver"}
               </span>
             </div>
-            {deadheadOrigin ? (
+            {!load.trackDeadhead ? (
+              <p className="-mt-1 text-xs text-muted-foreground">
+                Empty-mile tracking is off for this load — turn it on in Edit.
+              </p>
+            ) : deadheadOrigin ? (
               <p className="-mt-1 text-xs text-muted-foreground">
                 Empty from {deadheadOrigin} → {load.pickupCity ?? "pickup"}
               </p>

@@ -122,9 +122,11 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
     if (miles != null) d.estimatedDistanceKm = miles;
   }
 
-  // Deadhead — empty miles from the driver's previous drop to this pickup
+  // Deadhead — empty miles from the driver's previous drop to this pickup.
+  // Opt-in per load; the previous trip is found the same way regardless of
+  // whether that older load had tracking on.
   let deadhead: DeadheadResult | null = null;
-  if (d.driverId && pickupPoint) {
+  if (d.trackDeadhead && d.driverId && pickupPoint) {
     deadhead = await computeDeadhead({
       companyId: me.companyId,
       driverId: d.driverId,
@@ -189,6 +191,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       lineHaulRate: d.lineHaulRate,
       fuelSurcharge: d.fuelSurcharge,
       estimatedDistanceKm: d.estimatedDistanceKm,
+      trackDeadhead: d.trackDeadhead ?? false,
       deadheadMiles: deadhead?.miles ?? null,
       deadheadOrigin: deadhead?.origin ?? null,
       poNumber: d.poNumber,
@@ -338,8 +341,9 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   const driverId = rest.driverId === undefined ? target.driverId : rest.driverId || null;
   const pickupDate = rest.pickupDate ?? target.pickupDate;
   const pickupFrom = pickupPoint ?? pointOf(target.pickupLat, target.pickupLng);
+  const trackDeadhead = rest.trackDeadhead ?? target.trackDeadhead;
   let deadhead: DeadheadResult | null = null;
-  if (driverId && pickupFrom) {
+  if (trackDeadhead && driverId && pickupFrom) {
     deadhead = await computeDeadhead({
       companyId: me.companyId,
       driverId,
@@ -354,7 +358,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   const deadheadWrite =
     deadhead != null
       ? { deadheadMiles: deadhead.miles, deadheadOrigin: deadhead.origin }
-      : !driverId || driverChanged
+      : !trackDeadhead || !driverId || driverChanged
         ? { deadheadMiles: null, deadheadOrigin: null }
         : {};
 
@@ -408,7 +412,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
     country: target.pickupCountry,
   });
   const deadhead =
-    driverId && pickupPoint
+    target.trackDeadhead && driverId && pickupPoint
       ? await computeDeadhead({
           companyId: me.companyId,
           driverId,
@@ -421,7 +425,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const deadheadWrite =
     deadhead != null
       ? { deadheadMiles: deadhead.miles, deadheadOrigin: deadhead.origin }
-      : !driverId || driverId !== target.driverId
+      : !target.trackDeadhead || !driverId || driverId !== target.driverId
         ? { deadheadMiles: null, deadheadOrigin: null }
         : {};
 

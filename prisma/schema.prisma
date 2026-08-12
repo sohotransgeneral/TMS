@@ -561,6 +561,10 @@ model Load {
   fuelSurcharge    Float?    // fuel surcharge component
   estimatedDistanceKm Float?  // loaded miles pickup → delivery (US operation stores MILES)
   actualDistanceKm    Float?
+  // Empty-mile tracking is opt-in per load. The flag decides whether THIS load
+  // gets a figure — it never affects which load counts as the previous trip,
+  // so switching it on always measures from the real last load.
+  trackDeadhead       Boolean @default(false)
   deadheadMiles       Float?  // empty miles: previous load's delivery → this load's pickup
   deadheadOrigin      String? // where those empty miles start from, e.g. "Dallas, TX · L-2026-00012"
 

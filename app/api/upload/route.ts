@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { uploadPrivate } from "@/lib/r2";
-import { DocumentType } from "@prisma/client";
+import { LOAD_STATUSES } from "@/lib/validators/load";
+import { DocumentType, type LoadStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -97,6 +99,40 @@ export async function POST(req: NextRequest) {
       uploadedById: me.id,
     },
   });
+
+  // Paperwork proves the trip happened, so it moves the load along instead of
+  // waiting for someone to also remember the status dropdown. Only ever
+  // forwards: a POD landing on an INVOICED load must not drag it backwards.
+  if (loadId && (docType === "POD" || docType === "BOL")) {
+    const target = docType === "POD" ? "POD_UPLOADED" : "DELIVERED";
+    const load = await prisma.load.findUnique({
+      where: { id: loadId },
+      select: { status: true, companyId: true },
+    });
+    const rank = (s: string) => LOAD_STATUSES.indexOf(s as never);
+    if (
+      load &&
+      load.companyId === companyId &&
+      load.status !== "CANCELLED" &&
+      rank(load.status) < rank(target)
+    ) {
+      await prisma.load.update({
+        where: { id: loadId },
+        data: {
+          status: target as LoadStatus,
+          statusHistory: {
+            create: {
+              status: target as LoadStatus,
+              changedById: me.id,
+              note: `${docType} uploaded: ${name}`,
+            },
+          },
+        },
+      });
+      revalidatePath(`/dispatch/loads/${loadId}`);
+      revalidatePath("/dispatch/loads");
+    }
+  }
 
   return NextResponse.json({ ok: true, document: doc }, { status: 201 });
 }

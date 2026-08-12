@@ -84,6 +84,7 @@ export type LoadFormInitial = {
   lineHaulRate: number | null;
   fuelSurcharge: number | null;
   estimatedDistanceKm: number | null;
+  trackDeadhead?: boolean;
   deadheadMiles?: number | null;
   deadheadOrigin?: string | null;
   poNumber: string | null;
@@ -194,6 +195,11 @@ export function LoadForm({
     origin: string;
     from: LatLng;
   } | null>(null);
+  // Off unless this load asks for it. Turning it on later still measures from
+  // the driver's real last trip, not from the last load that had it on.
+  const [trackDeadhead, setTrackDeadhead] = useState(
+    initial?.trackDeadhead ?? false,
+  );
 
   const loadId = initial?.id;
   const recalcMiles = useCallback(
@@ -230,6 +236,7 @@ export function LoadForm({
             driverId: get("driverId") || undefined,
             pickupDate: get("pickupDate") || undefined,
             excludeLoadId: loadId,
+            deadhead: get("trackDeadhead") === "on",
           }),
         });
         const json = await res.json();
@@ -281,7 +288,7 @@ export function LoadForm({
       return;
     }
     void recalcMiles();
-  }, [driverId, recalcMiles]);
+  }, [driverId, trackDeadhead, recalcMiles]);
 
   const accessorialTotal = accessorials.length
     ? accessorialsTotal(accessorials)
@@ -1074,7 +1081,31 @@ export function LoadForm({
             </p>
           </Field>
 
-          {deadhead && (
+          <label className="flex cursor-pointer items-start gap-2 rounded border px-3 py-2 text-sm">
+            <input
+              type="checkbox"
+              name="trackDeadhead"
+              className="mt-0.5"
+              checked={trackDeadhead}
+              onChange={(ev) => {
+                setTrackDeadhead(ev.target.checked);
+                if (!ev.target.checked) {
+                  setDeadhead(null);
+                  setSuggestion(null);
+                  setTrip((t) => ({ ...t, emptyFrom: null }));
+                }
+              }}
+            />
+            <span>
+              <span className="font-medium">Count empty miles</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Measures from this driver&apos;s last trip. Off by default; turn
+                it on whenever you want — it always uses the real previous load.
+              </span>
+            </span>
+          </label>
+
+          {trackDeadhead && deadhead && (
             <div className="rounded border border-dashed px-3 py-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Deadhead (empty)</span>
@@ -1130,7 +1161,12 @@ export function LoadForm({
           {/* Empty miles depend on whose truck this is. With a driver chosen
               they're exact; without one, the closest truck is offered so the
               dashed leg still means something instead of being absent. */}
-          {deadhead ? (
+          {!trackDeadhead ? (
+            <p className="text-xs text-muted-foreground">
+              Empty miles are off for this load — tick “Count empty miles” under
+              Financials to measure the run in from the driver&apos;s last trip.
+            </p>
+          ) : deadhead ? (
             <p className="text-xs text-muted-foreground">
               Empty from {deadhead.origin} —{" "}
               <span className="font-medium text-foreground">
@@ -1183,6 +1219,7 @@ export function LoadForm({
 
       <AccessorialsField
         items={accessorials}
+        loadId={initial?.id}
         onChange={(items) => {
           setAccessorials(items);
           setRpmDraft(null);

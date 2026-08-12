@@ -24,11 +24,14 @@ export function AccessorialsField({
   items,
   onChange,
   currency = "USD",
+  loadId,
   error,
 }: {
   items: AccessorialItem[];
   onChange: (items: AccessorialItem[]) => void;
   currency?: string;
+  /** Set when editing an existing load — files it under Documents as well. */
+  loadId?: string;
   error?: string[];
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -84,6 +87,7 @@ export function AccessorialsField({
     try {
       const fd = new FormData();
       fd.append("file", file);
+      if (loadId) fd.append("loadId", loadId);
       const res = await fetch("/api/loads/accessorial-doc", {
         method: "POST",
         body: fd,

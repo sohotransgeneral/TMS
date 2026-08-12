@@ -24,6 +24,8 @@ type Body = {
   driverId?: string;
   pickupDate?: string;
   excludeLoadId?: string;
+  /** Empty-mile tracking is opt-in per load; false skips that work entirely. */
+  deadhead?: boolean;
 };
 
 export async function POST(req: NextRequest) {
@@ -55,6 +57,7 @@ export async function POST(req: NextRequest) {
   let deadhead: DeadheadResult | null = null;
   const pickupDate = body.pickupDate ? new Date(body.pickupDate) : null;
   if (
+    body.deadhead &&
     me.companyId &&
     body.driverId &&
     pickupDate &&
@@ -74,6 +77,7 @@ export async function POST(req: NextRequest) {
   // asked at that point anyway, and it gives the map something real to draw.
   let suggestion = null;
   if (
+    body.deadhead &&
     !body.driverId &&
     me.companyId &&
     pickupPoint &&

@@ -339,6 +339,8 @@ export function LoadImportDialog({
     origin: string;
     from: LatLng;
   } | null>(null);
+  // Off by default, same as the manual form.
+  const [trackDeadhead, setTrackDeadhead] = useState(false);
 
   const recalcMiles = useCallback(
     async ({ force = false }: { force?: boolean } = {}) => {
@@ -373,6 +375,7 @@ export function LoadImportDialog({
             delivery,
             driverId: get("driverId") || undefined,
             pickupDate: get("pickupDate") || undefined,
+            deadhead: get("trackDeadhead") === "on",
           }),
         });
         const json = await res.json();
@@ -456,7 +459,7 @@ export function LoadImportDialog({
   useEffect(() => {
     if (step !== "review") return;
     void recalcMiles();
-  }, [step, selDriverId, formKey, recalcMiles]);
+  }, [step, selDriverId, trackDeadhead, formKey, recalcMiles]);
 
   const priceNum = Number(price) || 0;
   const milesNum = Number(miles) || 0;
@@ -1368,7 +1371,31 @@ export function LoadImportDialog({
                     from it.
                   </p>
                 </Field>
-                {deadhead && (
+                <label className="flex cursor-pointer items-start gap-2 rounded border px-3 py-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="trackDeadhead"
+                    className="mt-0.5"
+                    checked={trackDeadhead}
+                    onChange={(e) => {
+                      setTrackDeadhead(e.target.checked);
+                      if (!e.target.checked) {
+                        setDeadhead(null);
+                        setSuggestion(null);
+                        setTrip((t) => ({ ...t, emptyFrom: null }));
+                      }
+                    }}
+                  />
+                  <span>
+                    <span className="font-medium">Count empty miles</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Measures from this driver&apos;s last trip. Off by
+                      default; it always uses the real previous load.
+                    </span>
+                  </span>
+                </label>
+
+                {trackDeadhead && deadhead && (
                   <div className="rounded border border-dashed px-3 py-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">
@@ -1432,7 +1459,13 @@ export function LoadImportDialog({
                   />
                   {/* Same as the manual form: exact once a driver is chosen,
                       the closest truck as an offer until then. */}
-                  {deadhead ? (
+                  {!trackDeadhead ? (
+                    <p className="text-xs text-muted-foreground">
+                      Empty miles are off — tick “Count empty miles" under
+                      Commercial to measure the run in from the driver&apos;s
+                      last trip.
+                    </p>
+                  ) : deadhead ? (
                     <p className="text-xs text-muted-foreground">
                       Empty from {deadhead.origin} —{" "}
                       <span className="font-medium text-foreground">

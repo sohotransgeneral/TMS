@@ -111,6 +111,9 @@ export const loadCreateSchema = z.object({
   lineHaulRate: optionalNumber,
   fuelSurcharge: optionalNumber,
   estimatedDistanceKm: optionalNumber,
+  trackDeadhead: z
+    .preprocess((v) => v === "on" || v === "true" || v === true, z.boolean())
+    .optional(),
 
   poNumber: optionalString,
   soNumber: optionalString,

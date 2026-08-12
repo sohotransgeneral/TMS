@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { uploadPrivate, getSignedDownloadUrl } from "@/lib/r2";
 
@@ -32,8 +34,9 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  let me: Awaited<ReturnType<typeof requirePermission>>;
   try {
-    await requirePermission("loads:write");
+    me = await requirePermission("loads:write");
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -41,6 +44,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
+  const loadId = (formData.get("loadId") as string | null) || null;
 
   if (!ALLOWED_MIME.has(file.type)) {
     return NextResponse.json(
@@ -54,7 +58,32 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { key } = await uploadPrivate(buffer, file.name, "accessorials");
+    const { key, sizeBytes } = await uploadPrivate(buffer, file.name, "accessorials");
+
+    // When the load already exists (editing), file it under Documents too —
+    // otherwise the proof is only reachable from inside the accessorial row.
+    if (loadId) {
+      const load = await prisma.load.findUnique({
+        where: { id: loadId },
+        select: { companyId: true },
+      });
+      if (load && (!me.companyId || load.companyId === me.companyId)) {
+        await prisma.document.create({
+          data: {
+            companyId: load.companyId,
+            type: "ACCESSORIAL",
+            name: file.name,
+            url: key,
+            mimeType: file.type,
+            sizeBytes,
+            loadId,
+            uploadedById: me.id,
+          },
+        });
+        revalidatePath(`/dispatch/loads/${loadId}`);
+      }
+    }
+
     return NextResponse.json({ ok: true, url: key, name: file.name });
   } catch (err) {
     console.error("[accessorial-doc] upload failed:", err);
