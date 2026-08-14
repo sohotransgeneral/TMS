@@ -112,19 +112,6 @@ function addrBlock(a: {
   return [a.street, cityLine, a.country].filter(Boolean) as string[];
 }
 
-function statusStyle(status: string): { bg: RGB; fg: RGB; label: string } {
-  const s = (status ?? "").toUpperCase();
-  switch (s) {
-    case "PAID":             return { bg: GREEN, fg: WHITE, label: "PAID" };
-    case "OVERDUE":          return { bg: RED,   fg: WHITE, label: "OVERDUE" };
-    case "PARTIALLY_PAID":   return { bg: AMBER, fg: WHITE, label: "PARTIAL" };
-    case "CANCELLED":        return { bg: GRAY,  fg: WHITE, label: "CANCELLED" };
-    case "SENT":             return { bg: SKY,   fg: WHITE, label: "SENT" };
-    case "DRAFT":            return { bg: GRAY,  fg: WHITE, label: "DRAFT" };
-    case "PENDING":          return { bg: AMBER, fg: WHITE, label: "PENDING" };
-    default:                 return { bg: BRAND, fg: WHITE, label: s.replace(/_/g, " ") || "ISSUED" };
-  }
-}
 
 /**
  * jsPDF ships only the 14 standard PDF fonts (Helvetica, Times, Courier, etc.)
@@ -223,7 +210,6 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   const ML = 15;
   const MR = 15;
 
-  const sc       = statusStyle(inv.status);
   const remaining = inv.total - inv.paidAmount;
   const isPaid   = remaining <= 0.005;
 
@@ -282,37 +268,17 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
   doc.setLineWidth(0.25);
   doc.line(0, metaY + metaH, W, metaY + metaH);
 
-  // Status badge (right side) — measured to fit label
-  doc.setFont("helvetica", "bold").setFontSize(8);
-  const badgeText = sc.label;
-  const badgeTextW = doc.getTextWidth(badgeText);
-  const badgeW = Math.max(28, badgeTextW + 10);
-  const badgeH = 8.5;
-  const badgeX = W - MR - badgeW;
-  const badgeY = metaY + (metaH - badgeH) / 2;
-  doc.setFillColor(...sc.bg);
-  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, badgeH / 2, badgeH / 2, "F");
-  doc.setTextColor(...sc.fg);
-  doc.text(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 1.6, { align: "center" });
-
-  // Meta items — only issue date
-  const metaItems = [
-    { label: "ISSUE DATE", value: fmtDate(inv.issueDate) },
-  ];
-  const metaAvail = badgeX - ML - 6;
-  const metaColW  = metaAvail / metaItems.length;
-  metaItems.forEach((m, i) => {
-    const x = ML + i * metaColW;
-    doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(...GRAY);
-    doc.text(m.label, x, metaY + 8);
-    doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(...DARK);
-    doc.text(m.value, x, metaY + 15);
-  });
+  // Issue date, right-aligned — the only thing in this strip. A status badge
+  // used to sit here, but it belongs to us, not to the customer being billed.
+  doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(...GRAY);
+  doc.text("ISSUE DATE", W - MR, metaY + 8, { align: "right" });
+  doc.setFont("helvetica", "bold").setFontSize(9.5).setTextColor(...DARK);
+  doc.text(fmtDate(inv.issueDate), W - MR, metaY + 15, { align: "right" });
 
   // ── ISSUER BLOCK ──────────────────────────────────────────────────────────
   // Plain text, not a card: it's the letterhead, and the two cards below are
   // for what changes per invoice — the load and who is being billed.
-  let issuerY = metaY + metaH + 8;
+  let issuerY = metaY + metaH + 6;
   doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...DARK);
   const issuerLines = [
     sanitize(inv.company.name).toUpperCase(),
