@@ -9,10 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, daysUntil } from "@/lib/utils";
 import { DocumentSection } from "@/components/documents/document-section";
-import {
-  DriverFinancialReport,
-  getPeriodRange,
-} from "@/components/drivers/driver-financial-report";
+import { DriverFinancialReport } from "@/components/drivers/driver-financial-report";
+import { getPeriodRange } from "@/lib/period";
 import { PeriodSelector } from "@/components/drivers/period-selector";
 import { DriverAdjustmentsPanel } from "@/components/drivers/driver-adjustments-panel";
 import { DriverExpensesPanel } from "@/components/drivers/driver-expenses-panel";

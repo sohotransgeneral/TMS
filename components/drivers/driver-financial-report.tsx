@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getPeriodRange } from "@/lib/period";
 import {
   TrendingUp,
   TrendingDown,
@@ -8,75 +9,6 @@ import {
   DollarSign,
   Calculator,
 } from "lucide-react";
-
-/* ─── date range ────────────────────────────────────────────── */
-export function getPeriodRange(period: string): {
-  from: Date;
-  to: Date;
-  label: string;
-  periodKey: string;
-} {
-  const now = new Date();
-  const from = new Date();
-  const to = new Date(now);
-  to.setHours(23, 59, 59, 999);
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-
-  switch (period) {
-    case "today":
-      from.setHours(0, 0, 0, 0);
-      return {
-        from,
-        to,
-        label: now.toLocaleDateString("ro-RO", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-        periodKey: `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`,
-      };
-    case "week": {
-      const day = from.getDay() || 7;
-      from.setDate(from.getDate() - day + 1);
-      from.setHours(0, 0, 0, 0);
-      // ISO week number
-      const weekNo = Math.ceil(
-        ((from.getTime() - new Date(from.getFullYear(), 0, 1).getTime()) /
-          86400000 +
-          1) /
-          7,
-      );
-      return {
-        from,
-        to,
-        label: `Week ${from.toLocaleDateString("ro-RO", { day: "numeric", month: "short" })} – ${to.toLocaleDateString("ro-RO", { day: "numeric", month: "short", year: "numeric" })}`,
-        periodKey: `${from.getFullYear()}-W${pad(weekNo)}`,
-      };
-    }
-    case "year":
-      from.setMonth(0, 1);
-      from.setHours(0, 0, 0, 0);
-      return {
-        from,
-        to,
-        label: `Anul ${from.getFullYear()}`,
-        periodKey: `${from.getFullYear()}`,
-      };
-    default: // month
-      from.setDate(1);
-      from.setHours(0, 0, 0, 0);
-      return {
-        from,
-        to,
-        label: from.toLocaleDateString("ro-RO", {
-          month: "long",
-          year: "numeric",
-        }),
-        periodKey: `${from.getFullYear()}-${pad(from.getMonth() + 1)}`,
-      };
-  }
-}
 
 /* ─── tax calculation (RO) ──────────────────────────────────── */
 function calcTaxes(

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getPeriodRange } from "@/components/drivers/driver-financial-report";
+import { getPeriodRange } from "@/lib/period";
 
 function calcTaxes(brut: number, casRate = 25, cassRate = 10, impozitRate = 10) {
   const cas = brut * (casRate / 100);
