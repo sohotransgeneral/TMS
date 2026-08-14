@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useOptimistic, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarRange, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPeriodRange, shiftPeriod } from "@/lib/period";
 
@@ -116,13 +116,18 @@ export function PeriodSelector() {
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span
-          className={cn(
-            "min-w-[11rem] text-center text-sm font-medium transition-opacity",
-            pending && "opacity-50",
+        {/* The label keeps its width so the arrows don't jump around when the
+            spinner appears. */}
+        <span className="flex min-w-[11rem] items-center justify-center gap-1.5 text-center text-sm font-medium">
+          <span className={cn("transition-opacity", pending && "opacity-50")}>
+            {range.label}
+          </span>
+          {pending && (
+            <Loader2
+              aria-label="Loading period"
+              className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground"
+            />
           )}
-        >
-          {range.label}
         </span>
         <button
           type="button"
