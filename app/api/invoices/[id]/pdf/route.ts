@@ -27,7 +27,18 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
   const inv = await prisma.invoice.findFirst({
     where: { id, companyId: me.companyId ?? undefined },
-    include: { company: true, customer: true, load: { select: { referenceNumber: true, pickupCity: true, deliveryCity: true } } },
+    include: {
+      company: true,
+      customer: true,
+      load: {
+        select: {
+          referenceNumber: true,
+          loadNumber: true,
+          pickupCity: true,
+          deliveryCity: true,
+        },
+      },
+    },
   });
   if (!inv) return new NextResponse("Not found", { status: 404 });
 

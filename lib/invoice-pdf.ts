@@ -23,6 +23,8 @@ type InvoiceForPdf = {
     name: string;
     taxId: string | null;
     registrationNumber: string | null;
+    mcNumber?: string | null;
+    dotNumber?: string | null;
     street: string | null;
     city: string | null;
     county: string | null;
@@ -45,6 +47,8 @@ type InvoiceForPdf = {
   } | null;
   load?: {
     referenceNumber: string;
+    /** Broker's own load number — what the customer recognises. */
+    loadNumber?: string | null;
     pickupCity: string | null;
     deliveryCity: string | null;
   } | null;
@@ -100,12 +104,12 @@ function addrBlock(a: {
   postalCode: string | null;
   country: string | null;
 }): string[] {
-  return [
-    a.street,
-    [a.postalCode, a.city].filter(Boolean).join(" "),
-    a.county,
-    a.country,
-  ].filter(Boolean) as string[];
+  // US order — "MONROE, NC 28110". The old "28110 MONROE" with the state on
+  // its own line reads as a European address on a US carrier's invoice.
+  const cityLine = [a.city, [a.county, a.postalCode].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(", ");
+  return [a.street, cityLine, a.country].filter(Boolean) as string[];
 }
 
 function statusStyle(status: string): { bg: RGB; fg: RGB; label: string } {
@@ -188,6 +192,7 @@ const CHAR_MAP: Record<string, string> = {
   "\u2026": "...",                // ellipsis
   "\u00ab": '"', "\u00bb": '"',   // « »
   "\u2022": "-",                  // bullet
+  "\u2192": "->",                 // \u2192 used between pickup and delivery
 };
 
 function sanitize(text: string): string {
@@ -304,8 +309,24 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
     doc.text(m.value, x, metaY + 15);
   });
 
+  // ── ISSUER BLOCK ──────────────────────────────────────────────────────────
+  // Plain text, not a card: it's the letterhead, and the two cards below are
+  // for what changes per invoice — the load and who is being billed.
+  let issuerY = metaY + metaH + 8;
+  doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...DARK);
+  const issuerLines = [
+    sanitize(inv.company.name).toUpperCase(),
+    ...addrBlock(inv.company),
+    inv.company.mcNumber ? `MC ${inv.company.mcNumber}` : null,
+    inv.company.dotNumber ? `DOT ${inv.company.dotNumber}` : null,
+  ].filter(Boolean) as string[];
+  issuerLines.forEach((line) => {
+    doc.text(truncate(doc, line, W * 0.5), ML, issuerY);
+    issuerY += 4.6;
+  });
+
   // ── PARTY BOXES ───────────────────────────────────────────────────────────
-  const boxTop = metaY + metaH + 8;   // 62
+  const boxTop = issuerY + 6;
   const boxH   = 52;
   const boxGap = 6;
   const halfW  = (W - ML - MR - boxGap) / 2;
@@ -347,15 +368,18 @@ export function renderInvoicePdf(inv: InvoiceForPdf): Uint8Array {
     });
   }
 
-  const supplierLines = [
-    ...addrBlock(inv.company),
-  ].filter(Boolean) as string[];
-
   const customerLines = [
     ...addrBlock(inv.customer ?? { street: null, city: null, county: null, postalCode: null, country: null }),
   ].filter(Boolean) as string[];
 
-  drawPartyBox(ML, "FROM", inv.company.name, supplierLines);
+  // The issuer is already the letterhead above, so the left card carries the
+  // load number instead — that's what a broker matches the invoice against.
+  drawPartyBox(
+    ML,
+    "LOAD NUMBER",
+    inv.load?.loadNumber || inv.load?.referenceNumber || "—",
+    [],
+  );
   drawPartyBox(ML + halfW + boxGap, "BILL TO", inv.customer?.name ?? "—", customerLines);
 
   let cursorY = boxTop + boxH + 10;

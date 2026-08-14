@@ -1,30 +1,40 @@
 import { prisma } from "@/lib/prisma";
 
 /**
- * Generates the next human-readable load reference, e.g. `L-2026-00042`.
+ * Next load reference — a plain sequential number ("516", "517", "518"), no
+ * prefix and no year. Carriers quote these over the phone; "L-2026-00517" is
+ * four syllables of ceremony around the only part anyone says out loud.
  *
- * Derived from the HIGHEST reference already issued this year, not from a count
- * of loads: counting breaks the moment a load is deleted. With 16 loads issued
- * and 12 deleted, a count-based sequence hands out L-2026-00005 again and the
- * insert dies on the unique index.
+ * Derived from the highest number already issued, never from a count: counting
+ * breaks as soon as a load is deleted and starts handing out numbers that are
+ * still in use.
  *
- * The 5-digit zero padding is what makes the plain string sort equal a numeric
- * sort, so "take the largest" is a single indexed query.
+ * Older references such as "L-2026-00008" are still recognised — the trailing
+ * digits are what count — so the sequence continues over existing data.
  *
- * Callers must still handle a duplicate: two dispatchers saving in the same
+ * Callers must handle a duplicate anyway: two dispatchers saving in the same
  * moment can both read the same maximum. `createLoad` retries on P2002.
  */
-export async function nextLoadReference(companyId: string): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `L-${year}-`;
 
-  const last = await prisma.load.findFirst({
-    where: { companyId, referenceNumber: { startsWith: prefix } },
-    orderBy: { referenceNumber: "desc" },
+/** First number issued when a company has no loads yet. */
+const SEQUENCE_START = 1;
+
+function sequenceOf(reference: string): number {
+  const digits = /(\d+)\s*$/.exec(reference.trim());
+  return digits ? Number(digits[1]) : NaN;
+}
+
+export async function nextLoadReference(companyId: string): Promise<string> {
+  const loads = await prisma.load.findMany({
+    where: { companyId },
     select: { referenceNumber: true },
   });
 
-  const lastSeq = last ? Number(last.referenceNumber.slice(prefix.length)) : 0;
-  const next = Number.isFinite(lastSeq) && lastSeq > 0 ? lastSeq + 1 : 1;
-  return `${prefix}${String(next).padStart(5, "0")}`;
+  let highest = 0;
+  for (const { referenceNumber } of loads) {
+    const seq = sequenceOf(referenceNumber);
+    if (Number.isFinite(seq) && seq > highest) highest = seq;
+  }
+
+  return String(highest > 0 ? highest + 1 : SEQUENCE_START);
 }

@@ -6,6 +6,8 @@ export const companySchema = z.object({
   legalName: fields.optionalString,
   taxId: fields.optionalString,
   registrationNumber: fields.optionalString,
+  mcNumber: fields.optionalString,
+  dotNumber: fields.optionalString,
   email: z.string().email("Email invalid").optional().or(z.literal("").transform(() => undefined)),
   phone: fields.optionalString,
   website: fields.optionalString,

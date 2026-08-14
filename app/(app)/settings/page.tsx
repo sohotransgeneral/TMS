@@ -94,6 +94,8 @@ export default async function SettingsPage() {
                 name: company.name,
                 taxId: company.taxId,
                 regCom: company.registrationNumber,
+                mcNumber: company.mcNumber,
+                dotNumber: company.dotNumber,
                 address: company.street,
                 city: company.city,
                 country: company.country,

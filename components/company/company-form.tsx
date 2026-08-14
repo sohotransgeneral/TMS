@@ -17,6 +17,8 @@ export type CompanyData = {
   name: string;
   taxId: string | null;
   regCom: string | null;
+  mcNumber: string | null;
+  dotNumber: string | null;
   address: string | null;
   city: string | null;
   country: string | null;
@@ -176,6 +178,25 @@ export function CompanyForm({
               id="regCom"
               name="regCom"
               defaultValue={initial.regCom ?? ""}
+            />
+          </Field>
+        </div>
+        {/* Printed under the letterhead on every invoice. */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field name="mcNumber" label="MC Number" error={e.mcNumber}>
+            <Input
+              id="mcNumber"
+              name="mcNumber"
+              placeholder="1497601"
+              defaultValue={initial.mcNumber ?? ""}
+            />
+          </Field>
+          <Field name="dotNumber" label="DOT Number" error={e.dotNumber}>
+            <Input
+              id="dotNumber"
+              name="dotNumber"
+              placeholder="3991627"
+              defaultValue={initial.dotNumber ?? ""}
             />
           </Field>
         </div>

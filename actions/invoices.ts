@@ -172,13 +172,11 @@ export async function createInvoiceFromLoad(
   const pickupFull = fmtAddr(load.pickupAddress, load.pickupCity, load.pickupState, load.pickupZip);
   const deliveryFull = fmtAddr(load.deliveryAddress, load.deliveryCity, load.deliveryState, load.deliveryZip);
 
-  const description = [
-    `Freight — Load ${load.referenceNumber}`,
-    pickupFull ? `From: ${pickupFull}` : null,
-    deliveryFull ? `To:   ${deliveryFull}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  // Just the route. The load number has its own box on the invoice, so
+  // repeating it here — and labelling the stops From:/To: — is noise.
+  const description =
+    [pickupFull, deliveryFull].filter(Boolean).join("  →  ") ||
+    `Load ${load.referenceNumber}`;
 
   items.push({
     description,

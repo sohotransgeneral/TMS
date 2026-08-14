@@ -150,6 +150,8 @@ model Company {
   legalName          String?
   taxId              String?            // CIF / VAT
   registrationNumber String?            // J.../
+  mcNumber           String?            // US motor carrier number, printed on invoices
+  dotNumber          String?            // US DOT number, printed on invoices
   email              String?
   phone              String?
   website            String?
