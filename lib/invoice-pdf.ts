@@ -183,7 +183,12 @@ const CHAR_MAP: Record<string, string> = {
 };
 
 function sanitize(text: string): string {
-  return text.replace(/[^\x20-\x7E\xA0-\xFF]/g, (c) => CHAR_MAP[c] ?? "?");
+  // Newlines survive — autoTable breaks lines on them. Without this exception
+  // every line break in a description printed as a literal "?", which is how
+  // "Load 8?From: ...?To: ..." ended up on invoices.
+  return text
+    .replace(/\r\n?/g, "\n")
+    .replace(/[^\n\x20-\x7E\xA0-\xFF]/g, (c) => CHAR_MAP[c] ?? "?");
 }
 
 // truncate text so it fits a given width at current font

@@ -23,7 +23,13 @@ export const companySchema = z.object({
   bankAccount: fields.optionalString,
   currency: z.string().min(3).max(3).default("USD"),
   vatRate: z.coerce.number().min(0).max(100).default(19),
-  invoicePrefix: fields.optionalString,
+  // Not optionalString: that turns "" into undefined, which Prisma skips — so
+  // clearing the prefix and saving left the old one in place. An empty field
+  // here is a decision ("no prefix"), so it has to reach the database as "".
+  invoicePrefix: z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v.trim())),
 
   timezone: z.string().default("Europe/Bucharest"),
   locale: z.string().default("ro"),
