@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useOptimistic, useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPeriodRange, shiftPeriod } from "@/lib/period";
@@ -30,7 +30,14 @@ export function PeriodSelector() {
   const pathname = usePathname();
   const params = useSearchParams();
   const current = params.get("period") ?? "week";
-  const range = getPeriodRange(current);
+
+  // The report is server-rendered, so the URL only changes once the new
+  // numbers are ready — long enough that a tapped button felt broken. The
+  // optimistic value moves the highlight and the label immediately and is
+  // dropped by React once the real navigation lands, including if it fails.
+  const [optimisticPeriod, setOptimisticPeriod] = useOptimistic(current);
+  const [pending, startTransition] = useTransition();
+  const range = getPeriodRange(optimisticPeriod);
 
   const [customOpen, setCustomOpen] = useState(range.unit === "range");
   // toISOString would shift these into UTC and show the day before for anyone
@@ -42,16 +49,26 @@ export function PeriodSelector() {
     (p: string) => {
       const sp = new URLSearchParams(params.toString());
       sp.set("period", p);
-      router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+      // Both inside the transition: the optimistic value is only allowed to
+      // live for as long as the navigation it belongs to.
+      startTransition(() => {
+        setOptimisticPeriod(p);
+        router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+      });
     },
-    [router, pathname, params],
+    [router, pathname, params, setOptimisticPeriod],
   );
 
-  const previous = shiftPeriod(current, -1);
-  const next = shiftPeriod(current, 1);
+  // Stepping is relative to what the user sees, not to what the server has
+  // caught up to — otherwise two quick clicks both move back a single week.
+  const previous = shiftPeriod(optimisticPeriod, -1);
+  const next = shiftPeriod(optimisticPeriod, 1);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      aria-busy={pending}
+      className="flex flex-wrap items-center gap-2 transition-opacity"
+    >
       <div className="flex w-fit overflow-hidden rounded-lg border border-border">
         {TABS.map((t) => (
           <button
@@ -99,7 +116,12 @@ export function PeriodSelector() {
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="min-w-[11rem] text-center text-sm font-medium">
+        <span
+          className={cn(
+            "min-w-[11rem] text-center text-sm font-medium transition-opacity",
+            pending && "opacity-50",
+          )}
+        >
           {range.label}
         </span>
         <button
