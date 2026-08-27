@@ -39,3 +39,17 @@ export function buildSearch(q: string, fields: string[]) {
     OR: fields.map((f) => ({ [f]: { contains: q, mode: "insensitive" as const } })),
   };
 }
+
+/**
+ * Whether the signed-in user may act on a record belonging to `companyId`.
+ *
+ * SUPER_ADMIN has no company of their own — `companyId` is null on that
+ * account — so a plain `record.companyId !== me.companyId` locks them out of
+ * every record in the system and reports it as "not found".
+ */
+export function canActOnCompany(
+  me: { role: string; companyId: string | null },
+  companyId: string | null,
+): boolean {
+  return me.role === "SUPER_ADMIN" || companyId === me.companyId;
+}

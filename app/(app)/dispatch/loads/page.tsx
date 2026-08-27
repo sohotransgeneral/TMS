@@ -252,7 +252,7 @@ export default async function LoadsPage({
           <Table className="text-xs whitespace-nowrap">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14">ID</TableHead>
+                <TableHead className="w-14">Nr</TableHead>
                 <TableHead>Shipper</TableHead>
                 <TableHead>City</TableHead>
                 <TableHead className="w-16">State</TableHead>

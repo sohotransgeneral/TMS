@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { canActOnCompany, failure, success, type ActionResult } from "@/lib/action-helpers";
 import {
   loadCreateSchema,
   loadUpdateSchema,
@@ -12,7 +12,15 @@ import {
   loadStatusSchema,
   LOAD_NEXT_STATUSES,
 } from "@/lib/validators/load";
-import { nextLoadReference } from "@/lib/load-reference";
+import {
+  nextLoadReference,
+  lowestLoadSequence,
+  resequenceLoadReferences,
+} from "@/lib/load-reference";
+import {
+  lowestInvoiceSequence,
+  resequenceInvoiceNumbers,
+} from "@/lib/invoice-number";
 import { drivingMiles, resolvePoint, type LatLng } from "@/lib/distance";
 import { computeDeadhead, type DeadheadResult } from "@/lib/load-miles";
 import { canForceLoadStatus } from "@/lib/permissions";
@@ -293,7 +301,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.load.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Load not found.");
   if (["PAID", "CANCELLED"].includes(target.status)) {
     return failure("Load can no longer be modified.");
   }
@@ -398,7 +406,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const { id, driverId, truckId, trailerId } = parsed.data;
 
   const target = await prisma.load.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Load not found.");
 
   // When a dispatcher assigns a driver, the load is auto-accepted —
   // drivers don't need to manually confirm loads given to them.
@@ -545,7 +553,7 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
       customer: { select: { name: true } },
     },
   });
-  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Load not found.");
 
   // Drivers can only update statuses of their own loads
   if (me.role === "DRIVER") {
@@ -627,13 +635,23 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
     where: { id },
     include: { invoice: { select: { id: true, number: true } } },
   });
-  if (!target || target.companyId !== me.companyId) return failure("Load not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Load not found.");
 
   if (target.invoice) {
+    const invoiceBase = await lowestInvoiceSequence(target.companyId);
     await prisma.payment.deleteMany({ where: { invoiceId: target.invoice.id } });
     await prisma.invoice.delete({ where: { id: target.invoice.id } });
+    if (invoiceBase != null) {
+      await resequenceInvoiceNumbers(target.companyId, invoiceBase);
+    }
   }
+  // Captured before the delete so removing the first load pulls the rest
+  // down to where the sequence started, rather than leaving it one higher.
+  const base = await lowestLoadSequence(target.companyId);
+
   await prisma.load.delete({ where: { id } });
+  if (base != null) await resequenceLoadReferences(target.companyId, base);
+
   await logAudit({
     action: "load.delete",
     userId: me.id,
@@ -667,7 +685,7 @@ export async function acceptLoad(id: string): Promise<ActionResult> {
       customer: { select: { name: true } },
     },
   });
-  if (!load || load.companyId !== me.companyId) return failure("Load not found.");
+  if (!load || !canActOnCompany(me, load.companyId)) return failure("Load not found.");
   if (load.driver?.userId !== me.id) return failure("You do not have access to this load.");
   if (load.status !== "ASSIGNED") return failure("Load can no longer be accepted.");
 

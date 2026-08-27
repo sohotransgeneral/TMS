@@ -38,3 +38,58 @@ export async function nextLoadReference(companyId: string): Promise<string> {
 
   return String(highest > 0 ? highest + 1 : SEQUENCE_START);
 }
+
+/**
+ * Closes the gap left by a deleted load: 516, 517, 519, 520 becomes
+ * 516, 517, 518, 519.
+ *
+ * `base` is the lowest number that existed BEFORE the deletion, so removing
+ * the first load pulls the rest down to it instead of stranding the sequence
+ * one higher.
+ *
+ * Renaming happens in two passes. Moving 519 onto 518 while a load still holds
+ * 518 trips the unique index on (companyId, referenceNumber) and would leave
+ * the renumbering half-applied, so everything is parked on a temporary name
+ * first.
+ */
+export async function resequenceLoadReferences(
+  companyId: string,
+  base: number,
+): Promise<void> {
+  const loads = await prisma.load.findMany({
+    where: { companyId },
+    select: { id: true, referenceNumber: true },
+  });
+
+  const ordered = loads
+    .map((l) => ({ ...l, seq: sequenceOf(l.referenceNumber) }))
+    .filter((l) => Number.isFinite(l.seq))
+    .sort((a, b) => a.seq - b.seq);
+
+  const target = ordered.map((l, i) => ({ ...l, next: String(base + i) }));
+  const changed = target.filter((l) => l.next !== l.referenceNumber);
+  if (changed.length === 0) return;
+
+  for (const l of changed) {
+    await prisma.load.update({
+      where: { id: l.id },
+      data: { referenceNumber: `tmp-${l.id}` },
+    });
+  }
+  for (const l of changed) {
+    await prisma.load.update({
+      where: { id: l.id },
+      data: { referenceNumber: l.next },
+    });
+  }
+}
+
+/** Lowest reference number currently issued, or null when there are none. */
+export async function lowestLoadSequence(companyId: string): Promise<number | null> {
+  const loads = await prisma.load.findMany({
+    where: { companyId },
+    select: { referenceNumber: true },
+  });
+  const seqs = loads.map((l) => sequenceOf(l.referenceNumber)).filter(Number.isFinite);
+  return seqs.length ? Math.min(...seqs) : null;
+}

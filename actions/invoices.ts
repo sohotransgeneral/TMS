@@ -12,7 +12,11 @@ import {
   invoiceStatusSchema,
   type InvoiceItem,
 } from "@/lib/validators/accounting";
-import { nextInvoiceNumber } from "@/lib/invoice-number";
+import {
+  nextInvoiceNumber,
+  lowestInvoiceSequence,
+  resequenceInvoiceNumbers,
+} from "@/lib/invoice-number";
 import { notifyEvent } from "@/lib/notifications";
 
 /** Pulls parallel `items[i][description|quantity|unitPrice]` arrays out of FormData. */
@@ -327,7 +331,10 @@ export async function deleteInvoice(formData: FormData): Promise<ActionResult> {
     return failure("Only DRAFT/Canceled invoices can be deleted.");
   if (target.paidAmount > 0) return failure("Payments exist; cannot delete.");
 
+  const base = await lowestInvoiceSequence(target.companyId);
   await prisma.invoice.delete({ where: { id } });
+  if (base != null) await resequenceInvoiceNumbers(target.companyId, base);
+
   await logAudit({
     action: "invoice.delete",
     userId: me.id,
