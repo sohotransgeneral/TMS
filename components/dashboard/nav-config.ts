@@ -21,6 +21,7 @@ import {
   Sparkles,
   ShieldCheck,
   Send,
+  Percent,
 } from "lucide-react";
 import type { Permission } from "@/lib/permissions";
 
@@ -111,6 +112,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Drivers",
         icon: UserCircle2,
         permissions: ["drivers:read"],
+      },
+      {
+        href: "/admin/dispatchers",
+        label: "Dispatchers",
+        icon: Percent,
+        permissions: ["reports:read"],
       },
       {
         href: "/fleet/permits",
