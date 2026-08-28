@@ -255,6 +255,7 @@ model User {
   accounts          Account[]
   sessions          Session[]
   aiUsageLogs       AiUsageLog[]
+  dispatcherAdjustments DispatcherAdjustment[]
 
   @@index([companyId, role])
 }
@@ -376,6 +377,26 @@ model DriverAdjustment {
   createdAt       DateTime      @default(now())
 
   @@index([driverProfileId, periodKey])
+  @@index([companyId])
+}
+
+// Manual additions and deductions on a dispatcher's commission, with an
+// optional proof document. Mirrors DriverAdjustment, but dispatchers are
+// plain users — there is no profile record to hang this off.
+model DispatcherAdjustment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String   @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  periodKey String   // "2026-08" for a month, "2026-W33" for a week
+  label     String   // e.g. "Bonus", "Advance", "Correction"
+  amount    Float    // positive = bonus, negative = deduction
+  proofUrl  String?  // R2 object key for a receipt or screenshot
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, periodKey])
   @@index([companyId])
 }
 
@@ -571,6 +592,10 @@ model Load {
   // Empty-mile tracking is opt-in per load. The flag decides whether THIS load
   // gets a figure — it never affects which load counts as the previous trip,
   // so switching it on always measures from the real last load.
+  // When the dispatcher's commission for this load was paid out. Null means
+  // still owed — the report counts on that to separate paid from outstanding.
+  dispatcherPaidAt    DateTime?
+
   trackDeadhead       Boolean @default(false)
   deadheadMiles       Float?  // empty miles: previous load's delivery → this load's pickup
   deadheadOrigin      String? // where those empty miles start from, e.g. "Dallas, TX · L-2026-00012"

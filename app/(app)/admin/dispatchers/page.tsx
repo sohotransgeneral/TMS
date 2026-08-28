@@ -153,7 +153,7 @@ export default async function DispatcherCommissionsPage({
                 >
                   <TableCell>
                     <Link
-                      href={`/admin/dispatchers?period=${encodeURIComponent(period)}&dispatcher=${r.id}`}
+                      href={`/admin/dispatchers/${r.id}?period=${encodeURIComponent(period)}`}
                       className="font-medium text-primary hover:underline"
                     >
                       {r.name ?? r.email}
