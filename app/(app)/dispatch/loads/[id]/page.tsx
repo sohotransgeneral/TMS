@@ -14,7 +14,7 @@ import { CreateInvoiceButton } from "@/components/loads/create-invoice-button";
 import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { parseAccessorials } from "@/lib/accessorials";
+import { parseAccessorials, loadTotal } from "@/lib/accessorials";
 import { getSignedDownloadUrl } from "@/lib/r2";
 import {
   computeDeadhead,
@@ -134,7 +134,7 @@ export default async function LoadDetailPage({
     dispatchNotes?: string | null;
   };
 
-  const totalRate = (l.price ?? 0) + (l.accessorialAmount ?? 0);
+  const totalRate = loadTotal(l);
   const accessorials = parseAccessorials(load.accessorials);
   // Proof documents live in private R2, so each needs a signed link. Older
   // rows may hold a plain URL — those are passed through untouched.

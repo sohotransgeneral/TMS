@@ -122,3 +122,18 @@ export function serializeAccessorials(items: AccessorialItem[]): string {
 export function accessorialsTotal(items: AccessorialItem[]): number {
   return items.reduce((sum, i) => sum + (Number.isFinite(i.amount) ? i.amount : 0), 0);
 }
+
+/**
+ * What a load is worth: the rate plus its accessorials.
+ *
+ * The two are stored separately, so anywhere that shows a single figure for a
+ * load has to add them. Showing `price` alone quietly understates every load
+ * carrying a lumper, detention or tarp charge — a $6,000 load with $50 of
+ * accessorials read as $6,000 on the dashboard while its own page said $6,050.
+ */
+export function loadTotal(load: {
+  price: number | null;
+  accessorialAmount?: number | null;
+}): number {
+  return (load.price ?? 0) + (load.accessorialAmount ?? 0);
+}

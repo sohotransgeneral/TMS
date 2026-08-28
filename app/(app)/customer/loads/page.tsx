@@ -13,6 +13,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadStatusBadge } from "@/components/loads/load-status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { loadTotal } from "@/lib/accessorials";
 import { Package } from "lucide-react";
 
 export const metadata = { title: "My Loads" };
@@ -44,6 +45,7 @@ export default async function CustomerLoadsPage() {
           deliveryDate: true,
           status: true,
           price: true,
+          accessorialAmount: true,
           currency: true,
           driver: { select: { firstName: true, lastName: true } },
           truck: { select: { plateNumber: true } },
@@ -131,7 +133,7 @@ export default async function CustomerLoadsPage() {
                     {load.truck?.plateNumber ?? "—"}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {formatCurrency(load.price, load.currency)}
+                    {formatCurrency(loadTotal(load), load.currency)}
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { loadTotal } from "@/lib/accessorials";
 import { requirePermission } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import {
@@ -96,7 +97,8 @@ export default async function CockpitPage({
     pickupAddress: l.pickupAddress,
     deliveryCity: l.deliveryCity,
     deliveryAddress: l.deliveryAddress,
-    price: l.price,
+    // The board shows one figure per card, so it gets the load total.
+    price: loadTotal(l),
     currency: l.currency,
     customer: l.customer,
     driver: l.driver ? { user: { name: l.driver.user.name } } : null,

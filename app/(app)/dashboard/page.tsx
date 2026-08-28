@@ -12,6 +12,7 @@ import {
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
+import { loadTotal } from "@/lib/accessorials";
 import { getCompanyCurrency } from "@/lib/company-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -252,7 +253,7 @@ export default async function DashboardPage() {
                           : "No driver"}
                       </span>
                       <span className="text-xs font-medium">
-                        {formatCurrency(l.price, l.currency)}
+                        {formatCurrency(loadTotal(l), l.currency)}
                       </span>
                     </div>
                   </div>
@@ -293,7 +294,7 @@ export default async function DashboardPage() {
                           </Badge>
                         </TD>
                         <TD className="text-right font-medium">
-                          {formatCurrency(l.price, l.currency)}
+                          {formatCurrency(loadTotal(l), l.currency)}
                         </TD>
                       </TR>
                     ))}
