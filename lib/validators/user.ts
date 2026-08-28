@@ -27,6 +27,17 @@ export const userCreateSchema = z.object({
     )
     .optional(),
   role: z.enum(ROLE_VALUES),
+  // Dispatcher commission. Empty clears it — undefined would leave the old
+  // percentage in place, and someone removing a commission expects it gone.
+  commissionPercent: z
+    .union([z.string(), z.number(), z.undefined(), z.null()])
+    .transform((v) => {
+      if (v === undefined || v === null || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    })
+    .pipe(z.number().min(0, "Cannot be negative").max(100, "Cannot exceed 100%").nullable())
+    .optional(),
   password: z
     .string()
     .min(8, "Minim 8 caractere")

@@ -38,6 +38,7 @@ export async function createUser(formData: FormData): Promise<ActionResult> {
       name: parsed.data.name,
       phone: parsed.data.phone,
       telegramChatId: parsed.data.telegramChatId ?? null,
+      commissionPercent: parsed.data.commissionPercent ?? null,
       role: parsed.data.role,
       active: parsed.data.active,
       password: hashed,

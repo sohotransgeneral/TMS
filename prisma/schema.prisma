@@ -219,6 +219,11 @@ model User {
   active        Boolean  @default(true)
   lastLoginAt   DateTime?
 
+  // Dispatcher commission: a percentage of every load they dispatched.
+  // Applied to the load total (rate + accessorials) and always read live, so
+  // changing it re-values past loads too.
+  commissionPercent Float?
+
   // Telegram personal chat id (numeric, can be negative). Optional.
   telegramChatId String?
 

@@ -27,6 +27,7 @@ type UserRow = {
   email: string;
   phone: string | null;
   telegramChatId?: string | null;
+  commissionPercent?: number | null;
   role: string;
   active: boolean;
   linkedCustomer?: { id: string; name: string } | null;
@@ -258,6 +259,28 @@ export function UserFormDialog({
               </Select>
             </Field>
           </div>
+          {selectedRole === "DISPATCHER" && (
+            <Field
+              name="commissionPercent"
+              label="Commission (% of each load)"
+              error={errors.commissionPercent}
+            >
+              <Input
+                id="commissionPercent"
+                name="commissionPercent"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                placeholder="e.g. 5"
+                defaultValue={initial?.commissionPercent ?? ""}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Taken from the load total (rate + accessorials) on every load
+                this dispatcher books. Changing it re-values earlier loads too.
+              </p>
+            </Field>
+          )}
           {selectedRole === "CUSTOMER" && (
             <Field
               name="customerId"

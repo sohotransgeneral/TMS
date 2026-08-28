@@ -69,7 +69,7 @@ export default async function LoadDetailPage({
       driver: { include: { user: { select: { name: true, phone: true } } } },
       truck: true,
       trailer: true,
-      dispatcher: { select: { name: true } },
+      dispatcher: { select: { name: true, commissionPercent: true } },
       createdBy: { select: { name: true } },
       statusHistory: {
         orderBy: { createdAt: "desc" },
@@ -187,6 +187,12 @@ export default async function LoadDetailPage({
   }
   const deadheadMiles = deadhead?.miles ?? (load.driverId ? load.deadheadMiles : null);
   const deadheadOrigin = deadhead?.origin ?? (load.driverId ? load.deadheadOrigin : null);
+
+  // Read live from the dispatcher rather than stored on the load: changing
+  // someone's percentage is meant to re-value their earlier loads too.
+  const dispatcherPercent = load.dispatcher?.commissionPercent ?? null;
+  const dispatcherCommission =
+    dispatcherPercent != null ? (totalRate * dispatcherPercent) / 100 : null;
 
   const rpm = ratePerMile(totalRate, loadedMiles);
   const allInMiles = (loadedMiles ?? 0) + (deadheadMiles ?? 0);
@@ -380,6 +386,17 @@ export default async function LoadDetailPage({
                 {formatCurrency(totalRate, load.currency)}
               </span>
             </div>
+            {dispatcherCommission != null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Dispatcher {dispatcherPercent}%
+                  {load.dispatcher?.name ? ` · ${load.dispatcher.name}` : ""}
+                </span>
+                <span className="font-medium tabular-nums">
+                  {formatCurrency(dispatcherCommission, load.currency)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Miles & rate per mile */}

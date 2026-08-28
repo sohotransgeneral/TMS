@@ -60,6 +60,7 @@ export default async function UsersPage({
           email: true,
           phone: true,
           telegramChatId: true,
+          commissionPercent: true,
           role: true,
           active: true,
           createdAt: true,
