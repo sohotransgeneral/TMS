@@ -20,6 +20,7 @@ import { Field } from "@/components/forms/field";
 import { createDriver, updateDriver, deleteDriver } from "@/actions/drivers";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
+import { visibleEmail } from "@/lib/placeholder-email";
 
 export type DriverRow = {
   id: string;
@@ -163,18 +164,13 @@ export function DriverFormDialog({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              name="email"
-              label="Email"
-              required={!editing}
-              error={errors.email}
-            >
+            <Field name="email" label="Email (optional)" error={errors.email}>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                defaultValue={initial?.user.email ?? ""}
-                required={!editing}
+                defaultValue={visibleEmail(initial?.user.email)}
+                placeholder="Can be added later"
               />
             </Field>
             <Field name="phone" label="Phone" error={errors.phone}>
@@ -205,8 +201,7 @@ export function DriverFormDialog({
             </Field>
             <Field
               name="password"
-              label={editing ? "New Password" : "Password"}
-              required={!editing}
+              label={editing ? "New Password" : "Password (optional)"}
               error={errors.password}
             >
               <Input
@@ -214,11 +209,10 @@ export function DriverFormDialog({
                 name="password"
                 type="password"
                 minLength={8}
-                required={!editing}
                 placeholder={
                   editing
                     ? "Leave blank to keep current"
-                    : "At least 8 characters"
+                    : "At least 8 characters — can be added later"
                 }
               />
             </Field>

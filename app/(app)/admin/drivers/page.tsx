@@ -22,6 +22,7 @@ import {
 } from "@/components/drivers/driver-form-dialog";
 import { formatDate, daysUntil } from "@/lib/utils";
 import { IdCard } from "lucide-react";
+import { visibleEmail } from "@/lib/placeholder-email";
 
 export const metadata = { title: "Drivers" };
 
@@ -180,7 +181,7 @@ export default async function DriversPage({
                     )}
                   </TableCell>
                   <TableCell className="text-sm">
-                    <div>{d.user.email}</div>
+                    <div>{visibleEmail(d.user.email) || "—"}</div>
                     {d.user.phone && (
                       <div className="text-muted-foreground">
                         {d.user.phone}

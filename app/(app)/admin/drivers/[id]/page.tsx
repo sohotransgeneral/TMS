@@ -16,6 +16,7 @@ import { DriverAdjustmentsPanel } from "@/components/drivers/driver-adjustments-
 import { DriverExpensesPanel } from "@/components/drivers/driver-expenses-panel";
 import { ExpenseFormDialog } from "@/components/accounting/expense-dialog";
 import { FileDown, ExternalLink } from "lucide-react";
+import { visibleEmail } from "@/lib/placeholder-email";
 
 export const metadata = { title: "Driver Details" };
 
@@ -140,7 +141,7 @@ export default async function DriverDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={fullName}
-        description={driver.user.email ?? undefined}
+        description={visibleEmail(driver.user.email) || undefined}
         action={
           <Badge variant={STATUS_VARIANT[driver.status] ?? "secondary"}>
             {STATUS_LABELS[driver.status] ?? driver.status}

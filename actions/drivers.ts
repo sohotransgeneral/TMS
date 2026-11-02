@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { failure, success, type ActionResult } from "@/lib/action-helpers";
 import { driverCreateSchema, driverUpdateSchema } from "@/lib/validators/driver";
+import { makePlaceholderEmail } from "@/lib/placeholder-email";
 
 export async function createDriver(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
@@ -19,13 +20,14 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
     return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const d = parsed.data;
-  const email = d.email.toLowerCase();
+  // Email and password are optional: they can be added later by editing the driver.
+  const email = d.email ? d.email.toLowerCase() : makePlaceholderEmail();
 
-  if (await prisma.user.findUnique({ where: { email } })) {
+  if (d.email && (await prisma.user.findUnique({ where: { email } }))) {
     return failure("An account with this email already exists.");
   }
 
-  const hashed = await bcrypt.hash(d.password, 10);
+  const hashed = d.password ? await bcrypt.hash(d.password, 10) : null;
 
   try {
     const newUser = await prisma.user.create({
@@ -107,6 +109,16 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
   });
   if (!target || target.companyId !== me.companyId) {
     return failure("Driver not found.");
+  }
+
+  if (d.email && d.email.toLowerCase() !== target.user.email) {
+    const taken = await prisma.user.findUnique({
+      where: { email: d.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (taken && taken.id !== target.userId) {
+      return failure("An account with this email already exists.");
+    }
   }
 
   try {

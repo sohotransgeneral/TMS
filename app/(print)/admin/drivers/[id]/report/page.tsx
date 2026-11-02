@@ -6,6 +6,7 @@ import { getDriverFinancialData } from "@/lib/driver-report";
 import { getCompanyCurrency } from "@/lib/company-context";
 import { PrintButton } from "@/components/drivers/print-button";
 import { ArrowLeft } from "lucide-react";
+import { visibleEmail } from "@/lib/placeholder-email";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,7 @@ export default async function DriverReportPage({
               {fullName}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              {driver.user.email}
+              {visibleEmail(driver.user.email)}
             </p>
           </div>
           <div className="sm:text-right mt-1 sm:mt-0">

@@ -4,12 +4,26 @@ import { fields } from "./_fields";
 
 const statusValues = Object.values(DriverStatus) as [DriverStatus, ...DriverStatus[]];
 
+// Empty string → not provided
+const optionalEmail = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v ? v : undefined))
+  .pipe(z.string().email("Email invalid").optional());
+
+const optionalPassword = z
+  .string()
+  .optional()
+  .transform((v) => (v && v.length > 0 ? v : undefined))
+  .pipe(z.string().min(8, "Minim 8 caractere").optional());
+
 export const driverCreateSchema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
-  email: z.string().email("Email invalid"),
+  email: optionalEmail,
   phone: fields.optionalString,
-  password: z.string().min(8, "Minim 8 caractere"),
+  password: optionalPassword,
 
   cnp: fields.optionalString,
   dateOfBirth: fields.optionalDate,
@@ -59,17 +73,9 @@ export const driverCreateSchema = z.object({
   internalNotes: fields.optionalString,
 });
 
-export const driverUpdateSchema = driverCreateSchema
-  .partial({ password: true, email: true })
-  .extend({
-    id: z.string().min(1),
-    // Allow empty string → treat as "no change"
-    password: z
-      .string()
-      .optional()
-      .transform((v) => (v && v.length > 0 ? v : undefined))
-      .pipe(z.string().min(8, "Minim 8 caractere").optional()),
-  });
+export const driverUpdateSchema = driverCreateSchema.extend({
+  id: z.string().min(1),
+});
 
 export type DriverCreateInput = z.infer<typeof driverCreateSchema>;
 export type DriverUpdateInput = z.infer<typeof driverUpdateSchema>;
