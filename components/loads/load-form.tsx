@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/field";
 import { AccessorialsField } from "@/components/loads/accessorials-field";
+import { PermitsField } from "@/components/loads/permits-field";
 import { LoadTripMap } from "@/components/loads/load-trip-map";
 import type { LatLng } from "@/lib/distance";
 import { createLoad, updateLoad } from "@/actions/loads";
@@ -20,6 +21,11 @@ import {
   parseAccessorials,
   type AccessorialItem,
 } from "@/lib/accessorials";
+import {
+  parsePermits,
+  permitsTotal,
+  type PermitItem,
+} from "@/lib/load-permits";
 
 type Opt = {
   id: string;
@@ -73,6 +79,7 @@ export type LoadFormInitial = {
   billingType: string | null;
   loadInvoiceNumber: string | null;
   accessorialAmount: number | null;
+  permits?: string | null;
   cargoDescription: string | null;
   weightKg: number | null;
   volumeM3: number | null;
@@ -156,6 +163,9 @@ export function LoadForm({
   );
   const [accessorials, setAccessorials] = useState<AccessorialItem[]>(() =>
     parseAccessorials(initial?.accessorials ?? null),
+  );
+  const [permits, setPermits] = useState<PermitItem[]>(() =>
+    parsePermits(initial?.permits ?? null),
   );
 
   // ── Miles ────────────────────────────────────────────────────────────────
@@ -294,6 +304,8 @@ export function LoadForm({
     ? accessorialsTotal(accessorials)
     : accessorialAmount;
   const totalRate = price + accessorialTotal;
+  const permitCost = permitsTotal(permits);
+  const netOfPermits = totalRate - permitCost;
   const milesNum = Number(miles);
   const ratePerMile = milesNum > 0 ? totalRate / milesNum : null;
   const totalMilesWithDeadhead = milesNum + (deadhead?.miles ?? 0);
@@ -1011,7 +1023,9 @@ export function LoadForm({
             )}
           </Field>
           <div className="flex items-center justify-between rounded border bg-muted/40 px-3 py-2">
-            <span className="text-sm font-medium">Total</span>
+            <span className="text-sm font-medium">
+              {permitCost > 0 ? "Total (before permits)" : "Total"}
+            </span>
             <span className="font-mono text-sm font-semibold">
               $
               {totalRate.toLocaleString("en-US", {
@@ -1020,6 +1034,32 @@ export function LoadForm({
               })}
             </span>
           </div>
+          {permitCost > 0 && (
+            <>
+              <div className="flex items-center justify-between px-3 text-sm">
+                <span className="text-muted-foreground">
+                  Permits ({permits.length})
+                </span>
+                <span className="font-mono">
+                  − $
+                  {permitCost.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded border bg-muted/40 px-3 py-2">
+                <span className="text-sm font-medium">Total after permits</span>
+                <span className="font-mono text-sm font-semibold">
+                  $
+                  {netOfPermits.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            </>
+          )}
 
           <Field
             name="estimatedDistanceKm"
@@ -1225,6 +1265,13 @@ export function LoadForm({
           setRpmDraft(null);
         }}
         error={e.accessorials}
+      />
+
+      <PermitsField
+        items={permits}
+        loadId={initial?.id}
+        onChange={setPermits}
+        error={e.permits}
       />
 
       <section className="grid gap-4 rounded-lg border bg-card p-6">

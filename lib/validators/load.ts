@@ -98,6 +98,8 @@ export const loadCreateSchema = z.object({
   billingType: optionalString,
   loadInvoiceNumber: optionalString,
   accessorialAmount: optionalNumber,
+  // JSON list of permit line items; the server derives `permitAmount` from it.
+  permits: optionalString,
 
   cargoDescription: optionalString,
   weightKg: optionalNumber,

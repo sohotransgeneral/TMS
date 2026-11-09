@@ -136,6 +136,7 @@ export async function DriverFinancialReport({
     },
     select: {
       price: true,
+      permitAmount: true,
       currency: true,
       actualDistanceKm: true,
       estimatedDistanceKm: true,
@@ -160,7 +161,7 @@ export async function DriverFinancialReport({
   for (const e of expensesDriver)
     expenseMap[e.type] = (expenseMap[e.type] ?? 0) + e.amount;
 
-  // 4. Permits (trucks driven in loads in period)
+  // 4. Trucks driven in loads in period (for maintenance below)
   const truckIds = await prisma.load.findMany({
     where: { driverId, pickupDate: { gte: from, lte: to } },
     select: { truckId: true },
@@ -168,15 +169,6 @@ export async function DriverFinancialReport({
   const uniqueTruckIds = [
     ...new Set(truckIds.map((l) => l.truckId).filter(Boolean)),
   ] as string[];
-  const permitsAgg = uniqueTruckIds.length
-    ? await prisma.truckPermit.aggregate({
-        where: {
-          truckId: { in: uniqueTruckIds },
-          validFrom: { gte: from, lte: to },
-        },
-        _sum: { cost: true },
-      })
-    : null;
 
   // 5. Maintenance (trucks driven)
   const maintAgg = uniqueTruckIds.length
@@ -207,7 +199,8 @@ export async function DriverFinancialReport({
     0,
   );
   const fuelCost = fuelAgg._sum.totalAmount ?? 0;
-  const permitsCost = permitsAgg?._sum.cost ?? 0;
+  // Permits are bought per load, so they come from the loads in this period.
+  const permitsCost = loads.reduce((s, l) => s + (l.permitAmount ?? 0), 0);
   const maintCost = maintAgg?._sum.cost ?? 0;
 
   const tollCost = expenseMap["TOLL"] ?? 0;

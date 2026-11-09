@@ -12,195 +12,205 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  ShieldCheck,
-  FileText,
-  Receipt,
-  AlertTriangle,
-  ExternalLink,
-} from "lucide-react";
+import { ShieldCheck, FileText } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { PERMIT_TYPES } from "@/lib/permit-types";
+import { loadTotal } from "@/lib/accessorials";
+import {
+  parsePermits,
+  permitTypeLabel,
+  loadNetOfPermits,
+} from "@/lib/load-permits";
+import { getSignedDownloadUrl } from "@/lib/r2";
 
-export const metadata = { title: "Truck Permits" };
+export const metadata = { title: "Permits" };
 
-function statusBadge(validTo: Date | null) {
-  if (!validTo) return <Badge variant="secondary">No expiry</Badge>;
-  const diff = (validTo.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diff < 0) return <Badge variant="destructive">Expired</Badge>;
-  if (diff < 14)
-    return (
-      <Badge variant="outline" className="border-amber-400 text-amber-600">
-        <AlertTriangle className="mr-1 h-3 w-3" />
-        {Math.ceil(diff)}d left
-      </Badge>
-    );
-  return <Badge className="bg-green-600 text-white">Active</Badge>;
-}
-
-function typeLabel(type: string) {
-  return PERMIT_TYPES.find((t) => t.value === type)?.label ?? type;
+function place(city: string | null, state: string | null, address: string) {
+  return [city, state].filter(Boolean).join(", ") || address;
 }
 
 export default async function PermitsPage() {
-  const me = await requirePermission("trucks:read");
+  const me = await requirePermission("loads:read");
 
-  const permits = await prisma.truckPermit.findMany({
-    where: { companyId: me.companyId ?? undefined },
-    orderBy: { validTo: "asc" },
-    include: {
-      truck: { select: { plateNumber: true, make: true, model: true } },
+  const loads = await prisma.load.findMany({
+    where: { companyId: me.companyId ?? undefined, permits: { not: null } },
+    orderBy: { pickupDate: "desc" },
+    select: {
+      id: true,
+      referenceNumber: true,
+      pickupDate: true,
+      pickupCity: true,
+      pickupState: true,
+      pickupAddress: true,
+      deliveryCity: true,
+      deliveryState: true,
+      deliveryAddress: true,
+      price: true,
+      accessorialAmount: true,
+      permits: true,
+      permitAmount: true,
+      currency: true,
+      driver: { select: { firstName: true, lastName: true } },
+      truck: { select: { plateNumber: true } },
     },
   });
 
-  const expiringSoon = permits.filter((p) => {
-    if (!p.validTo) return false;
-    const diff = (p.validTo.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff < 14;
-  });
-  const expired = permits.filter((p) => p.validTo && p.validTo < new Date());
-  const totalCost = permits.reduce((s, p) => s + (p.cost ?? 0), 0);
+  // Permit documents live in private storage, so each link needs signing.
+  const rows = await Promise.all(
+    loads.map(async (l) => {
+      const permits = parsePermits(l.permits);
+      const links = await Promise.all(
+        permits.map(async (p) => {
+          if (!p.docUrl) return null;
+          if (/^(https?:)?\/\//.test(p.docUrl) || p.docUrl.startsWith("/")) {
+            return p.docUrl;
+          }
+          try {
+            return await getSignedDownloadUrl(p.docUrl, 3600);
+          } catch {
+            return null;
+          }
+        }),
+      );
+      return { load: l, permits, links };
+    }),
+  ).then((all) => all.filter((r) => r.permits.length > 0));
+
+  const currency = rows[0]?.load.currency ?? "USD";
+  const permitCount = rows.reduce((s, r) => s + r.permits.length, 0);
+  const totalSpent = rows.reduce((s, r) => s + (r.load.permitAmount ?? 0), 0);
+  const totalRevenue = rows.reduce((s, r) => s + loadTotal(r.load), 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Special Permits"
-        description="Oversize, overweight and other special permits for your trucks."
+        title="Permits"
+        description="Every load that needed special permits, and what was spent on them. Permits are added on the load itself."
       />
 
-      {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Total Permits</p>
-          <p className="mt-1 text-2xl font-bold">{permits.length}</p>
-        </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Expiring (14 days)</p>
-          <p
-            className={`mt-1 text-2xl font-bold ${expiringSoon.length > 0 ? "text-amber-600" : ""}`}
-          >
-            {expiringSoon.length}
+          <p className="text-sm text-muted-foreground">Loads with permits</p>
+          <p className="mt-1 text-2xl font-bold">{rows.length}</p>
+          <p className="text-xs text-muted-foreground">
+            {permitCount} permit{permitCount === 1 ? "" : "s"} in total
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Total Cost</p>
+          <p className="text-sm text-muted-foreground">Spent on permits</p>
           <p className="mt-1 text-2xl font-bold">
-            {formatCurrency(totalCost, "USD")}
+            {formatCurrency(totalSpent, currency)}
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-sm text-muted-foreground">
+            Those loads, after permits
+          </p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatCurrency(totalRevenue - totalSpent, currency)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            of {formatCurrency(totalRevenue, currency)} before permits
           </p>
         </div>
       </div>
 
       <div className="rounded-lg border bg-card">
-        {permits.length === 0 ? (
+        {rows.length === 0 ? (
           <EmptyState
             icon={<ShieldCheck className="h-10 w-10" />}
             title="No permits yet"
-            description="Add permits from the truck detail page."
+            description="Add permits while creating or editing a load."
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Truck</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Permit #</TableHead>
-                <TableHead>Jurisdiction</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Valid To</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
-                <TableHead>Docs</TableHead>
-                <TableHead>Charged To</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Load</TableHead>
+                <TableHead>Route</TableHead>
+                <TableHead>Driver / Truck</TableHead>
+                <TableHead>Permits</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Permits cost</TableHead>
+                <TableHead className="text-right">After permits</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {permits.map((p) => (
-                <TableRow
-                  key={p.id}
-                  className={
-                    p.validTo && p.validTo < new Date()
-                      ? "bg-red-50/40 dark:bg-red-950/10"
-                      : ""
-                  }
-                >
-                  <TableCell>
-                    <Link
-                      href={`/fleet/trucks/${p.truckId}`}
-                      className="font-medium hover:underline"
-                    >
-                      {p.truck.plateNumber}
-                    </Link>
-                    {p.truck.make && (
+              {rows.map(({ load: l, permits, links }) => {
+                const total = loadTotal(l);
+                return (
+                  <TableRow key={l.id}>
+                    <TableCell>
+                      <Link
+                        href={`/dispatch/loads/${l.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {l.referenceNumber}
+                      </Link>
                       <div className="text-xs text-muted-foreground">
-                        {p.truck.make} {p.truck.model}
+                        {formatDate(l.pickupDate)}
                       </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{typeLabel(p.type)}</Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {p.permitNumber ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {p.jurisdiction ?? "—"}
-                  </TableCell>
-                  <TableCell className="max-w-[180px] text-xs text-muted-foreground truncate">
-                    {p.description ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {p.validTo ? formatDate(p.validTo) : "—"}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {p.cost != null ? formatCurrency(p.cost, p.currency) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1.5">
-                      {p.permitImageUrl && (
-                        <a
-                          href={p.permitImageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Permit document"
-                          className="text-blue-500 hover:text-blue-700"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </a>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {place(l.pickupCity, l.pickupState, l.pickupAddress)}
+                      <span className="text-muted-foreground"> → </span>
+                      {place(l.deliveryCity, l.deliveryState, l.deliveryAddress)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {l.driver
+                        ? `${l.driver.firstName} ${l.driver.lastName}`
+                        : "—"}
+                      {l.truck && (
+                        <div className="text-xs text-muted-foreground">
+                          {l.truck.plateNumber}
+                        </div>
                       )}
-                      {p.invoiceUrl && (
-                        <a
-                          href={p.invoiceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Invoice / Receipt"
-                          className="text-green-500 hover:text-green-700"
-                        >
-                          <Receipt className="h-4 w-4" />
-                        </a>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {(p as unknown as { chargedTo: string }).chargedTo ===
-                    "DRIVER" ? (
-                      <Badge
-                        variant="secondary"
-                        className="text-blue-600 border-blue-300"
-                      >
-                        👤 Driver
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-muted-foreground"
-                      >
-                        🏢 Company
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>{statusBadge(p.validTo)}</TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <ul className="space-y-1">
+                        {permits.map((p, i) => (
+                          <li
+                            key={i}
+                            className="flex flex-wrap items-center gap-x-2 text-sm"
+                          >
+                            <Badge variant="secondary">
+                              {permitTypeLabel(p.type)}
+                            </Badge>
+                            {p.jurisdiction && <span>{p.jurisdiction}</span>}
+                            {p.permitNumber && (
+                              <span className="font-mono text-xs text-muted-foreground">
+                                #{p.permitNumber}
+                              </span>
+                            )}
+                            <span className="tabular-nums text-muted-foreground">
+                              {formatCurrency(p.cost, l.currency)}
+                            </span>
+                            {links[i] && (
+                              <a
+                                href={links[i]!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={p.docName ?? "Permit document"}
+                                className="text-blue-500 hover:text-blue-700"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </a>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(total, l.currency)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums text-red-600">
+                      − {formatCurrency(l.permitAmount ?? 0, l.currency)}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold tabular-nums">
+                      {formatCurrency(loadNetOfPermits(total, l), l.currency)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

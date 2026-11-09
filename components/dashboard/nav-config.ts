@@ -123,7 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/fleet/permits",
         label: "Permits",
         icon: ShieldCheck,
-        permissions: ["trucks:read"],
+        permissions: ["loads:read"],
       },
     ],
   },

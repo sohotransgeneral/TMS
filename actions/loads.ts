@@ -29,6 +29,7 @@ import {
   serializeAccessorials,
   accessorialsTotal,
 } from "@/lib/accessorials";
+import { parsePermits, serializePermits, permitsTotal } from "@/lib/load-permits";
 import { notifyEvent } from "@/lib/notifications";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { appUrl } from "@/lib/app-url";
@@ -84,6 +85,20 @@ function normalizeAccessorials(d: {
   if (!items.length) return;
   d.accessorials = serializeAccessorials(items);
   d.accessorialAmount = accessorialsTotal(items);
+}
+
+/**
+ * Permits arrive as a JSON list of line items. `permitAmount` is always their
+ * sum. An empty list clears both, so removing the last permit from a load
+ * actually removes it (an absent field would leave the old value in place).
+ */
+function permitWrite(raw: string | undefined) {
+  if (raw === undefined) return {};
+  const items = parsePermits(raw);
+  return {
+    permits: items.length ? serializePermits(items) : null,
+    permitAmount: items.length ? permitsTotal(items) : null,
+  };
 }
 
 function pointOf(
@@ -188,6 +203,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
       billingType: d.billingType,
       loadInvoiceNumber: d.loadInvoiceNumber,
       accessorialAmount: d.accessorialAmount,
+      ...permitWrite(d.permits),
       cargoDescription: d.cargoDescription,
       weightKg: d.weightKg,
       volumeM3: d.volumeM3,
@@ -374,6 +390,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
     where: { id },
     data: {
       ...rest,
+      ...permitWrite(rest.permits),
       ...deadheadWrite,
       customerId: rest.customerId === undefined ? undefined : rest.customerId || null,
       driverId: rest.driverId === undefined ? undefined : rest.driverId || null,

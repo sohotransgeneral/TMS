@@ -5,8 +5,6 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, daysUntil } from "@/lib/utils";
 import { DocumentSection } from "@/components/documents/document-section";
-import { PermitList } from "@/components/fleet/permit-list";
-import { NewPermitButton } from "@/components/fleet/permit-form-dialog";
 
 export const metadata = { title: "Truck Details" };
 
@@ -65,26 +63,13 @@ export default async function TruckDetailPage({
   });
   if (!truck) notFound();
 
-  const [documents, permits, driverRows] = await Promise.all([
+  const [documents] = await Promise.all([
     prisma.document.findMany({
       where: { truckId: id },
       include: { uploadedBy: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.truckPermit.findMany({
-      where: { truckId: id },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.driverProfile.findMany({
-      where: { companyId: me.companyId ?? undefined },
-      select: { id: true, firstName: true, lastName: true },
-    }),
   ]);
-
-  const drivers = driverRows.map((d) => ({
-    id: d.id,
-    label: `${d.firstName} ${d.lastName}`.trim(),
-  }));
 
   return (
     <div className="space-y-6">
@@ -156,20 +141,6 @@ export default async function TruckDetailPage({
           <p className="text-sm">{truck.notes}</p>
         </section>
       )}
-
-      {/* Permits */}
-      <section className="rounded-lg border bg-card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-semibold">Special Permits ({permits.length})</h3>
-          <NewPermitButton truckId={truck.id} drivers={drivers} />
-        </div>
-        <PermitList
-          permits={permits}
-          truckId={truck.id}
-          canEdit
-          drivers={drivers}
-        />
-      </section>
 
       {/* Documents */}
       <section className="rounded-lg border bg-card p-6">

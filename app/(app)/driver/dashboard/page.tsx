@@ -19,7 +19,8 @@ import { LoadStatusButton } from "@/components/loads/load-status-button";
 import { GpsTracker } from "@/components/driver/gps-tracker";
 import { DriverZoneMap } from "@/components/driver/driver-zone-map";
 import { NavigateButton } from "@/components/driver/navigate-button";
-import { PermitList } from "@/components/fleet/permit-list";
+import { parsePermits, permitTypeLabel } from "@/lib/load-permits";
+import { getSignedDownloadUrl } from "@/lib/r2";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export const metadata = { title: "My Loads" };
@@ -74,15 +75,23 @@ export default async function DriverDashboardPage() {
     }),
   ]);
 
-  // Fetch permits for the truck currently assigned to the driver's active load
+  // Permits bought for the driver's active load (no costs — those are the
+  // office's business). Documents are private, so each link is signed.
   const activeLoad = activeLoads[0] ?? null;
-  const activeTruckId = activeLoad?.truckId ?? null;
-  const permits = activeTruckId
-    ? await prisma.truckPermit.findMany({
-        where: { truckId: activeTruckId },
-        orderBy: { validTo: "asc" },
-      })
-    : [];
+  const permits = parsePermits(activeLoad?.permits);
+  const permitLinks = await Promise.all(
+    permits.map(async (p) => {
+      if (!p.docUrl) return null;
+      if (/^(https?:)?\/\//.test(p.docUrl) || p.docUrl.startsWith("/")) {
+        return p.docUrl;
+      }
+      try {
+        return await getSignedDownloadUrl(p.docUrl, 3600);
+      } catch {
+        return null;
+      }
+    }),
+  );
 
   return (
     <div className="space-y-6">
@@ -227,25 +236,46 @@ export default async function DriverDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Permits for active truck */}
+      {/* Permits for the active load */}
       {permits.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-amber-500" />
-              Active Truck Permits
+              Permits for this load
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Special permits for this truck. Show these to authorities when
-              requested.
+              Special permits bought for this load. Show these to authorities
+              when requested.
             </p>
           </CardHeader>
           <CardContent>
-            <PermitList
-              permits={permits}
-              truckId={activeTruckId!}
-              canEdit={false}
-            />
+            <ul className="divide-y">
+              {permits.map((p, i) => (
+                <li
+                  key={i}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
+                >
+                  <span className="font-medium">{permitTypeLabel(p.type)}</span>
+                  {p.jurisdiction && <span>{p.jurisdiction}</span>}
+                  {p.permitNumber && (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      #{p.permitNumber}
+                    </span>
+                  )}
+                  {permitLinks[i] && (
+                    <a
+                      href={permitLinks[i]!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto text-primary hover:underline"
+                    >
+                      {p.docName ?? "Open document"}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       )}

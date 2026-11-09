@@ -103,6 +103,7 @@ enum DocumentType {
   INVOICE
   RATE_CONFIRMATION   // original rate con / BOL sent to AI for extraction
   ACCESSORIAL         // proof/justification for an accessorial charge
+  PERMIT              // special permit (oversize, overweight…) bought for a load
   DRIVER_LICENSE
   ID_CARD
   INSURANCE
@@ -581,6 +582,11 @@ model Load {
   billingType       String?   // Factoring, Direct, Broker
   loadInvoiceNumber String?
   accessorialAmount Float?    // accessorial charge $
+  // Special permits bought for this load: JSON list of line items (type, number,
+  // state, cost, document). `permitAmount` is always their sum; it comes out of
+  // the load total to give what the load really earned.
+  permits           String?
+  permitAmount      Float?
 
   // Pricing
   price            Float

@@ -41,6 +41,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   INVOICE: "Invoice",
   RATE_CONFIRMATION: "Rate Confirmation",
   ACCESSORIAL: "Accessorial Proof",
+  PERMIT: "Permit",
   DRIVER_LICENSE: "Driver License",
   ID_CARD: "ID Card",
   INSURANCE: "Insurance",

@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
   const loadId = (formData.get("loadId") as string | null) || null;
+  // Permit documents share this endpoint; they just file under their own type.
+  const isPermit = formData.get("kind") === "permit";
+  const folder = isPermit ? "permits" : "accessorials";
 
   if (!ALLOWED_MIME.has(file.type)) {
     return NextResponse.json(
@@ -58,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { key, sizeBytes } = await uploadPrivate(buffer, file.name, "accessorials");
+    const { key, sizeBytes } = await uploadPrivate(buffer, file.name, folder);
 
     // When the load already exists (editing), file it under Documents too —
     // otherwise the proof is only reachable from inside the accessorial row.
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
         await prisma.document.create({
           data: {
             companyId: load.companyId,
-            type: "ACCESSORIAL",
+            type: isPermit ? "PERMIT" : "ACCESSORIAL",
             name: file.name,
             url: key,
             mimeType: file.type,
@@ -104,7 +107,7 @@ export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("key");
   if (!key) return NextResponse.json({ error: "Missing key" }, { status: 400 });
   // Only ever hand out keys this route wrote.
-  if (!key.startsWith("accessorials/")) {
+  if (!key.startsWith("accessorials/") && !key.startsWith("permits/")) {
     return NextResponse.json({ error: "Invalid key" }, { status: 400 });
   }
 

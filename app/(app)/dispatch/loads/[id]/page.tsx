@@ -15,6 +15,11 @@ import { createInvoiceFromLoad } from "@/actions/invoices";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { parseAccessorials, loadTotal } from "@/lib/accessorials";
+import {
+  parsePermits,
+  loadNetOfPermits,
+  permitTypeLabel,
+} from "@/lib/load-permits";
 import { getSignedDownloadUrl } from "@/lib/r2";
 import {
   computeDeadhead,
@@ -34,6 +39,7 @@ import {
   MessageSquare,
   Paperclip,
   Route,
+  ShieldCheck,
 } from "lucide-react";
 import { DocumentSection } from "@/components/documents/document-section";
 
@@ -129,6 +135,7 @@ export default async function LoadDetailPage({
     billingType?: string | null;
     loadInvoiceNumber?: string | null;
     accessorialAmount?: number | null;
+    permitAmount?: number | null;
     pickupTimezone?: string | null;
     deliveryTimezone?: string | null;
     dispatchNotes?: string | null;
@@ -151,6 +158,23 @@ export default async function LoadDetailPage({
       }
     }),
   );
+
+  // Permits bought for this load. Their documents are private too.
+  const permits = parsePermits(load.permits);
+  const permitLinks = await Promise.all(
+    permits.map(async (p) => {
+      if (!p.docUrl) return null;
+      if (/^(https?:)?\/\//.test(p.docUrl) || p.docUrl.startsWith("/")) {
+        return p.docUrl;
+      }
+      try {
+        return await getSignedDownloadUrl(p.docUrl, 3600);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const permitCost = l.permitAmount ?? 0;
 
   // Loads created before mileage was tracked have nothing stored, so work the
   // numbers out on the fly instead of showing "—" until someone re-saves them.
@@ -381,11 +405,32 @@ export default async function LoadDetailPage({
               </span>
             </div>
             <div className="flex justify-between border-t pt-2 font-semibold text-sm">
-              <span>Total</span>
+              <span>{permitCost > 0 ? "Total (before permits)" : "Total"}</span>
               <span className="tabular-nums">
                 {formatCurrency(totalRate, load.currency)}
               </span>
             </div>
+            {permitCost > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Permits ({permits.length})
+                  </span>
+                  <span className="font-medium tabular-nums">
+                    − {formatCurrency(permitCost, load.currency)}
+                  </span>
+                </div>
+                <div className="flex justify-between font-semibold text-sm">
+                  <span>Total after permits</span>
+                  <span className="tabular-nums">
+                    {formatCurrency(
+                      loadNetOfPermits(totalRate, l),
+                      load.currency,
+                    )}
+                  </span>
+                </div>
+              </>
+            )}
             {dispatcherCommission != null && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
@@ -687,6 +732,55 @@ export default async function LoadDetailPage({
         </section>
       )}
 
+      {/* Permits */}
+      {permits.length > 0 && (
+        <section className="rounded-lg border bg-card p-6">
+          <h3 className="mb-4 flex items-center gap-2 font-semibold">
+            <ShieldCheck className="h-4 w-4" /> Permits
+          </h3>
+          <ul className="divide-y rounded-md border">
+            {permits.map((p, i) => (
+              <li
+                key={i}
+                className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm"
+              >
+                <span className="min-w-[10rem] flex-1 font-medium">
+                  {permitTypeLabel(p.type)}
+                  {p.jurisdiction ? (
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {p.jurisdiction}
+                    </span>
+                  ) : null}
+                  {p.permitNumber ? (
+                    <span className="ml-2 font-mono text-xs font-normal text-muted-foreground">
+                      #{p.permitNumber}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="tabular-nums">
+                  {formatCurrency(p.cost, load.currency)}
+                </span>
+                {permitLinks[i] ? (
+                  <a
+                    href={permitLinks[i]!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-[16rem] items-center gap-1 truncate text-xs text-primary hover:underline"
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{p.docName ?? "Document"}</span>
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    No document
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Notes */}
       {load.specialInstructions && (
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950/30">
@@ -771,6 +865,7 @@ export default async function LoadDetailPage({
             "POD",
             "RATE_CONFIRMATION",
             "ACCESSORIAL",
+            "PERMIT",
             "OTHER",
           ]}
         />
