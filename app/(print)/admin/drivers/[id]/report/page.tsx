@@ -57,11 +57,18 @@ export default async function DriverReportPage({
     driver.grossPercent,
     driver.salaryFixedAmount,
     driver.commissionRate,
-    (driver as { taxCas?: number | null }).taxCas ?? null,
-    (driver as { taxCass?: number | null }).taxCass ?? null,
-    (driver as { taxImpozit?: number | null }).taxImpozit ?? null,
+    // An external driver isn't our employee, so no payroll taxes.
+    driver.isExternal ? 0 : ((driver as { taxCas?: number | null }).taxCas ?? null),
+    driver.isExternal ? 0 : ((driver as { taxCass?: number | null }).taxCass ?? null),
+    driver.isExternal ? 0 : ((driver as { taxImpozit?: number | null }).taxImpozit ?? null),
     period,
     await getCompanyCurrency(me.companyId),
+    driver.isExternal
+      ? {
+          company: driver.externalCompany ?? "Their company",
+          ourPercent: driver.ourCutPercent ?? 0,
+        }
+      : null,
   );
   const { loads, fmt, fmtDate, adjustments } = data;
   const fullName = `${driver.firstName} ${driver.lastName}`;
@@ -109,6 +116,37 @@ export default async function DriverReportPage({
           </div>
         </div>
       </div>
+
+      {/* External driver: how the load total is divided */}
+      {data.external && data.externalSplit && (
+        <div className="rounded border border-border p-3 text-sm">
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            External driver · {data.external.company}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              ["Load total", fmt(data.externalSplit.total, data.currency)],
+              [
+                `We keep (${data.external.ourPercent}%)`,
+                fmt(data.externalSplit.our, data.currency),
+              ],
+              [
+                `Driver (${data.grossPercent ?? 0}%)`,
+                fmt(data.externalSplit.driver, data.currency),
+              ],
+              [
+                `${data.external.company} (${data.externalSplit.partnerPercent}%)`,
+                fmt(data.externalSplit.partner, data.currency),
+              ],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <div className="text-[10px] text-muted-foreground">{label}</div>
+                <div className="font-semibold">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary KPIs — 2×2 on mobile, 4 cols on sm+ */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPeriodRange } from "@/lib/period";
+import { loadTotal } from "@/lib/accessorials";
+import { splitExternal } from "@/lib/external-driver";
 
 function calcTaxes(brut: number, casRate = 25, cassRate = 10, impozitRate = 10) {
   const cas = brut * (casRate / 100);
@@ -32,6 +34,8 @@ export async function getDriverFinancialData(
   taxImpozit: number | null,
   period: string,
   companyCurrency: string = "USD",
+  /** Set for an external driver: the company they belong to and our cut. */
+  external: { company: string; ourPercent: number } | null = null,
 ) {
   const { from, to, label, periodKey } = getPeriodRange(period);
 
@@ -52,6 +56,7 @@ export async function getDriverFinancialData(
       pickupDate: true,
       deliveryDate: true,
       price: true,
+      accessorialAmount: true,
       permitAmount: true,
       currency: true,
       actualDistanceKm: true,
@@ -98,7 +103,14 @@ export async function getDriverFinancialData(
       })
     : null;
 
-  const revenue = loads.reduce((s, l) => s + l.price, 0);
+  // An external driver is paid on the load total (rate + accessorials).
+  const revenue = loads.reduce(
+    (s, l) => s + (external ? loadTotal(l) : l.price),
+    0,
+  );
+  const externalSplit = external
+    ? splitExternal(revenue, external.ourPercent, grossPercent ?? 0)
+    : null;
   const totalKm = loads.reduce((s, l) => s + (l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0), 0);
   const fuelCost = fuelAgg._sum.totalAmount ?? 0;
   // Permits are bought per load, so they come from the loads in this period.
@@ -173,6 +185,8 @@ export async function getDriverFinancialData(
     taxes,
     taxRates: { cas: taxCas ?? 25, cass: taxCass ?? 10, impozit: taxImpozit ?? 10 },
     companyCosts,
+    external,
+    externalSplit,
     currency,
     periodLabel: label,
     fmt,

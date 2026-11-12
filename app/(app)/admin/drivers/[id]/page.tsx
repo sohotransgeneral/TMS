@@ -17,6 +17,7 @@ import { DriverExpensesPanel } from "@/components/drivers/driver-expenses-panel"
 import { ExpenseFormDialog } from "@/components/accounting/expense-dialog";
 import { FileDown, ExternalLink } from "lucide-react";
 import { visibleEmail } from "@/lib/placeholder-email";
+import { partnerPercentOf } from "@/lib/external-driver";
 
 export const metadata = { title: "Driver Details" };
 
@@ -166,6 +167,12 @@ export default async function DriverDetailPage({
                 driver.employedSince ? formatDate(driver.employedSince) : null,
               ],
               [
+                "External driver",
+                driver.isExternal
+                  ? `${driver.externalCompany ?? "—"} · we ${driver.ourCutPercent ?? 0}% / driver ${driver.grossPercent ?? 0}% / company ${partnerPercentOf(driver.ourCutPercent ?? 0, driver.grossPercent ?? 0)}%`
+                  : null,
+              ],
+              [
                 "Salary Type",
                 driver.salaryType === "PERCENT_GROSS"
                   ? `${driver.grossPercent ?? 0}% of Gross`
@@ -266,11 +273,20 @@ export default async function DriverDetailPage({
             grossPercent={driver.grossPercent}
             salaryFixedAmount={driver.salaryFixedAmount}
             commissionRate={driver.commissionRate}
-            taxCas={(driver as { taxCas?: number | null }).taxCas}
-            taxCass={(driver as { taxCass?: number | null }).taxCass}
-            taxImpozit={(driver as { taxImpozit?: number | null }).taxImpozit}
+            // An external driver isn't our employee, so no payroll taxes.
+            taxCas={driver.isExternal ? 0 : (driver as { taxCas?: number | null }).taxCas}
+            taxCass={driver.isExternal ? 0 : (driver as { taxCass?: number | null }).taxCass}
+            taxImpozit={driver.isExternal ? 0 : (driver as { taxImpozit?: number | null }).taxImpozit}
             period={period}
             companyCurrency={companyCurrency}
+            external={
+              driver.isExternal
+                ? {
+                    company: driver.externalCompany ?? "Their company",
+                    ourPercent: driver.ourCutPercent ?? 0,
+                  }
+                : null
+            }
           />
         </Suspense>
       </section>

@@ -50,6 +50,13 @@ export const driverCreateSchema = z.object({
   salaryFixedAmount: fields.optionalNumber,
   grossPercent: fields.optionalNumber,
   commissionRate: fields.optionalNumber,
+
+  // External driver — see lib/external-driver.ts
+  isExternal: z
+    .preprocess((v) => v === "on" || v === "true" || v === true, z.boolean())
+    .optional(),
+  externalCompany: fields.optionalString,
+  ourCutPercent: fields.optionalNumber,
   taxCas: fields.optionalNumber,
   taxCass: fields.optionalNumber,
   taxImpozit: fields.optionalNumber,
@@ -76,6 +83,34 @@ export const driverCreateSchema = z.object({
 export const driverUpdateSchema = driverCreateSchema.extend({
   id: z.string().min(1),
 });
+
+/**
+ * Extra rules for an external driver: the company they belong to is needed for
+ * the statistics, and the three shares must fit inside 100%. Returns field
+ * errors, or null when everything is fine (or the driver isn't external).
+ */
+export function externalDriverErrors(d: {
+  isExternal?: boolean;
+  externalCompany?: string;
+  ourCutPercent?: number;
+  grossPercent?: number;
+}): Record<string, string[]> | null {
+  if (!d.isExternal) return null;
+  const errors: Record<string, string[]> = {};
+  if (!d.externalCompany) errors.externalCompany = ["Company is required"];
+  const inRange = (n: number | undefined) =>
+    n != null && n >= 0 && n <= 100;
+  if (!inRange(d.ourCutPercent)) errors.ourCutPercent = ["Enter 0–100"];
+  if (!inRange(d.grossPercent)) errors.grossPercent = ["Enter 0–100"];
+  if (
+    inRange(d.ourCutPercent) &&
+    inRange(d.grossPercent) &&
+    d.ourCutPercent! + d.grossPercent! > 100
+  ) {
+    errors.grossPercent = ["Our cut + driver can't be more than 100%"];
+  }
+  return Object.keys(errors).length ? errors : null;
+}
 
 export type DriverCreateInput = z.infer<typeof driverCreateSchema>;
 export type DriverUpdateInput = z.infer<typeof driverUpdateSchema>;

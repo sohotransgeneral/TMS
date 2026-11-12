@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPeriodRange } from "@/lib/period";
+import { loadTotal } from "@/lib/accessorials";
+import { splitExternal } from "@/lib/external-driver";
 import {
   TrendingUp,
   TrendingDown,
@@ -112,7 +114,10 @@ export async function DriverFinancialReport({
   taxImpozit,
   period,
   companyCurrency = "USD",
+  external = null,
 }: {
+  /** Set for an external driver: the company they belong to and our cut. */
+  external?: { company: string; ourPercent: number } | null;
   driverId: string;
   salaryType?: string | null;
   salaryPerKm: number | null;
@@ -136,6 +141,7 @@ export async function DriverFinancialReport({
     },
     select: {
       price: true,
+      accessorialAmount: true,
       permitAmount: true,
       currency: true,
       actualDistanceKm: true,
@@ -193,7 +199,14 @@ export async function DriverFinancialReport({
   );
 
   // ── calculations ──────────────────────────────────────────────
-  const revenue = loads.reduce((s, l) => s + l.price, 0);
+  // An external driver is paid on the load total (rate + accessorials).
+  const revenue = loads.reduce(
+    (s, l) => s + (external ? loadTotal(l) : l.price),
+    0,
+  );
+  const externalSplit = external
+    ? splitExternal(revenue, external.ourPercent, grossPercent ?? 0)
+    : null;
   const totalKm = loads.reduce(
     (s, l) => s + (l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0),
     0,
@@ -290,6 +303,30 @@ export async function DriverFinancialReport({
           </div>
         ))}
       </div>
+
+      {external && externalSplit && (
+        <Section title={`External driver · ${external.company}`} icon={DollarSign}>
+          <Row
+            label="Load total"
+            value={fmt(externalSplit.total, currency)}
+            sub={`${loads.length} loads`}
+          />
+          <Row
+            label={`We keep (${external.ourPercent}%)`}
+            value={fmt(externalSplit.our, currency)}
+            positive
+          />
+          <Row
+            label={`Driver (${grossPercent ?? 0}%)`}
+            value={fmt(externalSplit.driver, currency)}
+          />
+          <Row
+            label={`${external.company} (${externalSplit.partnerPercent}%)`}
+            value={fmt(externalSplit.partner, currency)}
+            big
+          />
+        </Section>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Revenue & deductions */}

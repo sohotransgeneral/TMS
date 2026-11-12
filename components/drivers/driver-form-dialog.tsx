@@ -21,6 +21,8 @@ import { createDriver, updateDriver, deleteDriver } from "@/actions/drivers";
 import { toActionState } from "@/lib/to-action-state";
 import type { ActionResult } from "@/lib/action-helpers";
 import { visibleEmail } from "@/lib/placeholder-email";
+import { splitExternal, partnerPercentOf } from "@/lib/external-driver";
+import { formatCurrency } from "@/lib/utils";
 
 export type DriverRow = {
   id: string;
@@ -45,6 +47,9 @@ export type DriverRow = {
   taxCass: number | null;
   taxImpozit: number | null;
   internalNotes: string | null;
+  isExternal?: boolean;
+  externalCompany?: string | null;
+  ourCutPercent?: number | null;
   truckId?: string | null;
   trailerId?: string | null;
   user: {
@@ -73,11 +78,14 @@ export function DriverFormDialog({
   initial,
   trucks = [],
   trailers = [],
+  partnerCompanies = [],
   trigger,
 }: {
   initial?: DriverRow;
   trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
   trailers?: { id: string; label: string; pairedTruckId?: string | null }[];
+  /** Companies already used by other external drivers, offered as suggestions. */
+  partnerCompanies?: string[];
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -95,12 +103,29 @@ export function DriverFormDialog({
     initial?.trailerId ?? "",
   );
 
+  // External driver: belongs to another company; we keep a cut of each load,
+  // the driver gets a percentage and the rest goes to their company.
+  const [external, setExternal] = useState(initial?.isExternal ?? false);
+  const [company, setCompany] = useState(initial?.externalCompany ?? "");
+  const [ourCut, setOurCut] = useState(String(initial?.ourCutPercent ?? 10));
+  const [driverPct, setDriverPct] = useState(
+    String(initial?.isExternal ? (initial?.grossPercent ?? 32) : 32),
+  );
+  const [sample, setSample] = useState("10000");
+
   // Reset when dialog opens/closes
   useEffect(() => {
     if (open) {
+      setExternal(initial?.isExternal ?? false);
+      setCompany(initial?.externalCompany ?? "");
+      setOurCut(String(initial?.ourCutPercent ?? 10));
+      setDriverPct(
+        String(initial?.isExternal ? (initial?.grossPercent ?? 32) : 32),
+      );
       setSelectedTruckId(initial?.truckId ?? "");
       setSelectedTrailerId(initial?.trailerId ?? "");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial?.truckId, initial?.trailerId]);
 
   useEffect(() => {
@@ -120,6 +145,11 @@ export function DriverFormDialog({
   }, [state]);
 
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
+
+  const ourNum = Number(ourCut) || 0;
+  const driverNum = Number(driverPct) || 0;
+  const split = splitExternal(Number(sample) || 0, ourNum, driverNum);
+  const partnerPct = partnerPercentOf(ourNum, driverNum);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -304,6 +334,131 @@ export function DriverFormDialog({
             </Field>
           </div>
 
+          {/* External driver */}
+          <div className="grid gap-3 rounded-lg border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium">External driver</p>
+                <p className="text-xs text-muted-foreground">
+                  Works for us but belongs to another company.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={external ? "default" : "outline"}
+                aria-pressed={external}
+                onClick={() => setExternal((v) => !v)}
+              >
+                {external ? "External driver ✓" : "External driver"}
+              </Button>
+            </div>
+
+            {external && (
+              <>
+                <input type="hidden" name="isExternal" value="on" />
+                <input type="hidden" name="salaryType" value="PERCENT_GROSS" />
+
+                <Field
+                  name="externalCompany"
+                  label="Driver's company"
+                  required
+                  error={errors.externalCompany}
+                >
+                  <Input
+                    id="externalCompany"
+                    name="externalCompany"
+                    list="partner-companies"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    placeholder="e.g. Company X"
+                  />
+                  <datalist id="partner-companies">
+                    {partnerCompanies.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </Field>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    name="ourCutPercent"
+                    label="We take (% of load total)"
+                    required
+                    error={errors.ourCutPercent}
+                  >
+                    <Input
+                      id="ourCutPercent"
+                      name="ourCutPercent"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={ourCut}
+                      onChange={(e) => setOurCut(e.target.value)}
+                    />
+                  </Field>
+                  <Field
+                    name="grossPercent"
+                    label="Driver gets (% of load total)"
+                    required
+                    error={errors.grossPercent}
+                  >
+                    <Input
+                      id="grossPercent"
+                      name="grossPercent"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={driverPct}
+                      onChange={(e) => setDriverPct(e.target.value)}
+                    />
+                  </Field>
+                </div>
+
+                <div className="rounded-md bg-muted/50 p-3 text-sm">
+                  <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    On a load of
+                    <Input
+                      type="number"
+                      min="0"
+                      className="h-7 w-28"
+                      value={sample}
+                      onChange={(e) => setSample(e.target.value)}
+                      aria-label="Example load total"
+                    />
+                  </div>
+                  <dl className="grid gap-1">
+                    <div className="flex justify-between">
+                      <dt>We take ({ourNum}%)</dt>
+                      <dd className="font-mono font-medium">
+                        {formatCurrency(split.our, "USD")}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt>Driver ({driverNum}%)</dt>
+                      <dd className="font-mono font-medium">
+                        {formatCurrency(split.driver, "USD")}
+                      </dd>
+                    </div>
+                    <div
+                      className={`flex justify-between border-t pt-1 ${
+                        partnerPct < 0 ? "text-destructive" : ""
+                      }`}
+                    >
+                      <dt>
+                        {company.trim() || "Their company"} ({partnerPct}%)
+                      </dt>
+                      <dd className="font-mono font-medium">
+                        {formatCurrency(split.partner, "USD")}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-3">
             <Field name="status" label="Status" error={errors.status}>
               <Select
@@ -318,6 +473,8 @@ export function DriverFormDialog({
                 ))}
               </Select>
             </Field>
+            {!external && (
+              <>
             <Field name="salaryType" label="Salary Type">
               <Select
                 id="salaryType"
@@ -439,6 +596,8 @@ export function DriverFormDialog({
                 </Field>
               </div>
             </div>
+              </>
+            )}
           </div>
 
           <Field
@@ -533,14 +692,17 @@ export function DriverFormDialog({
 export function NewDriverButton({
   trucks = [],
   trailers = [],
+  partnerCompanies = [],
 }: {
   trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
   trailers?: { id: string; label: string; pairedTruckId?: string | null }[];
+  partnerCompanies?: string[];
 }) {
   return (
     <DriverFormDialog
       trucks={trucks}
       trailers={trailers}
+      partnerCompanies={partnerCompanies}
       trigger={
         <Button>
           <Plus className="h-4 w-4" /> New Driver
@@ -554,10 +716,12 @@ export function DriverRowActions({
   driver,
   trucks = [],
   trailers = [],
+  partnerCompanies = [],
 }: {
   driver: DriverRow;
   trucks?: { id: string; label: string; pairedTrailerId?: string | null }[];
   trailers?: { id: string; label: string; pairedTruckId?: string | null }[];
+  partnerCompanies?: string[];
 }) {
   return (
     <div className="flex items-center justify-end gap-1">
@@ -565,6 +729,7 @@ export function DriverRowActions({
         initial={driver}
         trucks={trucks}
         trailers={trailers}
+        partnerCompanies={partnerCompanies}
         trigger={
           <Button variant="ghost" size="icon" aria-label="Edit">
             <Pencil className="h-4 w-4" />

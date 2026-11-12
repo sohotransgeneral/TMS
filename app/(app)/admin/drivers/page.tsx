@@ -23,6 +23,9 @@ import {
 import { formatDate, daysUntil } from "@/lib/utils";
 import { IdCard } from "lucide-react";
 import { visibleEmail } from "@/lib/placeholder-email";
+import { getCompanyCurrency } from "@/lib/company-context";
+import { partnerCompanyNames } from "@/lib/partner-stats";
+import { PartnerStats } from "@/components/drivers/partner-stats";
 
 export const metadata = { title: "Drivers" };
 
@@ -67,6 +70,7 @@ export default async function DriversPage({
   const sp = await searchParams;
   const { page, pageSize, q, skip } = parseListParams(sp);
   const status = typeof sp.status === "string" ? sp.status : undefined;
+  const period = typeof sp.period === "string" ? sp.period : "month";
 
   const where = {
     companyId: me.companyId ?? undefined,
@@ -74,7 +78,7 @@ export default async function DriversPage({
     ...buildSearch(q, ["firstName", "lastName", "licenseNumber", "cnp"]),
   };
 
-  const [drivers, total, trucks, trailers] = await Promise.all([
+  const [drivers, total, trucks, trailers, partnerCompanies, currency] = await Promise.all([
     prisma.driverProfile.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -107,6 +111,8 @@ export default async function DriversPage({
         pairedTruckId: true,
       },
     }),
+    partnerCompanyNames(me.companyId ?? undefined),
+    getCompanyCurrency(me.companyId),
   ]);
 
   const truckOpts = trucks.map((t) => ({
@@ -125,7 +131,13 @@ export default async function DriversPage({
       <PageHeader
         title="Drivers"
         description="Your team and document validity."
-        action={<NewDriverButton trucks={truckOpts} trailers={trailerOpts} />}
+        action={
+          <NewDriverButton
+            trucks={truckOpts}
+            trailers={trailerOpts}
+            partnerCompanies={partnerCompanies}
+          />
+        }
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -147,7 +159,11 @@ export default async function DriversPage({
             title="No drivers found"
             description="Add your first driver to assign loads."
             action={
-              <NewDriverButton trucks={truckOpts} trailers={trailerOpts} />
+              <NewDriverButton
+                trucks={truckOpts}
+                trailers={trailerOpts}
+                partnerCompanies={partnerCompanies}
+              />
             }
           />
         ) : (
@@ -174,6 +190,13 @@ export default async function DriversPage({
                         {d.firstName} {d.lastName}
                       </Link>
                     </div>
+                    {d.isExternal && (
+                      <div className="mt-0.5">
+                        <Badge variant="outline" className="text-xs">
+                          External · {d.externalCompany ?? "—"}
+                        </Badge>
+                      </div>
+                    )}
                     {d.cnp && (
                       <div className="text-xs text-muted-foreground">
                         CNP {d.cnp}
@@ -217,6 +240,7 @@ export default async function DriversPage({
                       }}
                       trucks={truckOpts}
                       trailers={trailerOpts}
+                      partnerCompanies={partnerCompanies}
                     />
                   </TableCell>
                 </TableRow>
@@ -227,6 +251,12 @@ export default async function DriversPage({
       </div>
 
       <Pagination total={total} page={page} pageSize={pageSize} />
+
+      <PartnerStats
+        companyId={me.companyId ?? undefined}
+        period={period}
+        currency={currency}
+      />
     </div>
   );
 }

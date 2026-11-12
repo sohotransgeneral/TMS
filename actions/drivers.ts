@@ -6,7 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { failure, success, type ActionResult } from "@/lib/action-helpers";
-import { driverCreateSchema, driverUpdateSchema } from "@/lib/validators/driver";
+import {
+  driverCreateSchema,
+  driverUpdateSchema,
+  externalDriverErrors,
+} from "@/lib/validators/driver";
 import { makePlaceholderEmail } from "@/lib/placeholder-email";
 
 export async function createDriver(formData: FormData): Promise<ActionResult> {
@@ -20,6 +24,8 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
     return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const d = parsed.data;
+  const externalErrors = externalDriverErrors(d);
+  if (externalErrors) return failure("Invalid data", externalErrors);
   // Email and password are optional: they can be added later by editing the driver.
   const email = d.email ? d.email.toLowerCase() : makePlaceholderEmail();
 
@@ -61,7 +67,11 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
         tachoCardNumber: d.tachoCardNumber ?? null,
         tachoCardExpiresAt: d.tachoCardExpiresAt ?? null,
         employedSince: d.employedSince ?? null,
-        salaryType: d.salaryType ?? "PER_MI",
+        // An external driver is always paid a share of the load total.
+        salaryType: d.isExternal ? "PERCENT_GROSS" : (d.salaryType ?? "PER_MI"),
+        isExternal: d.isExternal ?? false,
+        externalCompany: d.isExternal ? (d.externalCompany ?? null) : null,
+        ourCutPercent: d.isExternal ? (d.ourCutPercent ?? null) : null,
         salaryPerKm: d.salaryPerKm ?? null,
         salaryFixedAmount: d.salaryFixedAmount ?? null,
         grossPercent: d.grossPercent ?? null,
@@ -102,6 +112,8 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
     return failure("Invalid data", parsed.error.flatten().fieldErrors);
   }
   const d = parsed.data;
+  const externalErrors = externalDriverErrors(d);
+  if (externalErrors) return failure("Invalid data", externalErrors);
 
   const target = await prisma.driverProfile.findUnique({
     where: { id: d.id },
@@ -140,7 +152,10 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
         tachoCardExpiresAt: d.tachoCardExpiresAt ?? null,
         employedSince: d.employedSince ?? null,
         status: d.status ?? target.status,
-        salaryType: d.salaryType ?? target.salaryType,
+        salaryType: d.isExternal ? "PERCENT_GROSS" : (d.salaryType ?? target.salaryType),
+        isExternal: d.isExternal ?? false,
+        externalCompany: d.isExternal ? (d.externalCompany ?? null) : null,
+        ourCutPercent: d.isExternal ? (d.ourCutPercent ?? null) : null,
         salaryPerKm: d.salaryPerKm ?? null,
         salaryFixedAmount: d.salaryFixedAmount ?? null,
         grossPercent: d.grossPercent ?? null,
