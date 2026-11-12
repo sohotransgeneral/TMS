@@ -139,7 +139,7 @@ export async function syncInvoiceNumbersToLoads(
   for (const c of changes) {
     await prisma.invoice.update({
       where: { id: c.invoice.id },
-      data: { number: c.next, series: prefix || null },
+      data: { number: c.next },
     });
   }
 }

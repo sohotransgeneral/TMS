@@ -25,11 +25,16 @@ const TABS = [
  * Which period is shown lives in the URL, so a report can be linked, reloaded
  * or exported to PDF and still show the same numbers.
  */
-export function PeriodSelector() {
+export function PeriodSelector({
+  defaultPeriod = "week",
+}: {
+  /** What the page shows when the URL has no `period`. */
+  defaultPeriod?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const current = params.get("period") ?? "week";
+  const current = params.get("period") ?? defaultPeriod;
 
   // The report is server-rendered, so the URL only changes once the new
   // numbers are ready — long enough that a tapped button felt broken. The

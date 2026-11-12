@@ -905,13 +905,8 @@ export function LoadImportDialog({
               <section className="grid gap-3 rounded-lg border bg-card p-4">
                 <h3 className="text-sm font-semibold">Reference</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field name="referenceNumber" label="Reference / Load #">
-                    <Input
-                      name="referenceNumber"
-                      defaultValue={d.referenceNumber ?? ""}
-                      placeholder="e.g. 1234567 / LOAD-2026-001"
-                    />
-                  </Field>
+                  {/* The broker's number goes in Load Number. A field named
+                      referenceNumber here would be read as our own Load ID. */}
                   <Field name="loadNumber" label="Load Number">
                     <Input
                       name="loadNumber"

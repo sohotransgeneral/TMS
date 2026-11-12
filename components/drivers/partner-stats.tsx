@@ -41,7 +41,7 @@ export async function PartnerStats({
             load total.
           </p>
         </div>
-        <PeriodSelector />
+        <PeriodSelector defaultPeriod="month" />
       </div>
       <Table>
         <TableHeader>
