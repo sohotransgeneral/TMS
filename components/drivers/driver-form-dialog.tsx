@@ -450,10 +450,14 @@ export function DriverFormDialog({
                         {company.trim() || "Their company"} ({partnerPct}%)
                       </dt>
                       <dd className="font-mono font-medium">
-                        {formatCurrency(split.partner, "USD")}
+                        {formatCurrency(split.partnerShare, "USD")}
                       </dd>
                     </div>
                   </dl>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Permits bought for a load are paid out of the company share,
+                    not out of the total.
+                  </p>
                 </div>
               </>
             )}

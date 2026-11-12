@@ -135,9 +135,21 @@ export default async function DriverReportPage({
                 fmt(data.externalSplit.driver, data.currency),
               ],
               [
-                `${data.external.company} (${data.externalSplit.partnerPercent}%)`,
-                fmt(data.externalSplit.partner, data.currency),
+                `${data.external.company} share (${data.externalSplit.partnerPercent}%)`,
+                fmt(data.externalSplit.partnerShare, data.currency),
               ],
+              ...(data.externalSplit.permits > 0
+                ? [
+                    [
+                      "Permits (from their share)",
+                      `- ${fmt(data.externalSplit.permits, data.currency)}`,
+                    ],
+                    [
+                      `Owed to ${data.external.company}`,
+                      fmt(data.externalSplit.partner, data.currency),
+                    ],
+                  ]
+                : []),
             ].map(([label, value]) => (
               <div key={label}>
                 <div className="text-[10px] text-muted-foreground">{label}</div>

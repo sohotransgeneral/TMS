@@ -6,12 +6,23 @@
  *   $10,000  →  we 10% = $1,000 · driver 32% = $3,200 · their company $5,800
  *
  * The base is the load total (rate + accessorials), before permits.
+ *
+ * Permits bought for the load are paid out of the company's share, never out
+ * of the total — so our cut and the driver's pay don't move, and what we owe
+ * the company is its share minus the permits:
+ *
+ *   $5,800 − $300 permits = $5,500 owed
  */
 
 export type ExternalSplit = {
   total: number;
   our: number;
   driver: number;
+  /** The company's share of the total, before permits. */
+  partnerShare: number;
+  /** Permit costs covered out of that share. */
+  permits: number;
+  /** What is actually owed to the company: its share minus the permits. */
   partner: number;
   partnerPercent: number;
 };
@@ -26,15 +37,19 @@ export function splitExternal(
   total: number,
   ourPercent: number,
   driverPercent: number,
+  permits = 0,
 ): ExternalSplit {
   const our = round2((total * ourPercent) / 100);
   const driver = round2((total * driverPercent) / 100);
+  // What is left, so the three parts always add back up to the total.
+  const partnerShare = round2(total - our - driver);
   return {
     total: round2(total),
     our,
     driver,
-    // What is left, so the three parts always add back up to the total.
-    partner: round2(total - our - driver),
+    partnerShare,
+    permits: round2(permits),
+    partner: round2(partnerShare - permits),
     partnerPercent: partnerPercentOf(ourPercent, driverPercent),
   };
 }

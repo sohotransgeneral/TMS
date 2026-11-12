@@ -14,6 +14,9 @@ export type PartnerStatsRow = {
   total: number;
   our: number;
   driver: number;
+  /** Permit costs, paid out of the company's share. */
+  permits: number;
+  /** Owed to the company: its share minus the permits. */
   partner: number;
 };
 
@@ -58,7 +61,12 @@ export async function getPartnerStats(
       status: { in: [...DELIVERED] },
       pickupDate: { gte: from, lte: to },
     },
-    select: { driverId: true, price: true, accessorialAmount: true },
+    select: {
+      driverId: true,
+      price: true,
+      accessorialAmount: true,
+      permitAmount: true,
+    },
   });
 
   const rows = new Map<string, PartnerStatsRow>();
@@ -68,7 +76,7 @@ export async function getPartnerStats(
     const name = d.externalCompany?.trim() || "(no company)";
     const key = keyOf(name);
     if (!rows.has(key)) {
-      rows.set(key, { company: name, drivers: 0, loads: 0, total: 0, our: 0, driver: 0, partner: 0 });
+      rows.set(key, { company: name, drivers: 0, loads: 0, total: 0, our: 0, driver: 0, permits: 0, partner: 0 });
       driversOf.set(key, new Set());
     }
     driversOf.get(key)!.add(d.id);
@@ -79,11 +87,17 @@ export async function getPartnerStats(
     if (!d) continue;
     const key = keyOf(d.externalCompany?.trim() || "(no company)");
     const row = rows.get(key)!;
-    const split = splitExternal(loadTotal(l), d.ourCutPercent ?? 0, d.grossPercent ?? 0);
+    const split = splitExternal(
+      loadTotal(l),
+      d.ourCutPercent ?? 0,
+      d.grossPercent ?? 0,
+      l.permitAmount ?? 0,
+    );
     row.loads += 1;
     row.total += split.total;
     row.our += split.our;
     row.driver += split.driver;
+    row.permits += split.permits;
     row.partner += split.partner;
   }
 

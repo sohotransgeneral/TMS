@@ -38,7 +38,7 @@ export async function PartnerStats({
           <h3 className="font-semibold">Partner companies</h3>
           <p className="text-xs text-muted-foreground">
             External drivers · {range.label} · delivered loads, split of the
-            load total.
+            load total. Permits are taken from the company share.
           </p>
         </div>
         <PeriodSelector defaultPeriod="month" />
@@ -52,6 +52,7 @@ export async function PartnerStats({
             <TableHead className="text-right">Total</TableHead>
             <TableHead className="text-right">We keep</TableHead>
             <TableHead className="text-right">Drivers</TableHead>
+            <TableHead className="text-right">Permits</TableHead>
             <TableHead className="text-right">Owed to company</TableHead>
           </TableRow>
         </TableHeader>
@@ -69,6 +70,9 @@ export async function PartnerStats({
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCurrency(r.driver, currency)}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {r.permits > 0 ? `-${formatCurrency(r.permits, currency)}` : "—"}
               </TableCell>
               <TableCell className="text-right font-semibold tabular-nums">
                 {formatCurrency(r.partner, currency)}
@@ -92,6 +96,11 @@ export async function PartnerStats({
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCurrency(sum((r) => r.driver), currency)}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {sum((r) => r.permits) > 0
+                  ? `-${formatCurrency(sum((r) => r.permits), currency)}`
+                  : "—"}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCurrency(sum((r) => r.partner), currency)}

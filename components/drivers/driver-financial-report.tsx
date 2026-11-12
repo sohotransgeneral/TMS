@@ -204,16 +204,19 @@ export async function DriverFinancialReport({
     (s, l) => s + (external ? loadTotal(l) : l.price),
     0,
   );
+  // Permits are bought per load, so they come from the loads in this period.
+  const permitsTotal = loads.reduce((s, l) => s + (l.permitAmount ?? 0), 0);
   const externalSplit = external
-    ? splitExternal(revenue, external.ourPercent, grossPercent ?? 0)
+    ? splitExternal(revenue, external.ourPercent, grossPercent ?? 0, permitsTotal)
     : null;
   const totalKm = loads.reduce(
     (s, l) => s + (l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0),
     0,
   );
   const fuelCost = fuelAgg._sum.totalAmount ?? 0;
-  // Permits are bought per load, so they come from the loads in this period.
-  const permitsCost = loads.reduce((s, l) => s + (l.permitAmount ?? 0), 0);
+  // For an external driver the permits come out of their company's share
+  // (see the split above), not out of what we spend.
+  const permitsCost = external ? 0 : permitsTotal;
   const maintCost = maintAgg?._sum.cost ?? 0;
 
   const tollCost = expenseMap["TOLL"] ?? 0;
@@ -321,10 +324,24 @@ export async function DriverFinancialReport({
             value={fmt(externalSplit.driver, currency)}
           />
           <Row
-            label={`${external.company} (${externalSplit.partnerPercent}%)`}
-            value={fmt(externalSplit.partner, currency)}
-            big
+            label={`${external.company} share (${externalSplit.partnerPercent}%)`}
+            value={fmt(externalSplit.partnerShare, currency)}
+            big={externalSplit.permits === 0}
           />
+          {externalSplit.permits > 0 && (
+            <>
+              <Row
+                label="Permits (paid from their share)"
+                value={`-${fmt(externalSplit.permits, currency)}`}
+                negative
+              />
+              <Row
+                label={`Owed to ${external.company}`}
+                value={fmt(externalSplit.partner, currency)}
+                big
+              />
+            </>
+          )}
         </Section>
       )}
 
