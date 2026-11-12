@@ -14,8 +14,7 @@ import {
 } from "@/lib/validators/accounting";
 import {
   nextInvoiceNumber,
-  lowestInvoiceSequence,
-  resequenceInvoiceNumbers,
+  invoiceNumberForLoad,
 } from "@/lib/invoice-number";
 import { notifyEvent } from "@/lib/notifications";
 
@@ -55,7 +54,17 @@ export async function createInvoice(formData: FormData): Promise<ActionResult> {
   const d = parsed.data;
 
   const { subtotal, vatAmount, total } = totalsOf(d.items, d.vatRate);
-  const { number, series } = await nextInvoiceNumber(me.companyId);
+  // An invoice for a load carries that load's number; one without a load
+  // takes the next number in the sequence.
+  const forLoad = d.loadId
+    ? await prisma.load.findFirst({
+        where: { id: d.loadId, companyId: me.companyId },
+        select: { referenceNumber: true },
+      })
+    : null;
+  const { number, series } = forLoad
+    ? await invoiceNumberForLoad(me.companyId, forLoad.referenceNumber)
+    : await nextInvoiceNumber(me.companyId);
 
   const invoice = await prisma.invoice.create({
     data: {
@@ -196,7 +205,10 @@ export async function createInvoiceFromLoad(
   }
 
   const { subtotal, vatAmount, total } = totalsOf(items, 0);
-  const { number, series } = await nextInvoiceNumber(me.companyId);
+  const { number, series } = await invoiceNumberForLoad(
+    me.companyId,
+    load.referenceNumber,
+  );
   const issueDate = new Date();
   const dueDate = new Date(issueDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
@@ -331,9 +343,7 @@ export async function deleteInvoice(formData: FormData): Promise<ActionResult> {
     return failure("Only DRAFT/Canceled invoices can be deleted.");
   if (target.paidAmount > 0) return failure("Payments exist; cannot delete.");
 
-  const base = await lowestInvoiceSequence(target.companyId);
   await prisma.invoice.delete({ where: { id } });
-  if (base != null) await resequenceInvoiceNumbers(target.companyId, base);
 
   await logAudit({
     action: "invoice.delete",

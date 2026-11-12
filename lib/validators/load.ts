@@ -53,6 +53,9 @@ export const LOAD_NEXT_STATUSES: Record<string, readonly string[]> = {
 };
 
 export const loadCreateSchema = z.object({
+  // Load ID / number in the company's sequence. Left empty = next free number.
+  referenceNumber: optionalString,
+
   customerId: optionalString,
 
   pickupCompanyName: optionalString,

@@ -12,15 +12,8 @@ import {
   loadStatusSchema,
   LOAD_NEXT_STATUSES,
 } from "@/lib/validators/load";
-import {
-  nextLoadReference,
-  lowestLoadSequence,
-  resequenceLoadReferences,
-} from "@/lib/load-reference";
-import {
-  lowestInvoiceSequence,
-  resequenceInvoiceNumbers,
-} from "@/lib/invoice-number";
+import { nextLoadReference, closeLoadReferenceGap } from "@/lib/load-reference";
+import { syncInvoiceNumbersToLoads } from "@/lib/invoice-number";
 import { drivingMiles, resolvePoint, type LatLng } from "@/lib/distance";
 import { computeDeadhead, type DeadheadResult } from "@/lib/load-miles";
 import { canForceLoadStatus } from "@/lib/permissions";
@@ -101,6 +94,26 @@ function permitWrite(raw: string | undefined) {
   };
 }
 
+/**
+ * A load's number can be set by hand — the sequence then carries on from the
+ * highest number in use. Plain digits only (that is what the sequence reads),
+ * and no two loads of a company may share one.
+ */
+async function referenceProblem(
+  companyId: string,
+  reference: string,
+  exceptLoadId?: string,
+): Promise<string | null> {
+  if (!/^d{1,9}$/.test(reference)) return "Use digits only, e.g. 520.";
+  const taken = await prisma.load.findFirst({
+    where: { companyId, referenceNumber: reference },
+    select: { id: true },
+  });
+  return taken && taken.id !== exceptLoadId
+    ? `Load ${reference} already exists.`
+    : null;
+}
+
 function pointOf(
   lat: number | null | undefined,
   lng: number | null | undefined,
@@ -124,6 +137,11 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
     : "DRAFT";
 
   normalizeAccessorials(d);
+
+  if (d.referenceNumber) {
+    const problem = await referenceProblem(me.companyId, d.referenceNumber);
+    if (problem) return failure(problem, { referenceNumber: [problem] });
+  }
 
   // Geocode pickup/delivery if coords not provided
   const [pickupPoint, deliveryPoint] = await Promise.all([
@@ -242,7 +260,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
   // again rather than handing the user a database error.
   let load;
   for (let attempt = 0; ; attempt++) {
-    const referenceNumber = await nextLoadReference(me.companyId);
+    const referenceNumber = d.referenceNumber ?? (await nextLoadReference(me.companyId));
     try {
       load = await prisma.load.create({ data: buildData(referenceNumber) });
       break;
@@ -251,6 +269,10 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
         typeof err === "object" &&
         err !== null &&
         (err as { code?: string }).code === "P2002";
+      if (duplicate && d.referenceNumber) {
+        const problem = `Load ${d.referenceNumber} already exists.`;
+        return failure(problem, { referenceNumber: [problem] });
+      }
       if (!duplicate || attempt >= 4) throw err;
     }
   }
@@ -323,6 +345,18 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   }
 
   normalizeAccessorials(rest);
+
+  // The number can be changed by hand; an empty field leaves it as it is.
+  const renumbered =
+    rest.referenceNumber != null && rest.referenceNumber !== target.referenceNumber;
+  if (renumbered) {
+    const problem = await referenceProblem(
+      target.companyId,
+      rest.referenceNumber!,
+      id,
+    );
+    if (problem) return failure(problem, { referenceNumber: [problem] });
+  }
 
   // Re-geocode if the address changed but coords weren't supplied
   const pickupChanged =
@@ -398,6 +432,14 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
       trailerId: rest.trailerId === undefined ? undefined : rest.trailerId || null,
     },
   });
+
+  // The invoice of this load carries its number, so it follows the change.
+  if (renumbered) {
+    await syncInvoiceNumbersToLoads(target.companyId, [
+      { id, to: rest.referenceNumber! },
+    ]);
+    revalidatePath("/accounting/invoices");
+  }
 
   await logAudit({
     action: "load.update",
@@ -655,19 +697,19 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
   if (!target || !canActOnCompany(me, target.companyId)) return failure("Load not found.");
 
   if (target.invoice) {
-    const invoiceBase = await lowestInvoiceSequence(target.companyId);
     await prisma.payment.deleteMany({ where: { invoiceId: target.invoice.id } });
     await prisma.invoice.delete({ where: { id: target.invoice.id } });
-    if (invoiceBase != null) {
-      await resequenceInvoiceNumbers(target.companyId, invoiceBase);
-    }
   }
-  // Captured before the delete so removing the first load pulls the rest
-  // down to where the sequence started, rather than leaving it one higher.
-  const base = await lowestLoadSequence(target.companyId);
 
   await prisma.load.delete({ where: { id } });
-  if (base != null) await resequenceLoadReferences(target.companyId, base);
+  // The loads right after it step down to close the gap, and their invoices
+  // follow so each invoice keeps the number of its load.
+  const moved = await closeLoadReferenceGap(target.companyId, target.referenceNumber);
+  await syncInvoiceNumbersToLoads(
+    target.companyId,
+    moved.map((m) => ({ id: m.id, to: m.to })),
+  );
+  if (target.invoice) revalidatePath("/accounting/invoices");
 
   await logAudit({
     action: "load.delete",

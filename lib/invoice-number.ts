@@ -52,19 +52,53 @@ export async function nextInvoiceNumber(
   return { number: prefix ? `${prefix}-${seq}` : seq, series: prefix };
 }
 
+/** "STL-516" when the company has a prefix, plain "516" when it doesn't. */
+function withPrefix(prefix: string, seq: string): string {
+  return prefix ? `${prefix}-${seq}` : seq;
+}
+
 /**
- * Closes the gap left by a deleted invoice, the same way loads are resequenced.
+ * The invoice for a load carries the load's own number — load 516 is invoice
+ * 516 (or "STL-516"), so the two can be matched at a glance and both keep
+ * counting up together.
  *
- * Worth being clear about what this means: an invoice number that has already
- * been sent to a customer will change, and their remittance will quote a number
- * that no longer matches. This runs because it was asked for explicitly — most
- * accounting practice (and law, in many countries) treats an issued invoice
- * number as permanent and closes gaps with a credit note instead.
+ * Falls back to the next free number in the invoice sequence when that number
+ * is already taken (a hand-made invoice that landed on it first), so creating
+ * an invoice never fails over a clash.
  */
-export async function resequenceInvoiceNumbers(
+export async function invoiceNumberForLoad(
   companyId: string,
-  base: number,
+  loadReference: string,
+): Promise<{ number: string; series: string }> {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { invoicePrefix: true },
+  });
+  const prefix = (company?.invoicePrefix ?? "").trim();
+  const number = withPrefix(prefix, loadReference.trim());
+
+  const taken = await prisma.invoice.findFirst({
+    where: { companyId, number },
+    select: { id: true },
+  });
+  return taken ? nextInvoiceNumber(companyId) : { number, series: prefix };
+}
+
+/**
+ * Re-numbers the invoices of loads whose number changed (edited by hand, or
+ * pulled down after a delete) so each invoice keeps matching its load.
+ *
+ * Two passes — the unique index on (companyId, number) rejects a rename onto a
+ * number another invoice still holds, and shifted numbers overlap by design.
+ * An invoice whose target is held by an unrelated invoice is left alone rather
+ * than failing the whole change.
+ */
+export async function syncInvoiceNumbersToLoads(
+  companyId: string,
+  moved: { id: string; to: string }[],
 ): Promise<void> {
+  if (moved.length === 0) return;
+
   const [company, invoices] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
@@ -72,45 +106,40 @@ export async function resequenceInvoiceNumbers(
     }),
     prisma.invoice.findMany({
       where: { companyId },
-      select: { id: true, number: true },
+      select: { id: true, number: true, loadId: true },
     }),
   ]);
-
   const prefix = (company?.invoicePrefix ?? "").trim();
-  const ordered = invoices
-    .map((i) => ({ ...i, seq: sequenceOf(i.number) }))
-    .filter((i) => Number.isFinite(i.seq))
-    .sort((a, b) => a.seq - b.seq);
 
-  const target = ordered.map((inv, i) => {
-    const seq = String(base + i);
-    return { ...inv, next: prefix ? `${prefix}-${seq}` : seq };
-  });
-  const changed = target.filter((i) => i.next !== i.number);
-  if (changed.length === 0) return;
+  const movingLoadIds = new Set(moved.map((m) => m.id));
+  const movingInvoiceIds = new Set(
+    invoices.filter((i) => i.loadId && movingLoadIds.has(i.loadId)).map((i) => i.id),
+  );
+  // Numbers that stay where they are and so can't be reused.
+  const held = new Set(
+    invoices.filter((i) => !movingInvoiceIds.has(i.id)).map((i) => i.number),
+  );
 
-  // Two passes — the unique index on (companyId, number) rejects a rename onto
-  // a number another invoice still holds.
-  for (const inv of changed) {
+  const changes = moved
+    .map((m) => ({
+      invoice: invoices.find((i) => i.loadId === m.id),
+      next: withPrefix(prefix, m.to),
+    }))
+    .filter(
+      (c): c is { invoice: (typeof invoices)[number]; next: string } =>
+        c.invoice != null && c.invoice.number !== c.next && !held.has(c.next),
+    );
+
+  for (const c of changes) {
     await prisma.invoice.update({
-      where: { id: inv.id },
-      data: { number: `tmp-${inv.id}` },
+      where: { id: c.invoice.id },
+      data: { number: `tmp-${c.invoice.id}` },
     });
   }
-  for (const inv of changed) {
+  for (const c of changes) {
     await prisma.invoice.update({
-      where: { id: inv.id },
-      data: { number: inv.next, series: prefix || null },
+      where: { id: c.invoice.id },
+      data: { number: c.next, series: prefix || null },
     });
   }
-}
-
-/** Lowest invoice sequence currently issued, or null when there are none. */
-export async function lowestInvoiceSequence(companyId: string): Promise<number | null> {
-  const invoices = await prisma.invoice.findMany({
-    where: { companyId },
-    select: { number: true },
-  });
-  const seqs = invoices.map((i) => sequenceOf(i.number)).filter(Number.isFinite);
-  return seqs.length ? Math.min(...seqs) : null;
 }

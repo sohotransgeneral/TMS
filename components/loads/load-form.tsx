@@ -70,6 +70,7 @@ export type LoadFormInitial = {
   equipment: string | null;
   commodity: string | null;
   accessorials: string | null;
+  referenceNumber?: string;
   loadNumber: string | null;
   pickupNumber: string | null;
   deliveryNumber: string | null;
@@ -124,6 +125,7 @@ export function LoadForm({
   userName,
   companyName,
   enteredByUsers = [],
+  nextReference,
 }: {
   initial?: LoadFormInitial;
   customers: Opt[];
@@ -134,6 +136,8 @@ export function LoadForm({
   userName?: string;
   companyName?: string;
   enteredByUsers?: string[];
+  /** The number a new load would get, shown as the placeholder of the ID field. */
+  nextReference?: string;
 }) {
   const editing = Boolean(initial);
   const router = useRouter();
@@ -677,6 +681,24 @@ export function LoadForm({
         {/* Col 1 – Load and Equipment */}
         <section className="grid content-start gap-3 rounded-lg border bg-card p-6">
           <h3 className="font-semibold">Load and Equipment</h3>
+          <Field
+            name="referenceNumber"
+            label="Load ID"
+            error={e.referenceNumber}
+          >
+            <Input
+              id="referenceNumber"
+              name="referenceNumber"
+              inputMode="numeric"
+              defaultValue={initial?.referenceNumber ?? ""}
+              placeholder={nextReference ? `Auto: ${nextReference}` : "Auto"}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {editing
+                ? "Change it to renumber this load; the next new load continues from the highest number. Its invoice follows."
+                : "Leave empty for the next number, or type one to continue from it."}
+            </p>
+          </Field>
           <Field name="loadNumber" label="Load Number" error={e.loadNumber}>
             <Input
               id="loadNumber"

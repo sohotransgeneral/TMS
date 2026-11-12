@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/session";
 import { getCurrentUser } from "@/lib/session";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { LoadForm } from "@/components/loads/load-form";
+import { nextLoadReference } from "@/lib/load-reference";
 
 export const metadata = { title: "New load" };
 
@@ -13,7 +14,7 @@ export default async function NewLoadPage() {
 
   const LOADS_WRITE_ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"];
 
-  const [customers, drivers, trucks, trailers, loadUsers] = await Promise.all([
+  const [customers, drivers, trucks, trailers, loadUsers, nextReference] = await Promise.all([
     prisma.customer.findMany({
       where,
       orderBy: { name: "asc" },
@@ -58,6 +59,7 @@ export default async function NewLoadPage() {
       select: { name: true },
       orderBy: { name: "asc" },
     }),
+    me.companyId ? nextLoadReference(me.companyId) : undefined,
   ]);
 
   return (
@@ -87,6 +89,7 @@ export default async function NewLoadPage() {
           truckId: d.truckId,
           trailerId: d.trailerId,
         }))}
+        nextReference={nextReference}
         userName={currentUser?.name ?? undefined}
         companyName={currentUser?.company?.name ?? undefined}
         enteredByUsers={loadUsers

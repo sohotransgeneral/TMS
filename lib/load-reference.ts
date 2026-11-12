@@ -41,55 +41,56 @@ export async function nextLoadReference(companyId: string): Promise<string> {
 
 /**
  * Closes the gap left by a deleted load: 516, 517, 519, 520 becomes
- * 516, 517, 518, 519.
+ * 516, 517, 518, 519 once 518 is deleted.
  *
- * `base` is the lowest number that existed BEFORE the deletion, so removing
- * the first load pulls the rest down to it instead of stranding the sequence
- * one higher.
+ * Only the unbroken run right after the deleted number moves down. A number
+ * somebody set by hand (jumping from 520 to 600, say) is a deliberate restart
+ * of the sequence, so closing the gap would silently undo it.
  *
- * Renaming happens in two passes. Moving 519 onto 518 while a load still holds
- * 518 trips the unique index on (companyId, referenceNumber) and would leave
- * the renumbering half-applied, so everything is parked on a temporary name
- * first.
+ * Moving happens in ascending order — each load steps into the number the
+ * previous one just freed — so the unique index on (companyId, referenceNumber)
+ * is never hit.
+ *
+ * Returns what moved so the caller can keep each load's invoice number in step.
  */
-export async function resequenceLoadReferences(
+export async function closeLoadReferenceGap(
   companyId: string,
-  base: number,
-): Promise<void> {
+  deletedReference: string,
+): Promise<{ id: string; from: string; to: string }[]> {
+  const deleted = sequenceOf(deletedReference);
+  if (!Number.isFinite(deleted)) return [];
+
   const loads = await prisma.load.findMany({
     where: { companyId },
     select: { id: true, referenceNumber: true },
   });
 
-  const ordered = loads
+  const above = loads
     .map((l) => ({ ...l, seq: sequenceOf(l.referenceNumber) }))
-    .filter((l) => Number.isFinite(l.seq))
+    .filter((l) => Number.isFinite(l.seq) && l.seq > deleted)
     .sort((a, b) => a.seq - b.seq);
 
-  const target = ordered.map((l, i) => ({ ...l, next: String(base + i) }));
-  const changed = target.filter((l) => l.next !== l.referenceNumber);
-  if (changed.length === 0) return;
-
-  for (const l of changed) {
-    await prisma.load.update({
-      where: { id: l.id },
-      data: { referenceNumber: `tmp-${l.id}` },
-    });
+  const moved: { id: string; from: string; to: string }[] = [];
+  let expected = deleted + 1;
+  for (const l of above) {
+    if (l.seq !== expected) break;
+    const to = String(l.seq - 1);
+    await prisma.load.update({ where: { id: l.id }, data: { referenceNumber: to } });
+    moved.push({ id: l.id, from: l.referenceNumber, to });
+    expected++;
   }
-  for (const l of changed) {
-    await prisma.load.update({
-      where: { id: l.id },
-      data: { referenceNumber: l.next },
-    });
-  }
+  return moved;
 }
 
-/** Lowest reference number currently issued, or null when there are none. */
-export async function lowestLoadSequence(companyId: string): Promise<number | null> {
-  const loads = await prisma.load.findMany({
-    where: { companyId },
-    select: { referenceNumber: true },
-  });
-  const seqs = loads.map((l) => sequenceOf(l.referenceNumber)).filter(Number.isFinite);
-  return seqs.length ? Math.min(...seqs) : null;
+/** Newest first: highest number on top; anything without a number goes last. */
+export function byReferenceDesc(
+  a: { referenceNumber: string },
+  b: { referenceNumber: string },
+): number {
+  const x = sequenceOf(a.referenceNumber);
+  const y = sequenceOf(b.referenceNumber);
+  if (Number.isNaN(x) && Number.isNaN(y)) return 0;
+  if (Number.isNaN(x)) return 1;
+  if (Number.isNaN(y)) return -1;
+  return y - x;
 }

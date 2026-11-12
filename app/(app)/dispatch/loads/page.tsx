@@ -22,6 +22,7 @@ import {
   LoadRefLink,
 } from "@/components/loads/load-status-badge";
 import { LOAD_STATUS_LABELS } from "@/lib/validators/load";
+import { byReferenceDesc } from "@/lib/load-reference";
 import { Plus, PackageOpen } from "lucide-react";
 import { LoadImportDialog } from "@/components/loads/load-import-dialog";
 import { DeleteLoadButton } from "@/components/loads/delete-load-button";
@@ -66,6 +67,7 @@ export default async function LoadsPage({
       : {}),
     ...buildSearch(q, [
       "referenceNumber",
+      "loadNumber",
       "pickupCity",
       "deliveryCity",
       "pickupAddress",
@@ -75,16 +77,27 @@ export default async function LoadsPage({
 
   const companyWhere = { companyId: me.companyId ?? undefined };
 
-  const [loads, total, customers, drivers, trucks, trailers] =
+  // Newest number on top. The number is text ("9" sorts after "10"), so the
+  // order is worked out here and only the page being shown is loaded in full —
+  // sorting by last edit, as this list used to, scrambled the numbers.
+  const allRefs = await prisma.load.findMany({
+    where,
+    select: { id: true, referenceNumber: true },
+  });
+  const total = allRefs.length;
+  const pageIds = allRefs
+    .sort(byReferenceDesc)
+    .slice(skip, skip + pageSize)
+    .map((l) => l.id);
+
+  const [pageLoads, customers, drivers, trucks, trailers] =
     await Promise.all([
       prisma.load.findMany({
-        where,
-        orderBy: { updatedAt: "desc" },
-        skip,
-        take: pageSize,
+        where: { id: { in: pageIds } },
         select: {
           id: true,
           referenceNumber: true,
+          loadNumber: true,
           status: true,
           loadType: true,
           pickupCompanyName: true,
@@ -106,7 +119,6 @@ export default async function LoadsPage({
           driver: { select: { user: { select: { name: true } } } },
         },
       }),
-      prisma.load.count({ where }),
       prisma.customer.findMany({
         where: companyWhere,
         orderBy: { name: "asc" },
@@ -145,6 +157,10 @@ export default async function LoadsPage({
         },
       }),
     ]);
+
+  const loads = pageIds
+    .map((id) => pageLoads.find((l) => l.id === id))
+    .filter((l): l is (typeof pageLoads)[number] => l != null);
 
   return (
     <div className="space-y-6">
@@ -187,7 +203,7 @@ export default async function LoadsPage({
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <SearchInput placeholder="Search by reference, city, address…" />
+        <SearchInput placeholder="Search by ID, load #, city, address…" />
         <FilterSelect
           paramKey="status"
           allLabel="All statuses"
@@ -252,7 +268,8 @@ export default async function LoadsPage({
           <Table className="text-xs whitespace-nowrap">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14">Nr</TableHead>
+                <TableHead className="w-14">ID</TableHead>
+                <TableHead className="w-20">Load #</TableHead>
                 <TableHead>Shipper</TableHead>
                 <TableHead>City</TableHead>
                 <TableHead className="w-16">State</TableHead>
@@ -277,6 +294,9 @@ export default async function LoadsPage({
                       id={l.id}
                       referenceNumber={l.referenceNumber}
                     />
+                  </TableCell>
+                  <TableCell className="font-mono">
+                    {l.loadNumber ?? "—"}
                   </TableCell>
                   <TableCell className="max-w-[160px] truncate">
                     {l.pickupCompanyName ?? "—"}
