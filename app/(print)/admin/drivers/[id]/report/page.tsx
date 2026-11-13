@@ -7,6 +7,7 @@ import { getCompanyCurrency } from "@/lib/company-context";
 import { PrintButton } from "@/components/drivers/print-button";
 import { ArrowLeft } from "lucide-react";
 import { visibleEmail } from "@/lib/placeholder-email";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,45 @@ export default async function DriverReportPage({
       : null,
   );
   const { loads, fmt, fmtDate, adjustments } = data;
+  const company = me.companyId
+    ? await prisma.company.findUnique({
+        where: { id: me.companyId },
+        select: {
+          name: true,
+          legalName: true,
+          logoUrl: true,
+          street: true,
+          city: true,
+          county: true,
+          postalCode: true,
+          country: true,
+          phone: true,
+          email: true,
+          website: true,
+          mcNumber: true,
+          dotNumber: true,
+          taxId: true,
+        },
+      })
+    : null;
+  const cityLine = company
+    ? [company.city, [company.county, company.postalCode].filter(Boolean).join(" ")]
+        .filter(Boolean)
+        .join(", ")
+    : "";
+  const companyLines = company
+    ? [
+        [company.street, cityLine, company.country].filter(Boolean).join(", "),
+        [company.phone, company.email, company.website].filter(Boolean).join(" · "),
+        [
+          company.mcNumber ? `MC ${company.mcNumber}` : null,
+          company.dotNumber ? `DOT ${company.dotNumber}` : null,
+          company.taxId ? `Tax ID ${company.taxId}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      ].filter(Boolean)
+    : [];
   const fullName = `${driver.firstName} ${driver.lastName}`;
 
   return (
@@ -86,6 +126,32 @@ export default async function DriverReportPage({
         </Link>
         <PrintButton />
       </div>
+
+      {/* Company letterhead */}
+      {company && (
+        <div className="flex items-center gap-4">
+          {company.logoUrl && (
+            <Image
+              src={company.logoUrl}
+              alt={company.name}
+              width={72}
+              height={72}
+              className="h-16 w-16 sm:h-[72px] sm:w-[72px] shrink-0 object-contain"
+              unoptimized
+            />
+          )}
+          <div className="min-w-0">
+            <div className="text-lg sm:text-xl font-bold uppercase text-foreground leading-tight">
+              {company.legalName || company.name}
+            </div>
+            {companyLines.map((line) => (
+              <div key={line} className="text-xs text-muted-foreground">
+                {line}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="border-b-2 border-foreground pb-3 sm:pb-4">
