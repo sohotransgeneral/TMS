@@ -266,6 +266,30 @@ function keyValueTable(doc: jsPDF, y: number, title: string, rows: Row[]): numbe
   return lastY(doc, y + 20) + 8;
 }
 
+type PlaceLoad = {
+  pickupCity: string | null;
+  pickupState: string | null;
+  pickupAddress: string;
+  deliveryCity: string | null;
+  deliveryState: string | null;
+  deliveryAddress: string;
+  pickupDate: Date;
+  deliveryDate: Date;
+};
+
+const place = (city: string | null, state: string | null, address: string) =>
+  city
+    ? [city, state].filter(Boolean).join(", ")
+    : address.split(",").slice(0, 2).join(",").trim();
+
+/** "Monroe, NC -> Dallas, TX": where the load went from and to. */
+const loadRoute = (l: PlaceLoad) =>
+  `${place(l.pickupCity, l.pickupState, l.pickupAddress)} -> ${place(l.deliveryCity, l.deliveryState, l.deliveryAddress)}`;
+
+/** "11/01/2026 -> 11/03/2026": pickup and delivery dates. */
+const loadDates = (l: PlaceLoad, fmtDate: (d: Date | string | null) => string) =>
+  `${fmtDate(l.pickupDate)} -> ${fmtDate(l.deliveryDate)}`;
+
 const miles = (km: number) => `${Math.round(km).toLocaleString("en-US")} Mi`;
 
 // ── 1. the full report ──────────────────────────────────────────────────────
@@ -309,8 +333,7 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
   doc.text(`Loads (${loads.length})`, ML, y);
   const body = loads.map((l) => [
     sanitize(l.referenceNumber),
-    sanitize(`${l.pickupCity ?? l.pickupAddress.slice(0, 25)}\n${fmtDate(l.pickupDate)}`),
-    sanitize(`${l.deliveryCity ?? l.deliveryAddress.slice(0, 25)}\n${fmtDate(l.deliveryDate)}`),
+    sanitize(`${loadRoute(l)}\n${loadDates(l, fmtDate)}`),
     sanitize(l.customer?.name ?? "-"),
     sanitize(l.truck?.plateNumber ?? "-"),
     Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("en-US"),
@@ -318,10 +341,10 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
   ]);
   autoTable(doc, {
     startY: y + 2,
-    head: [["Ref. No.", "Pickup", "Delivery", "Customer", "Truck", "Mi", "Price"]],
-    body: body.length ? body : [["No loads in this period", "", "", "", "", "", ""]],
+    head: [["Load #", "Description (from -> to, dates)", "Customer", "Truck", "Mi", "Price"]],
+    body: body.length ? body : [["No loads in this period", "", "", "", "", ""]],
     foot: body.length
-      ? [["TOTAL", "", "", "", "", Math.round(data.totalKm).toLocaleString("en-US"), fmt(data.revenue, currency)]]
+      ? [["TOTAL", "", "", "", Math.round(data.totalKm).toLocaleString("en-US"), fmt(data.revenue, currency)]]
       : undefined,
     showFoot: "lastPage",
     theme: "plain",
@@ -331,12 +354,14 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
     footStyles: { fillColor: SOFT, textColor: DARK, fontStyle: "bold" },
     alternateRowStyles: { fillColor: [249, 250, 251] },
     columnStyles: {
-      0: { cellWidth: 20 },
-      5: { halign: "right", cellWidth: 16 },
-      6: { halign: "right", cellWidth: 26 },
+      0: { cellWidth: 18 },
+      1: { cellWidth: "auto" },
+      3: { cellWidth: 22 },
+      4: { halign: "right", cellWidth: 16 },
+      5: { halign: "right", cellWidth: 26 },
     },
     didParseCell: (h) => {
-      if ((h.section === "head" || h.section === "foot") && (h.column.index === 5 || h.column.index === 6)) {
+      if ((h.section === "head" || h.section === "foot") && (h.column.index === 4 || h.column.index === 5)) {
         h.cell.styles.halign = "right";
       }
     },
@@ -458,6 +483,27 @@ export function renderDriverStatementPdf(input: DriverPdfInput): Uint8Array {
   doc.text("Your amount", W / 2, payY + 12, { align: "center" });
   doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(255, 255, 255);
   doc.text(fmt(pay, currency), W / 2, payY + 29, { align: "center" });
+
+  // The loads behind the total: where from and to, and when. No prices.
+  const rows = data.loads.map((l) => [
+    sanitize(l.referenceNumber),
+    sanitize(loadRoute(l)),
+    sanitize(loadDates(l, data.fmtDate)),
+  ]);
+  const listY = payY + 38 + 10;
+  doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...DARK);
+  doc.text(`Loads (${rows.length})`, ML, listY);
+  autoTable(doc, {
+    startY: listY + 2,
+    head: [["Load #", "Description (from -> to)", "Dates (pickup -> delivery)"]],
+    body: rows.length ? rows : [["No loads in this period", "", ""]],
+    theme: "plain",
+    margin: { left: ML, right: MR },
+    styles: { fontSize: 8.5, cellPadding: 2.2, textColor: DARK, lineColor: LGRAY, lineWidth: { bottom: 0.15 } },
+    headStyles: { fillColor: BRAND, textColor: [255, 255, 255], fontStyle: "bold", lineWidth: 0 },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
+    columnStyles: { 0: { cellWidth: 20 }, 2: { cellWidth: 52 } },
+  });
 
   footers(doc, sanitize(`${input.fullName} - ${data.periodLabel}`));
   return doc.output("arraybuffer") as unknown as Uint8Array;
