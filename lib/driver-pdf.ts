@@ -7,6 +7,7 @@ import { getCompanyCurrency } from "@/lib/company-context";
 import { fetchLogoBase64, type PdfLogo } from "@/lib/company-logo";
 import { visibleEmail } from "@/lib/placeholder-email";
 import { sanitize, truncate } from "@/lib/invoice-pdf";
+import { loadTotal } from "@/lib/accessorials";
 
 /**
  * Two PDFs for a driver and a period:
@@ -290,6 +291,12 @@ const loadRoute = (l: PlaceLoad) =>
 const loadDates = (l: PlaceLoad, fmtDate: (d: Date | string | null) => string) =>
   `${fmtDate(l.pickupDate)} -> ${fmtDate(l.deliveryDate)}`;
 
+/** What a load adds to the total: for an external driver rate + accessorials. */
+const loadAmount = (
+  data: ReportData,
+  l: { price: number; accessorialAmount: number | null },
+) => (data.external ? loadTotal(l) : l.price);
+
 const miles = (km: number) => `${Math.round(km).toLocaleString("en-US")} Mi`;
 
 // ── 1. the full report ──────────────────────────────────────────────────────
@@ -337,7 +344,7 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
     sanitize(l.customer?.name ?? "-"),
     sanitize(l.truck?.plateNumber ?? "-"),
     Math.round(l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0).toLocaleString("en-US"),
-    fmt(l.price, l.currency),
+    fmt(loadAmount(data, l), l.currency),
   ]);
   autoTable(doc, {
     startY: y + 2,
@@ -489,20 +496,29 @@ export function renderDriverStatementPdf(input: DriverPdfInput): Uint8Array {
     sanitize(l.referenceNumber),
     sanitize(loadRoute(l)),
     sanitize(loadDates(l, data.fmtDate)),
+    fmt(loadAmount(data, l), l.currency),
   ]);
   const listY = payY + 38 + 10;
   doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...DARK);
   doc.text(`Loads (${rows.length})`, ML, listY);
   autoTable(doc, {
     startY: listY + 2,
-    head: [["Load #", "Description (from -> to)", "Dates (pickup -> delivery)"]],
-    body: rows.length ? rows : [["No loads in this period", "", ""]],
+    head: [["Load #", "Description (from -> to)", "Dates (pickup -> delivery)", "Amount"]],
+    body: rows.length ? rows : [["No loads in this period", "", "", ""]],
+    foot: rows.length ? [["TOTAL", "", "", fmt(data.revenue, currency)]] : undefined,
+    showFoot: "lastPage",
     theme: "plain",
     margin: { left: ML, right: MR },
     styles: { fontSize: 8.5, cellPadding: 2.2, textColor: DARK, lineColor: LGRAY, lineWidth: { bottom: 0.15 } },
     headStyles: { fillColor: BRAND, textColor: [255, 255, 255], fontStyle: "bold", lineWidth: 0 },
     alternateRowStyles: { fillColor: [249, 250, 251] },
-    columnStyles: { 0: { cellWidth: 20 }, 2: { cellWidth: 52 } },
+    footStyles: { fillColor: SOFT, textColor: DARK, fontStyle: "bold" },
+    columnStyles: { 0: { cellWidth: 20 }, 2: { cellWidth: 50 }, 3: { halign: "right", cellWidth: 28 } },
+    didParseCell: (h) => {
+      if ((h.section === "head" || h.section === "foot") && h.column.index === 3) {
+        h.cell.styles.halign = "right";
+      }
+    },
   });
 
   footers(doc, sanitize(`${input.fullName} - ${data.periodLabel}`));
