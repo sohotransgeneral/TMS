@@ -449,6 +449,16 @@ export function renderDriverStatementPdf(input: DriverPdfInput): Uint8Array {
     doc.text(truncate(doc, value, boxW - 8), x + boxW / 2, y + 28, { align: "center" });
   });
 
+  // What he earned: his percentage (or rate) applied to the total.
+  const pay = data.baseSalary + data.commission;
+  const payY = y + 38 + gap;
+  doc.setFillColor(...BRAND).setDrawColor(...BRAND).setLineWidth(0.3);
+  doc.roundedRect(ML, payY, W - ML - MR, 38, 2, 2, "FD");
+  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(199, 210, 254);
+  doc.text("Your amount", W / 2, payY + 12, { align: "center" });
+  doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(255, 255, 255);
+  doc.text(fmt(pay, currency), W / 2, payY + 29, { align: "center" });
+
   footers(doc, sanitize(`${input.fullName} - ${data.periodLabel}`));
   return doc.output("arraybuffer") as unknown as Uint8Array;
 }
