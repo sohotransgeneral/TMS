@@ -182,7 +182,7 @@ const CHAR_MAP: Record<string, string> = {
   "\u2192": "->",                 // \u2192 used between pickup and delivery
 };
 
-function sanitize(text: string): string {
+export function sanitize(text: string): string {
   // Newlines survive — autoTable breaks lines on them. Without this exception
   // every line break in a description printed as a literal "?", which is how
   // "Load 8?From: ...?To: ..." ended up on invoices.
@@ -192,7 +192,7 @@ function sanitize(text: string): string {
 }
 
 // truncate text so it fits a given width at current font
-function truncate(doc: jsPDF, text: string, maxW: number): string {
+export function truncate(doc: jsPDF, text: string, maxW: number): string {
   const safe = sanitize(text);
   if (doc.getTextWidth(safe) <= maxW) return safe;
   const ellipsis = "...";

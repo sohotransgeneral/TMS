@@ -249,13 +249,16 @@ export default async function DriverDetailPage({
           <div className="flex items-center gap-2">
             <PeriodSelector />
             <Button asChild variant="outline" size="sm">
-              <Link
-                href={`/admin/drivers/${driver.id}/report?period=${period}`}
-                target="_blank"
-              >
+              <a href={`/api/drivers/${driver.id}/report-pdf?period=${period}`}>
                 <FileDown className="mr-2 h-4 w-4" />
                 PDF
-              </Link>
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href={`/api/drivers/${driver.id}/statement-pdf?period=${period}`}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Driver PDF
+              </a>
             </Button>
           </div>
         </div>

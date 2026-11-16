@@ -2,24 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
-
-async function fetchLogoBase64(
-  logoUrl: string | null | undefined,
-): Promise<{ logoBase64: string; logoFormat: "PNG" | "JPEG" | "WEBP" } | null> {
-  if (!logoUrl) return null;
-  try {
-    const res = await fetch(logoUrl);
-    if (!res.ok) return null;
-    const contentType = res.headers.get("content-type") ?? "";
-    const format: "PNG" | "JPEG" | "WEBP" =
-      contentType.includes("png") ? "PNG" :
-      contentType.includes("webp") ? "WEBP" : "JPEG";
-    const buf = Buffer.from(await res.arrayBuffer());
-    return { logoBase64: buf.toString("base64"), logoFormat: format };
-  } catch {
-    return null;
-  }
-}
+import { fetchLogoBase64 } from "@/lib/company-logo";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const me = await requirePermission("invoices:read");
