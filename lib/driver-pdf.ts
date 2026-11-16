@@ -8,6 +8,7 @@ import { fetchLogoBase64, type PdfLogo } from "@/lib/company-logo";
 import { visibleEmail } from "@/lib/placeholder-email";
 import { sanitize, truncate } from "@/lib/invoice-pdf";
 import { loadTotal } from "@/lib/accessorials";
+import { getPeriodRange } from "@/lib/period";
 
 /**
  * Two PDFs for a driver and a period:
@@ -47,6 +48,14 @@ type CompanyInfo = {
 export type DriverPdfInput = {
   fullName: string;
   email: string;
+  phone: string;
+  /** Delivered loads from January 1 to the end of the period (for year-to-date). */
+  ytdLoads: {
+    price: number;
+    accessorialAmount: number | null;
+    actualDistanceKm: number | null;
+    estimatedDistanceKm: number | null;
+  }[];
   data: ReportData;
   company: CompanyInfo | null;
   logo: PdfLogo | null;
@@ -62,7 +71,7 @@ export async function loadDriverPdfInput(
 ): Promise<DriverPdfInput | null> {
   const driver = await prisma.driverProfile.findFirst({
     where: { id: driverId, companyId: companyId ?? undefined },
-    include: { user: { select: { email: true } } },
+    include: { user: { select: { email: true, phone: true } } },
   });
   if (!driver) return null;
 
@@ -86,6 +95,22 @@ export async function loadDriverPdfInput(
         }
       : null,
   );
+
+  // Year to date, for the settlement: January 1 up to the end of the period.
+  const { to } = getPeriodRange(period);
+  const ytdLoads = await prisma.load.findMany({
+    where: {
+      driverId: driver.id,
+      pickupDate: { gte: new Date(to.getFullYear(), 0, 1), lte: to },
+      status: { in: ["DELIVERED", "POD_UPLOADED", "INVOICED", "PAID"] },
+    },
+    select: {
+      price: true,
+      accessorialAmount: true,
+      actualDistanceKm: true,
+      estimatedDistanceKm: true,
+    },
+  });
 
   const company = companyId
     ? await prisma.company.findUnique({
@@ -112,6 +137,8 @@ export async function loadDriverPdfInput(
   return {
     fullName: `${driver.firstName} ${driver.lastName}`,
     email: visibleEmail(driver.user.email),
+    phone: driver.user.phone ?? "",
+    ytdLoads,
     data,
     company,
     logo: company ? await fetchLogoBase64(company.logoUrl) : null,
@@ -149,7 +176,11 @@ function companyLines(c: CompanyInfo): string[] {
 }
 
 /** Logo on the left, company name and details beside it. Returns the next y. */
-function letterhead(doc: jsPDF, input: DriverPdfInput): number {
+function letterhead(
+  doc: jsPDF,
+  input: DriverPdfInput,
+  opts: { maxTextW?: number; rule?: boolean } = {},
+): number {
   const W = doc.internal.pageSize.getWidth();
   const top = 14;
   const c = input.company;
@@ -167,7 +198,7 @@ function letterhead(doc: jsPDF, input: DriverPdfInput): number {
     }
   }
 
-  const maxW = W - MR - textX;
+  const maxW = opts.maxTextW ?? W - MR - textX;
   let y = top + 1;
   doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(...DARK);
   doc.text(truncate(doc, (c.legalName || c.name).toUpperCase(), maxW), textX, y + 3);
@@ -178,6 +209,7 @@ function letterhead(doc: jsPDF, input: DriverPdfInput): number {
     y += 4;
   }
   const end = Math.max(y, top - 4 + blockH) + 1;
+  if (opts.rule === false) return end + 4;
   doc.setDrawColor(...BRAND).setLineWidth(0.6).line(ML, end, W - MR, end);
   return end + 7;
 }
@@ -440,86 +472,169 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
   return doc.output("arraybuffer") as unknown as Uint8Array;
 }
 
-// ── 2. the driver's own statement ───────────────────────────────────────────
+// ── 2. the driver's settlement ──────────────────────────────────────────────
 
 /**
- * For the driver: the total that built up in the period and his percentage —
- * nothing else (no expenses, taxes, or what the company keeps).
+ * Handed to the driver, in the shape of a classic driver settlement: the
+ * company letterhead, one line per load (from, to, dates, gross, how he is
+ * paid, what he gets), the year to date, and a short summary.
+ * No expenses, taxes or what the company keeps.
  */
+
+const shortDate = (d: Date | string) =>
+  new Date(d).toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" });
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+const loadMiles = (l: { actualDistanceKm: number | null; estimatedDistanceKm: number | null }) =>
+  l.actualDistanceKm ?? l.estimatedDistanceKm ?? 0;
+
+/** What one load pays the driver; null when his pay isn't per load (fixed). */
+function loadPay(input: DriverPdfInput, amount: number, miles: number): number | null {
+  const d = input.data;
+  if (d.salaryType === "PERCENT_GROSS") return round2((amount * (d.grossPercent ?? 0)) / 100);
+  if (d.salaryType === "FIXED") return null;
+  return round2(miles * (input.salaryPerKm ?? 0) + (amount * (input.commissionRate ?? 0)) / 100);
+}
+
+/** How he is paid, short enough for a narrow column. */
+function methodLabel(input: DriverPdfInput): string {
+  const d = input.data;
+  if (d.salaryType === "PERCENT_GROSS") return `${d.grossPercent ?? 0}%`;
+  if (d.salaryType === "FIXED") return "Fixed";
+  return input.salaryPerKm ? `$${input.salaryPerKm}/mi` : "-";
+}
+
 export function renderDriverStatementPdf(input: DriverPdfInput): Uint8Array {
   const { data } = input;
   const { fmt, currency } = data;
   const doc = newDoc();
   const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
 
-  let y = letterhead(doc, input);
-  y = titleBlock(doc, input, "Driver Statement", y) + 6;
+  // Header: our logo and details on the left, the document on the right.
+  const top = 14;
+  let y = letterhead(doc, input, { maxTextW: 100, rule: false });
+  doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(...DARK);
+  doc.text("Driver Settlement", W - MR, top + 4, { align: "right" });
+  doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(...GRAY);
+  doc.text(sanitize(`Period: ${data.periodLabel}`), W - MR, top + 10, { align: "right" });
+  doc.text(`Settlement Date: ${shortDate(new Date())}`, W - MR, top + 15, { align: "right" });
 
-  // His percentage; a driver paid per mile or a fixed amount has a rate instead.
-  const percent =
-    data.salaryType === "PERCENT_GROSS" && data.grossPercent != null
-      ? `${data.grossPercent}%`
-      : data.salaryType === "FIXED"
-        ? "Fixed amount"
-        : input.salaryPerKm
-          ? `${input.salaryPerKm} ${currency} / Mi`
-          : "-";
+  // Who it is for.
+  y += 4;
+  doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(...DARK);
+  doc.text(sanitize(input.fullName.toUpperCase()), ML, y);
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...GRAY);
+  for (const line of [input.phone, input.email].filter(Boolean)) {
+    y += 4.5;
+    doc.text(sanitize(line), ML, y);
+  }
+  y += 8;
 
-  const boxes: [string, string][] = [
-    ["Total accumulated", fmt(data.revenue, currency)],
-    [data.salaryType === "PERCENT_GROSS" ? "Your percentage" : "Your pay rate", percent],
-  ];
-  const gap = 8;
-  const boxW = (W - ML - MR - gap) / 2;
-  boxes.forEach(([label, value], i) => {
-    const x = ML + i * (boxW + gap);
-    doc.setFillColor(...SOFT).setDrawColor(...LGRAY).setLineWidth(0.3);
-    doc.roundedRect(x, y, boxW, 38, 2, 2, "FD");
-    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(...GRAY);
-    doc.text(label, x + boxW / 2, y + 12, { align: "center" });
-    doc.setFont("helvetica", "bold").setFontSize(24).setTextColor(...DARK);
-    doc.text(truncate(doc, value, boxW - 8), x + boxW / 2, y + 28, { align: "center" });
+  // One line per load.
+  let paySum = 0;
+  let grossSum = 0;
+  let milesSum = 0;
+  const methodText = methodLabel(input);
+  const body = data.loads.map((l) => {
+    const amount = loadAmount(data, l);
+    const miles = loadMiles(l);
+    const pay = loadPay(input, amount, miles);
+    grossSum += amount;
+    milesSum += miles;
+    if (pay != null) paySum += pay;
+    return [
+      sanitize(l.referenceNumber),
+      sanitize(place(l.pickupCity, l.pickupState, l.pickupAddress).toUpperCase()),
+      sanitize(place(l.deliveryCity, l.deliveryState, l.deliveryAddress).toUpperCase()),
+      Math.round(miles).toLocaleString("en-US"),
+      sanitize(l.truck?.plateNumber ?? "-"),
+      shortDate(l.pickupDate),
+      shortDate(l.deliveryDate),
+      fmt(amount, l.currency),
+      sanitize(methodText),
+      pay != null ? fmt(pay, l.currency) : "-",
+    ];
   });
+  // A fixed salary isn't earned load by load: the whole amount is the total.
+  const grandTotal = data.salaryType === "FIXED" ? data.baseSalary : paySum;
 
-  // What he earned: his percentage (or rate) applied to the total.
-  const pay = data.baseSalary + data.commission;
-  const payY = y + 38 + gap;
-  doc.setFillColor(...BRAND).setDrawColor(...BRAND).setLineWidth(0.3);
-  doc.roundedRect(ML, payY, W - ML - MR, 38, 2, 2, "FD");
-  doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(199, 210, 254);
-  doc.text("Your amount", W / 2, payY + 12, { align: "center" });
-  doc.setFont("helvetica", "bold").setFontSize(28).setTextColor(255, 255, 255);
-  doc.text(fmt(pay, currency), W / 2, payY + 29, { align: "center" });
-
-  // The loads behind the total: where from and to, and when. No prices.
-  const rows = data.loads.map((l) => [
-    sanitize(l.referenceNumber),
-    sanitize(loadRoute(l)),
-    sanitize(loadDates(l, data.fmtDate)),
-    fmt(loadAmount(data, l), l.currency),
-  ]);
-  const listY = payY + 38 + 10;
-  doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...DARK);
-  doc.text(`Loads (${rows.length})`, ML, listY);
   autoTable(doc, {
-    startY: listY + 2,
-    head: [["Load #", "Description (from -> to)", "Dates (pickup -> delivery)", "Amount"]],
-    body: rows.length ? rows : [["No loads in this period", "", "", ""]],
-    foot: rows.length ? [["TOTAL", "", "", fmt(data.revenue, currency)]] : undefined,
+    startY: y,
+    head: [["Load #", "Origin", "Destn", "Dist", "Tractor", "Ship Date", "Delv Date", "Gross", "Method", "Net Pay"]],
+    body: body.length ? body : [["No loads in this period", "", "", "", "", "", "", "", "", ""]],
+    foot: body.length
+      ? [["Total", "", "", Math.round(milesSum).toLocaleString("en-US"), "", "", "", fmt(grossSum, currency), "", fmt(grandTotal, currency)]]
+      : undefined,
     showFoot: "lastPage",
     theme: "plain",
     margin: { left: ML, right: MR },
-    styles: { fontSize: 8.5, cellPadding: 2.2, textColor: DARK, lineColor: LGRAY, lineWidth: { bottom: 0.15 } },
-    headStyles: { fillColor: BRAND, textColor: [255, 255, 255], fontStyle: "bold", lineWidth: 0 },
-    alternateRowStyles: { fillColor: [249, 250, 251] },
+    styles: { fontSize: 7.5, cellPadding: 1.8, textColor: DARK, lineColor: LGRAY, lineWidth: { bottom: 0.15 }, valign: "middle" },
+    headStyles: { fillColor: [229, 231, 235], textColor: DARK, fontStyle: "bold", lineWidth: 0 },
     footStyles: { fillColor: SOFT, textColor: DARK, fontStyle: "bold" },
-    columnStyles: { 0: { cellWidth: 20 }, 2: { cellWidth: 50 }, 3: { halign: "right", cellWidth: 28 } },
+    columnStyles: {
+      0: { cellWidth: 15 },
+      1: { cellWidth: 23 },
+      2: { cellWidth: 23 },
+      3: { halign: "right", cellWidth: 15 },
+      4: { cellWidth: 14 },
+      5: { cellWidth: 16 },
+      6: { cellWidth: 16 },
+      7: { halign: "right", cellWidth: 21 },
+      8: { cellWidth: 17 },
+      9: { halign: "right", cellWidth: 20 },
+    },
     didParseCell: (h) => {
-      if ((h.section === "head" || h.section === "foot") && h.column.index === 3) {
+      if ((h.section === "head" || h.section === "foot") && [3, 7, 9].includes(h.column.index)) {
         h.cell.styles.halign = "right";
       }
     },
   });
+  y = lastY(doc, y + 20) + 12;
+
+  if (y > H - 75) {
+    doc.addPage();
+    y = 20;
+  }
+
+  // Year to date, as of the end of this period.
+  const ytdGross = input.ytdLoads.reduce((t, l) => t + loadAmount(data, l), 0);
+  const ytdNet =
+    data.salaryType === "FIXED"
+      ? null
+      : input.ytdLoads.reduce(
+          (t, l) => t + (loadPay(input, loadAmount(data, l), loadMiles(l)) ?? 0),
+          0,
+        );
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...DARK);
+  doc.text("Year to Date Gross:", ML, y);
+  doc.text(fmt(ytdGross, currency), ML + 48, y);
+  if (ytdNet != null) {
+    y += 6;
+    doc.text("Year to Date Net:", ML, y);
+    doc.text(fmt(ytdNet, currency), ML + 48, y);
+  }
+
+  y += 14;
+  doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(...DARK);
+  doc.text(`Grand Total: ${fmt(grandTotal, currency)}`, ML, y);
+
+  // Settlement summary.
+  y += 12;
+  doc.setFontSize(10);
+  doc.text("Settlement Summary:", ML, y);
+  doc.setFont("helvetica", "normal").setFontSize(9);
+  const summary = [
+    `Loads Total: ${data.loads.length}`,
+    `Gross Pay Total: ${fmt(grossSum, currency)}`,
+    `Miles Total: ${Math.round(milesSum).toLocaleString("en-US")}`,
+    ...(data.salaryType === "PERCENT_GROSS" ? [`Pay Percentage: ${data.grossPercent ?? 0}%`] : []),
+  ];
+  for (const line of summary) {
+    y += 5.5;
+    doc.text(sanitize(line), ML, y);
+  }
 
   footers(doc, sanitize(`${input.fullName} - ${data.periodLabel}`));
   return doc.output("arraybuffer") as unknown as Uint8Array;
