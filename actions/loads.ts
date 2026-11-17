@@ -340,8 +340,28 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
 
   const target = await prisma.load.findUnique({ where: { id } });
   if (!target || !canActOnCompany(me, target.companyId)) return failure("Load not found.");
-  if (["PAID", "CANCELLED"].includes(target.status)) {
+  if (target.status === "CANCELLED") {
     return failure("Load can no longer be modified.");
+  }
+  // A paid load is closed for everything except its permits: they are costs
+  // that often turn up after the load was settled, and they don't touch the
+  // price or the invoice.
+  if (target.status === "PAID") {
+    if (rest.permits === undefined) {
+      return failure("A paid load can only have its permits changed.");
+    }
+    await prisma.load.update({ where: { id }, data: permitWrite(rest.permits) });
+    await logAudit({
+      action: "load.update",
+      userId: me.id,
+      companyId: me.companyId,
+      entityType: "Load",
+      entityId: id,
+    });
+    revalidatePath("/dispatch/loads");
+    revalidatePath(`/dispatch/loads/${id}`);
+    revalidatePath("/fleet/permits");
+    return success(undefined, "Permits updated (the load is paid, so nothing else was changed).");
   }
 
   normalizeAccessorials(rest);
