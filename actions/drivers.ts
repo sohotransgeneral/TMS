@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import {
   driverCreateSchema,
   driverUpdateSchema,
@@ -106,7 +106,7 @@ export async function createDriver(formData: FormData): Promise<ActionResult> {
 
 export async function updateDriver(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = driverUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -121,7 +121,7 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
     where: { id: d.id },
     include: { user: true },
   });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Driver not found.");
   }
 
@@ -198,7 +198,7 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "driver.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "DriverProfile",
     entityId: d.id,
   });
@@ -210,7 +210,7 @@ export async function updateDriver(formData: FormData): Promise<ActionResult> {
 export async function deleteDriver(id: string): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
   const target = await prisma.driverProfile.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Driver not found.");
   }
 
@@ -221,7 +221,7 @@ export async function deleteDriver(id: string): Promise<ActionResult> {
   await logAudit({
     action: "driver.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "DriverProfile",
     entityId: id,
   });

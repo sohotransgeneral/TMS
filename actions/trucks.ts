@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import { truckSchema, truckUpdateSchema } from "@/lib/validators/truck";
 
 export async function createTruck(formData: FormData): Promise<ActionResult> {
@@ -46,7 +46,7 @@ export async function createTruck(formData: FormData): Promise<ActionResult> {
 
 export async function updateTruck(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = truckUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -57,7 +57,7 @@ export async function updateTruck(formData: FormData): Promise<ActionResult> {
   const cleanData = { ...data, pairedTrailerId: data.pairedTrailerId ?? null };
 
   const target = await prisma.truck.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Truck not found.");
   }
 
@@ -81,7 +81,7 @@ export async function updateTruck(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "truck.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Truck",
     entityId: id,
   });
@@ -93,7 +93,7 @@ export async function updateTruck(formData: FormData): Promise<ActionResult> {
 export async function deleteTruck(id: string): Promise<ActionResult> {
   const me = await requirePermission("trucks:write");
   const target = await prisma.truck.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Truck not found.");
   }
 
@@ -102,7 +102,7 @@ export async function deleteTruck(id: string): Promise<ActionResult> {
   await logAudit({
     action: "truck.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Truck",
     entityId: id,
   });

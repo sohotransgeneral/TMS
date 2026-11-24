@@ -4,20 +4,20 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import { paymentCreateSchema } from "@/lib/validators/accounting";
 import { notifyEvent } from "@/lib/notifications";
 
 export async function recordPayment(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("payments:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = paymentCreateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
   const invoice = await prisma.invoice.findUnique({ where: { id: d.invoiceId } });
-  if (!invoice || invoice.companyId !== me.companyId) return failure("Invoice not found.");
+  if (!invoice || !canActOnCompany(me, invoice.companyId)) return failure("Invoice not found.");
   if (invoice.status === "CANCELLED") return failure("Invoice is canceled.");
 
   const newPaid = +(invoice.paidAmount + d.amount).toFixed(2);
@@ -26,7 +26,7 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
   await prisma.$transaction([
     prisma.payment.create({
       data: {
-        companyId: me.companyId,
+        companyId: invoice.companyId,
         invoiceId: d.invoiceId,
         amount: d.amount,
         currency: d.currency,
@@ -45,7 +45,7 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "payment.record",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: invoice.companyId,
     entityType: "Invoice",
     entityId: d.invoiceId,
     meta: { amount: d.amount, newPaid },
@@ -89,7 +89,7 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
   if (d.reference) payBodyLines.push(`Ref: ${d.reference}`);
 
   await notifyEvent({
-    companyId: me.companyId,
+    companyId: invoice.companyId,
     topic: "invoices",
     type: status === "PAID" ? "INVOICE_PAID" : "INFO",
     title:
@@ -108,12 +108,12 @@ export async function recordPayment(formData: FormData): Promise<ActionResult> {
 
 export async function deletePayment(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("payments:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
   if (!id) return failure("ID is missing.");
 
   const pay = await prisma.payment.findUnique({ where: { id } });
-  if (!pay || pay.companyId !== me.companyId) return failure("Payment not found.");
+  if (!pay || !canActOnCompany(me, pay.companyId)) return failure("Payment not found.");
 
   const invoice = await prisma.invoice.findUnique({ where: { id: pay.invoiceId } });
   if (!invoice) return failure("Invoice not found.");
@@ -132,7 +132,7 @@ export async function deletePayment(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "payment.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: pay.companyId,
     entityType: "Invoice",
     entityId: pay.invoiceId,
   });

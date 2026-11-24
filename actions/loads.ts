@@ -330,7 +330,7 @@ export async function createLoad(formData: FormData): Promise<ActionResult> {
 
 export async function updateLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = loadUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -354,7 +354,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
     await logAudit({
       action: "load.update",
       userId: me.id,
-      companyId: me.companyId,
+      companyId: target.companyId,
       entityType: "Load",
       entityId: id,
     });
@@ -423,7 +423,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   let deadhead: DeadheadResult | null = null;
   if (trackDeadhead && driverId && pickupFrom) {
     deadhead = await computeDeadhead({
-      companyId: me.companyId,
+      companyId: target.companyId,
       driverId,
       pickup: pickupFrom,
       pickupDate,
@@ -464,7 +464,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "load.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Load",
     entityId: id,
   });
@@ -476,7 +476,7 @@ export async function updateLoad(formData: FormData): Promise<ActionResult> {
 
 export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:assign");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = loadAssignSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -501,7 +501,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   const deadhead =
     target.trackDeadhead && driverId && pickupPoint
       ? await computeDeadhead({
-          companyId: me.companyId,
+          companyId: target.companyId,
           driverId,
           pickup: pickupPoint,
           pickupDate: target.pickupDate,
@@ -541,7 +541,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "load.assign",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Load",
     entityId: id,
     meta: { driverId, truckId, trailerId },
@@ -555,7 +555,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
     ]);
 
     await notifyEvent({
-      companyId: me.companyId,
+      companyId: target.companyId,
       topic: "loads",
       type: "LOAD_ASSIGNED",
       title: `Load ${target.referenceNumber} assigned`,
@@ -616,7 +616,7 @@ export async function assignLoad(formData: FormData): Promise<ActionResult> {
 
 export async function changeLoadStatus(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("loads:update_status");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = loadStatusSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -661,14 +661,14 @@ export async function changeLoadStatus(formData: FormData): Promise<ActionResult
   await logAudit({
     action: "load.status",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Load",
     entityId: id,
     meta: { status, note },
   });
 
   await notifyEvent({
-    companyId: me.companyId,
+    companyId: target.companyId,
     topic: "loads",
     type: "LOAD_STATUS",
     title: `Load ${target.referenceNumber}: ${status}`,
@@ -734,7 +734,7 @@ export async function deleteLoad(id: string): Promise<ActionResult> {
   await logAudit({
     action: "load.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Load",
     entityId: id,
     meta: {

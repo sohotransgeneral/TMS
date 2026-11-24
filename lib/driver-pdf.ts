@@ -83,6 +83,8 @@ export async function loadDriverPdfInput(
     include: { user: { select: { email: true, phone: true } } },
   });
   if (!driver) return null;
+  // A super admin has no company of their own: use the driver's.
+  const ownCompanyId = companyId ?? driver.companyId;
 
   const data = await getDriverFinancialData(
     driver.id,
@@ -96,7 +98,7 @@ export async function loadDriverPdfInput(
     driver.isExternal ? 0 : ((driver as { taxCass?: number | null }).taxCass ?? null),
     driver.isExternal ? 0 : ((driver as { taxImpozit?: number | null }).taxImpozit ?? null),
     period,
-    await getCompanyCurrency(companyId),
+    await getCompanyCurrency(ownCompanyId),
     driver.isExternal
       ? {
           company: driver.externalCompany ?? "Their company",
@@ -123,9 +125,9 @@ export async function loadDriverPdfInput(
     },
   });
 
-  const company = companyId
+  const company = ownCompanyId
     ? await prisma.company.findUnique({
-        where: { id: companyId },
+        where: { id: ownCompanyId },
         select: {
           name: true,
           legalName: true,
@@ -514,6 +516,20 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
         ),
       )
     : null;
+  const periodDriver = round2(data.baseSalary + data.commission);
+  const earned: Row[] = [];
+  if (data.salaryType !== "FIXED" || periodDriver > 0) {
+    earned.push({ label: "Driver earned this period", value: fmt(periodDriver, currency), bold: true });
+  }
+  if (data.externalSplit) {
+    earned.push({
+      label: `Truck owner earned this period${input.ownerLabel ? ` (${input.ownerLabel})` : ""}`,
+      value: fmt(data.externalSplit.partner, currency),
+      bold: true,
+    });
+  }
+  if (earned.length) y = keyValueTable(doc, y, "Earned in this period", earned);
+
   const ytd: Row[] = [
     { label: "Loads (invoiced / paid)", value: String(input.ytdLoads.length) },
     {

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import {
   expenseCreateSchema,
   expenseUpdateSchema,
@@ -102,14 +102,14 @@ export async function createExpense(formData: FormData): Promise<ActionResult> {
 
 export async function updateExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = expenseUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.expense.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Expense not found.");
   if (target.status === "APPROVED") return failure("Approved expense cannot be modified.");
 
   const data: Record<string, unknown> = { ...rest };
@@ -122,7 +122,7 @@ export async function updateExpense(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "expense.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Expense",
     entityId: id,
   });
@@ -133,13 +133,13 @@ export async function updateExpense(formData: FormData): Promise<ActionResult> {
 
 export async function decideExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:approve");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
   const parsed = expenseDecisionSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, decision } = parsed.data;
 
   const target = await prisma.expense.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Expense not found.");
 
   await prisma.expense.update({
     where: { id },
@@ -153,7 +153,7 @@ export async function decideExpense(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "expense.decision",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Expense",
     entityId: id,
     meta: { decision },
@@ -191,7 +191,7 @@ export async function decideExpense(formData: FormData): Promise<ActionResult> {
   if (decLoad) decBodyLines.push(`Load: ${decLoad.referenceNumber}`);
 
   await notifyEvent({
-    companyId: me.companyId,
+    companyId: target.companyId,
     topic: "expenses",
     type: "EXPENSE_DECISION",
     title: `${
@@ -212,10 +212,10 @@ export async function setExpenseChargedTo(
   chargedTo: "DRIVER" | "COMPANY",
 ): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const target = await prisma.expense.findUnique({ where: { id: expenseId } });
-  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Expense not found.");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (prisma.expense as any).update({ where: { id: expenseId }, data: { chargedTo } });
@@ -227,19 +227,19 @@ export async function setExpenseChargedTo(
 
 export async function deleteExpense(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("expenses:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
   if (!id) return failure("ID is missing.");
 
   const target = await prisma.expense.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Expense not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Expense not found.");
   if (target.status === "APPROVED") return failure("Approved expense cannot be deleted.");
 
   await prisma.expense.delete({ where: { id } });
   await logAudit({
     action: "expense.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Expense",
     entityId: id,
   });

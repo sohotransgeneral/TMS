@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import {
   maintenanceCreateSchema,
   maintenanceUpdateSchema,
@@ -86,14 +86,14 @@ export async function createMaintenance(formData: FormData): Promise<ActionResul
 
 export async function updateMaintenance(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("maintenance:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = maintenanceUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, ...rest } = parsed.data;
 
   const target = await prisma.maintenance.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Maintenance not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Maintenance not found.");
 
   const data: Record<string, unknown> = { ...rest };
   if (rest.truckId !== undefined) data.truckId = rest.truckId || null;
@@ -110,11 +110,11 @@ export async function updateMaintenance(formData: FormData): Promise<ActionResul
 
 export async function deleteMaintenance(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("maintenance:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
   if (!id) return failure("ID is missing.");
   const target = await prisma.maintenance.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Maintenance not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Maintenance not found.");
   await prisma.maintenance.delete({ where: { id } });
   revalidatePath("/fleet/maintenance");
   return success(null, "Maintenance deleted.");

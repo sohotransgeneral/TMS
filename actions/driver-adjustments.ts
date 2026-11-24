@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 
 export async function createDriverAdjustment(
   formData: FormData,
@@ -51,14 +51,14 @@ export async function deleteDriverAdjustment(
   formData: FormData,
 ): Promise<ActionResult> {
   const me = await requirePermission("drivers:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const id = String(formData.get("id") ?? "");
   if (!id) return failure("ID is missing.");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adj = await (prisma as any).driverAdjustment.findUnique({ where: { id } });
-  if (!adj || adj.companyId !== me.companyId) return failure("Adjustment not found.");
+  if (!adj || !canActOnCompany(me, adj.companyId)) return failure("Adjustment not found.");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (prisma as any).driverAdjustment.delete({ where: { id } });

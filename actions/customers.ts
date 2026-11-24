@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import { customerSchema, customerUpdateSchema } from "@/lib/validators/customer";
 
 export async function createCustomer(formData: FormData): Promise<ActionResult> {
@@ -35,7 +35,7 @@ export async function createCustomer(formData: FormData): Promise<ActionResult> 
 
 export async function updateCustomer(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("customers:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = customerUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -44,7 +44,7 @@ export async function updateCustomer(formData: FormData): Promise<ActionResult> 
   const { id, ...data } = parsed.data;
 
   const target = await prisma.customer.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Client inexistent.");
   }
 
@@ -53,7 +53,7 @@ export async function updateCustomer(formData: FormData): Promise<ActionResult> 
   await logAudit({
     action: "customer.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Customer",
     entityId: id,
   });
@@ -65,7 +65,7 @@ export async function updateCustomer(formData: FormData): Promise<ActionResult> 
 export async function deleteCustomer(id: string): Promise<ActionResult> {
   const me = await requirePermission("customers:write");
   const target = await prisma.customer.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Client inexistent.");
   }
 
@@ -83,7 +83,7 @@ export async function deleteCustomer(id: string): Promise<ActionResult> {
   await logAudit({
     action: "customer.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Customer",
     entityId: id,
   });
@@ -96,7 +96,7 @@ export async function deleteCustomer(id: string): Promise<ActionResult> {
  *  If no User is linked yet, creates one (requires the customer to have an email). */
 export async function setCustomerPortalPassword(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("customers:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const customerId = formData.get("customerId") as string | null;
   const password = formData.get("password") as string | null;
@@ -107,7 +107,8 @@ export async function setCustomerPortalPassword(formData: FormData): Promise<Act
   if (password !== confirmPassword) return failure("Passwords do not match.");
 
   const customer = await prisma.customer.findFirst({
-    where: { id: customerId, companyId: me.companyId },
+    // SUPER_ADMIN has no company of their own and may set it for any customer.
+    where: { id: customerId, ...(me.companyId ? { companyId: me.companyId } : {}) },
     include: { user: true },
   });
   if (!customer) return failure("Customer not found.");
@@ -138,7 +139,7 @@ export async function setCustomerPortalPassword(formData: FormData): Promise<Act
           role: "CUSTOMER",
           active: true,
           password: hashed,
-          companyId: me.companyId,
+          companyId: customer.companyId,
         },
       });
       await prisma.customer.update({ where: { id: customerId }, data: { userId: newUser.id } });
@@ -148,7 +149,7 @@ export async function setCustomerPortalPassword(formData: FormData): Promise<Act
   await logAudit({
     action: "customer.portal_password",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: customer.companyId,
     entityType: "Customer",
     entityId: customerId,
   });

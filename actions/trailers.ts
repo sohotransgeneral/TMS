@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import { trailerSchema, trailerUpdateSchema } from "@/lib/validators/trailer";
 
 export async function createTrailer(formData: FormData): Promise<ActionResult> {
@@ -46,7 +46,7 @@ export async function createTrailer(formData: FormData): Promise<ActionResult> {
 
 export async function updateTrailer(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("trailers:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const parsed = trailerUpdateSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -57,7 +57,7 @@ export async function updateTrailer(formData: FormData): Promise<ActionResult> {
   const cleanData = { ...data, pairedTruckId: data.pairedTruckId ?? null };
 
   const target = await prisma.trailer.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Trailer not found.");
   }
 
@@ -81,7 +81,7 @@ export async function updateTrailer(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "trailer.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Trailer",
     entityId: id,
   });
@@ -93,7 +93,7 @@ export async function updateTrailer(formData: FormData): Promise<ActionResult> {
 export async function deleteTrailer(id: string): Promise<ActionResult> {
   const me = await requirePermission("trailers:write");
   const target = await prisma.trailer.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) {
+  if (!target || !canActOnCompany(me, target.companyId)) {
     return failure("Trailer not found.");
   }
 
@@ -102,7 +102,7 @@ export async function deleteTrailer(id: string): Promise<ActionResult> {
   await logAudit({
     action: "trailer.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Trailer",
     entityId: id,
   });

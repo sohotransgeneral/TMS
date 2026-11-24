@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
-import { failure, success, type ActionResult } from "@/lib/action-helpers";
+import { failure, success, type ActionResult, canActOnCompany } from "@/lib/action-helpers";
 import {
   invoiceCreateSchema,
   invoiceUpdateSchema,
@@ -266,7 +266,7 @@ export async function createInvoiceFromLoad(
 
 export async function updateInvoice(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
 
   const items = parseItems(formData);
   const raw = Object.fromEntries(formData);
@@ -275,7 +275,7 @@ export async function updateInvoice(formData: FormData): Promise<ActionResult> {
 
   const { id, items: newItems, ...rest } = parsed.data;
   const target = await prisma.invoice.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Invoice not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Invoice not found.");
   if (target.status === "PAID" || target.status === "CANCELLED")
     return failure("Invoice can no longer be modified.");
 
@@ -295,7 +295,7 @@ export async function updateInvoice(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "invoice.update",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Invoice",
     entityId: id,
   });
@@ -307,20 +307,20 @@ export async function updateInvoice(formData: FormData): Promise<ActionResult> {
 
 export async function changeInvoiceStatus(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
   const parsed = invoiceStatusSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return failure("Invalid data", parsed.error.flatten().fieldErrors);
   const { id, status } = parsed.data;
 
   const target = await prisma.invoice.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Invoice not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Invoice not found.");
 
   await prisma.invoice.update({ where: { id }, data: { status } });
 
   await logAudit({
     action: "invoice.status_change",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Invoice",
     entityId: id,
     meta: { from: target.status, to: status },
@@ -333,12 +333,12 @@ export async function changeInvoiceStatus(formData: FormData): Promise<ActionRes
 
 export async function deleteInvoice(formData: FormData): Promise<ActionResult> {
   const me = await requirePermission("invoices:write");
-  if (!me.companyId) return failure("You are not assigned to a company.");
+  if (!me.companyId && me.role !== "SUPER_ADMIN") return failure("You are not assigned to a company.");
   const id = String(formData.get("id") ?? "");
   if (!id) return failure("ID is missing.");
 
   const target = await prisma.invoice.findUnique({ where: { id } });
-  if (!target || target.companyId !== me.companyId) return failure("Invoice not found.");
+  if (!target || !canActOnCompany(me, target.companyId)) return failure("Invoice not found.");
   if (target.status !== "DRAFT" && target.status !== "CANCELLED")
     return failure("Only DRAFT/Canceled invoices can be deleted.");
   if (target.paidAmount > 0) return failure("Payments exist; cannot delete.");
@@ -348,7 +348,7 @@ export async function deleteInvoice(formData: FormData): Promise<ActionResult> {
   await logAudit({
     action: "invoice.delete",
     userId: me.id,
-    companyId: me.companyId,
+    companyId: target.companyId,
     entityType: "Invoice",
     entityId: id,
   });
