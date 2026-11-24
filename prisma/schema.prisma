@@ -341,6 +341,10 @@ model DriverProfile {
   isExternal         Boolean   @default(false)
   externalCompany    String?
   ourCutPercent      Float?
+  // The owner of the truck (usually the lending company's person): shown on the
+  // company report instead of the driver when asked for.
+  ownerName          String?
+  ownerEmail         String?
 
   // Tax rates (percentages, e.g. 25 = 25%). Defaults match Romanian PFA/employee rates
   taxCas             Float?    @default(25)   // Employee pension contribution %

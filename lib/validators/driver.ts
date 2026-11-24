@@ -57,6 +57,8 @@ export const driverCreateSchema = z.object({
     .optional(),
   externalCompany: fields.optionalString,
   ourCutPercent: fields.optionalNumber,
+  ownerName: fields.optionalString,
+  ownerEmail: optionalEmail,
   taxCas: fields.optionalNumber,
   taxCass: fields.optionalNumber,
   taxImpozit: fields.optionalNumber,

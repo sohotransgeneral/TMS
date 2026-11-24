@@ -290,7 +290,7 @@ export async function DriverFinancialReport({
             color: "text-purple-500",
           },
           {
-            label: "Net salary",
+            label: "Driver net salary",
             value: fmt(taxes.net, currency),
             icon: Calculator,
             color: "text-amber-500",

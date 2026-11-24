@@ -9,6 +9,7 @@ import { visibleEmail } from "@/lib/placeholder-email";
 import { sanitize, truncate } from "@/lib/invoice-pdf";
 import { loadTotal } from "@/lib/accessorials";
 import { getPeriodRange } from "@/lib/period";
+import { splitExternal } from "@/lib/external-driver";
 
 /**
  * Two PDFs for a driver and a period:
@@ -49,10 +50,16 @@ export type DriverPdfInput = {
   fullName: string;
   email: string;
   phone: string;
-  /** Delivered loads from January 1 to the end of the period (for year-to-date). */
+  /** Who the full report is addressed to: the driver, or the truck owner when asked for. */
+  reportName: string;
+  reportEmail: string;
+  /** Truck owner, for an external driver: owner's name, else the driver's company. */
+  ownerLabel: string | null;
+  /** Invoiced and paid loads from January 1 to the end of the period (year to date). */
   ytdLoads: {
     price: number;
     accessorialAmount: number | null;
+    permitAmount: number | null;
     actualDistanceKm: number | null;
     estimatedDistanceKm: number | null;
   }[];
@@ -68,6 +75,8 @@ export async function loadDriverPdfInput(
   companyId: string | null,
   driverId: string,
   period: string,
+  /** Whose name and email head the full report. */
+  party: "driver" | "owner" = "driver",
 ): Promise<DriverPdfInput | null> {
   const driver = await prisma.driverProfile.findFirst({
     where: { id: driverId, companyId: companyId ?? undefined },
@@ -96,17 +105,19 @@ export async function loadDriverPdfInput(
       : null,
   );
 
-  // Year to date, for the settlement: January 1 up to the end of the period.
+  // Year to date: January 1 up to the end of the period, counting only loads
+  // that were at least invoiced — what has really been earned so far.
   const { to } = getPeriodRange(period);
   const ytdLoads = await prisma.load.findMany({
     where: {
       driverId: driver.id,
       pickupDate: { gte: new Date(to.getFullYear(), 0, 1), lte: to },
-      status: { in: ["DELIVERED", "POD_UPLOADED", "INVOICED", "PAID"] },
+      status: { in: ["INVOICED", "PAID"] },
     },
     select: {
       price: true,
       accessorialAmount: true,
+      permitAmount: true,
       actualDistanceKm: true,
       estimatedDistanceKm: true,
     },
@@ -134,9 +145,19 @@ export async function loadDriverPdfInput(
       })
     : null;
 
+  const fullName = `${driver.firstName} ${driver.lastName}`;
+  const email = visibleEmail(driver.user.email);
+  const ownerLabel = driver.isExternal
+    ? driver.ownerName?.trim() || driver.externalCompany?.trim() || null
+    : null;
+  const asOwner = party === "owner" && ownerLabel != null;
+
   return {
-    fullName: `${driver.firstName} ${driver.lastName}`,
-    email: visibleEmail(driver.user.email),
+    fullName,
+    email,
+    reportName: asOwner ? ownerLabel : fullName,
+    reportEmail: asOwner ? (driver.ownerEmail ?? "") : email,
+    ownerLabel,
     phone: driver.user.phone ?? "",
     ytdLoads,
     data,
@@ -222,9 +243,9 @@ function titleBlock(
 ): number {
   const W = doc.internal.pageSize.getWidth();
   doc.setFont("helvetica", "bold").setFontSize(17).setTextColor(...DARK);
-  doc.text(truncate(doc, input.fullName, W * 0.5), ML, y + 4);
+  doc.text(truncate(doc, input.reportName, W * 0.5), ML, y + 4);
   doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(...GRAY);
-  if (input.email) doc.text(truncate(doc, input.email, W * 0.5), ML, y + 10);
+  if (input.reportEmail) doc.text(truncate(doc, input.reportEmail, W * 0.5), ML, y + 10);
 
   doc.setFont("helvetica", "bold").setFontSize(13).setTextColor(...DARK);
   doc.text(title, W - MR, y + 4, { align: "right" });
@@ -334,7 +355,8 @@ const miles = (km: number) => `${Math.round(km).toLocaleString("en-US")} Mi`;
 // ── 1. the full report ──────────────────────────────────────────────────────
 
 export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
-  const { data, fullName } = input;
+  const { data } = input;
+  const fullName = input.reportName;
   const { fmt, fmtDate, loads, currency } = data;
   const doc = newDoc();
   const W = doc.internal.pageSize.getWidth();
@@ -364,7 +386,7 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
     ["Loads", String(loads.length)],
     ["Gross revenue", fmt(data.revenue, currency)],
     ["Distance", miles(data.totalKm)],
-    ["Net salary", fmt(data.taxes.net, currency)],
+    ["Driver net salary", fmt(data.taxes.net, currency)],
   ]);
 
   // Loads
@@ -386,6 +408,7 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
       ? [["TOTAL", "", "", "", Math.round(data.totalKm).toLocaleString("en-US"), fmt(data.revenue, currency)]]
       : undefined,
     showFoot: "lastPage",
+    rowPageBreak: "avoid",
     theme: "plain",
     margin: { left: ML, right: MR },
     styles: { fontSize: 8, cellPadding: 2, textColor: DARK, lineColor: LGRAY, lineWidth: { bottom: 0.15 } },
@@ -466,7 +489,49 @@ export function renderDriverReportPdf(input: DriverPdfInput): Uint8Array {
       W - ML - MR,
     );
     doc.text(note, ML, y);
+    y += note.length * 3.2 + 6;
   }
+
+  // Year to date: what the driver and the truck owner earned so far.
+  const ext = data.external;
+  const driverYtd =
+    data.salaryType === "FIXED"
+      ? null
+      : round2(
+          input.ytdLoads.reduce(
+            (t, l) => t + (loadPay(input, loadAmount(data, l), loadMiles(l)) ?? 0),
+            0,
+          ),
+        );
+  const ownerYtd = ext
+    ? round2(
+        input.ytdLoads.reduce(
+          (t, l) =>
+            t +
+            splitExternal(loadTotal(l), ext.ourPercent, data.grossPercent ?? 0, l.permitAmount ?? 0)
+              .partner,
+          0,
+        ),
+      )
+    : null;
+  const ytd: Row[] = [
+    { label: "Loads (invoiced / paid)", value: String(input.ytdLoads.length) },
+    {
+      label: "Total of these loads",
+      value: fmt(input.ytdLoads.reduce((t, l) => t + loadAmount(data, l), 0), currency),
+    },
+  ];
+  if (driverYtd != null) {
+    ytd.push({ label: "Driver earned so far", value: fmt(driverYtd, currency), bold: true, rule: true });
+  }
+  if (ownerYtd != null) {
+    ytd.push({
+      label: `Truck owner earned so far${input.ownerLabel ? ` (${input.ownerLabel})` : ""}`,
+      value: fmt(ownerYtd, currency),
+      bold: true,
+    });
+  }
+  y = keyValueTable(doc, y, "Year to Date (invoiced and paid loads)", ytd);
 
   footers(doc, sanitize(`Report auto-generated by TMS - ${fullName} - ${data.periodLabel}`));
   return doc.output("arraybuffer") as unknown as Uint8Array;

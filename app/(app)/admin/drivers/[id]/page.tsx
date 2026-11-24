@@ -12,6 +12,7 @@ import { DocumentSection } from "@/components/documents/document-section";
 import { DriverFinancialReport } from "@/components/drivers/driver-financial-report";
 import { getPeriodRange } from "@/lib/period";
 import { PeriodSelector } from "@/components/drivers/period-selector";
+import { ReportPdfButton } from "@/components/drivers/report-pdf-button";
 import { DriverAdjustmentsPanel } from "@/components/drivers/driver-adjustments-panel";
 import { DriverExpensesPanel } from "@/components/drivers/driver-expenses-panel";
 import { ExpenseFormDialog } from "@/components/accounting/expense-dialog";
@@ -169,7 +170,7 @@ export default async function DriverDetailPage({
               [
                 "External driver",
                 driver.isExternal
-                  ? `${driver.externalCompany ?? "—"} · we ${driver.ourCutPercent ?? 0}% / driver ${driver.grossPercent ?? 0}% / company ${partnerPercentOf(driver.ourCutPercent ?? 0, driver.grossPercent ?? 0)}%`
+                  ? `${driver.externalCompany ?? "—"}${driver.ownerName ? ` (owner: ${driver.ownerName}${driver.ownerEmail ? `, ${driver.ownerEmail}` : ""})` : ""} · we ${driver.ourCutPercent ?? 0}% / driver ${driver.grossPercent ?? 0}% / company ${partnerPercentOf(driver.ourCutPercent ?? 0, driver.grossPercent ?? 0)}%`
                   : null,
               ],
               [
@@ -248,12 +249,15 @@ export default async function DriverDetailPage({
           <h3 className="font-semibold">Financial Report</h3>
           <div className="flex items-center gap-2">
             <PeriodSelector />
-            <Button asChild variant="outline" size="sm">
-              <a href={`/api/drivers/${driver.id}/report-pdf?period=${period}`}>
-                <FileDown className="mr-2 h-4 w-4" />
-                PDF
-              </a>
-            </Button>
+            <ReportPdfButton
+              driverId={driver.id}
+              period={period}
+              ownerLabel={
+                driver.isExternal
+                  ? driver.ownerName?.trim() || driver.externalCompany?.trim() || null
+                  : null
+              }
+            />
             <Button asChild variant="outline" size="sm">
               <a href={`/api/drivers/${driver.id}/statement-pdf?period=${period}`}>
                 <FileDown className="mr-2 h-4 w-4" />

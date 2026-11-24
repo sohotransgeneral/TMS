@@ -235,7 +235,7 @@ export default async function DriverReportPage({
             label: "Distance",
             value: `${Math.round(data.totalKm).toLocaleString("en-US")} Mi`,
           },
-          { label: "Net salary", value: fmt(data.taxes.net) },
+          { label: "Driver net salary", value: fmt(data.taxes.net) },
         ].map((k) => (
           <div
             key={k.label}

@@ -50,6 +50,8 @@ export type DriverRow = {
   isExternal?: boolean;
   externalCompany?: string | null;
   ourCutPercent?: number | null;
+  ownerName?: string | null;
+  ownerEmail?: string | null;
   truckId?: string | null;
   trailerId?: string | null;
   user: {
@@ -107,6 +109,8 @@ export function DriverFormDialog({
   // the driver gets a percentage and the rest goes to their company.
   const [external, setExternal] = useState(initial?.isExternal ?? false);
   const [company, setCompany] = useState(initial?.externalCompany ?? "");
+  const [ownerName, setOwnerName] = useState(initial?.ownerName ?? "");
+  const [ownerEmail, setOwnerEmail] = useState(initial?.ownerEmail ?? "");
   const [ourCut, setOurCut] = useState(String(initial?.ourCutPercent ?? 10));
   const [driverPct, setDriverPct] = useState(
     String(initial?.isExternal ? (initial?.grossPercent ?? 32) : 32),
@@ -118,6 +122,8 @@ export function DriverFormDialog({
     if (open) {
       setExternal(initial?.isExternal ?? false);
       setCompany(initial?.externalCompany ?? "");
+      setOwnerName(initial?.ownerName ?? "");
+      setOwnerEmail(initial?.ownerEmail ?? "");
       setOurCut(String(initial?.ourCutPercent ?? 10));
       setDriverPct(
         String(initial?.isExternal ? (initial?.grossPercent ?? 32) : 32),
@@ -378,6 +384,36 @@ export function DriverFormDialog({
                     ))}
                   </datalist>
                 </Field>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field
+                    name="ownerName"
+                    label="Truck owner — name"
+                    error={errors.ownerName}
+                  >
+                    <Input
+                      id="ownerName"
+                      name="ownerName"
+                      value={ownerName}
+                      onChange={(e) => setOwnerName(e.target.value)}
+                      placeholder="Owner of the truck"
+                    />
+                  </Field>
+                  <Field
+                    name="ownerEmail"
+                    label="Truck owner — email"
+                    error={errors.ownerEmail}
+                  >
+                    <Input
+                      id="ownerEmail"
+                      name="ownerEmail"
+                      type="email"
+                      value={ownerEmail}
+                      onChange={(e) => setOwnerEmail(e.target.value)}
+                      placeholder="owner@example.com"
+                    />
+                  </Field>
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field
